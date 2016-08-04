@@ -4,4 +4,4 @@ cmake_minimum_required(VERSION 2.8)
 add_subdirectory(minisat)
 
 set(SOURCE_FILES xmg.cpp mlputil.c  mlpext.cpp strashmap.cpp 
-	mig_interface.cpp)
+	mig_interface.cpp PARENT_SCOPE)

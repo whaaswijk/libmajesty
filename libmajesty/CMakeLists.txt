@@ -13,7 +13,7 @@ find_package(Threads)
 #FLEX_TARGET(Lexer lexer.l ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
 #ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
 
-# Add the ./src and ./include dirs to the include path for the lexer and parser
+# Add the ./src and ./include dirs to the include path 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 

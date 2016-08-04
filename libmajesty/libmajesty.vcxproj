@@ -146,6 +146,11 @@
     <ClInclude Include="src\primes.h" />
     <ClInclude Include="src\strashmap.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+    <Text Include="src\CMakeLists.txt" />
+    <Text Include="src\minisat\CMakeLists.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
