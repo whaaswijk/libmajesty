@@ -357,7 +357,7 @@ namespace majesty {
 	nodeid xmg::create_input() {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
-		in.ecnext = -1;
+		in.ecnext = EC_NULL;
 		set_pi(in);
 		auto idx = _nodes.size();
 		in.ecrep = idx;
@@ -368,7 +368,7 @@ namespace majesty {
 	nodeid xmg::create_input(const string& name) {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
-		in.ecnext = -1;
+		in.ecnext = EC_NULL;
 		set_pi(in);
 		auto idx = _nodes.size();
 		in.ecrep = idx;
@@ -380,7 +380,7 @@ namespace majesty {
 	nodeid xmg::create_input(varmap& var_map, Solver& solver) {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
-		in.ecnext = -1;
+		in.ecnext = EC_NULL;
 		set_pi(in);
 		auto idx = _nodes.size();
 		in.ecrep = idx;
@@ -396,7 +396,7 @@ namespace majesty {
 		n.in1 = in1; if (c1) { set_c1(n); }
 		n.in2 = in2; if (c2) { set_c2(n); }
 		n.in3 = in3; if (c3) { set_c3(n); }
-		n.ecnext = -1;
+		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
 		_nodes.push_back(n);
@@ -411,7 +411,7 @@ namespace majesty {
 		n.in1 = in1; if (c1) { set_c1(n); }
 		n.in2 = in2; if (c2) { set_c2(n); }
 		n.in3 = in3; if (c3) { set_c3(n); }
-		n.ecnext = -1;
+		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
 		_nodes.push_back(n);
@@ -448,7 +448,7 @@ namespace majesty {
 		set_xor(n);
 		n.in1 = in1; if (c1) { set_c1(n); }
 		n.in2 = in2; if (c2) { set_c2(n); }
-		n.ecnext = -1;
+		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
 		_nodes.push_back(n);
@@ -463,7 +463,7 @@ namespace majesty {
 		set_xor(n);
 		n.in1 = in1; if (c1) { set_c1(n); }
 		n.in2 = in2; if (c2) { set_c2(n); }
-		n.ecnext = -1;
+		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
 		_nodes.push_back(n);
@@ -686,7 +686,7 @@ namespace majesty {
 			}
 			const auto& nnode = _nodes[nextid];
 			nextid = nnode.ecnext;
-		} while (nextid != -1);
+		} while (nextid != EC_NULL);
 		return false;
 	}
 
@@ -725,7 +725,7 @@ namespace majesty {
 			auto nodeid = r.ecrep;
 			while (true) {
 				auto& node = _nodes[nodeid];
-				if (node.ecnext == -1) {
+				if (node.ecnext == EC_NULL) {
 					node.ecnext = i1;
 					break;
 				}

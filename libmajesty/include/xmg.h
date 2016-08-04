@@ -3,6 +3,7 @@
 
 #include <bitset>
 #include <vector>
+#include <limits>
 #include <boost/dynamic_bitset.hpp>
 #include "../src/minisat/Solver.h"
 #include "../src/minisat/SolverTypes.h"
@@ -22,7 +23,7 @@ using varmap = std::unordered_map<nodeid,Minisat::Var>;
 using fanoutmap = std::vector<std::vector<nodeid>>;
 using nodemap = std::unordered_map<nodeid,std::pair<nodeid,bool>>;
 
-
+#define EC_NULL numeric_limits<nodeid>::max()
 
 #define maj3signature nodeid, bool, nodeid, bool,\
    	nodeid, bool
