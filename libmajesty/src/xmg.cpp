@@ -5,8 +5,10 @@
 #include <random>
 #include "mlpext.h"
 #include <functional>
+#include <boost/optional.hpp>
 
 using namespace std;
+using boost::optional;
 
 static default_random_engine generator;
 static uniform_int_distribution<unsigned int>
@@ -22,13 +24,13 @@ MAJ3* hashnode(unsigned int h, hashmap& hnmap) {
 	}
 }
 
-nodeid hashnode(unsigned int h, xhashmap& hnmap) {
+optional<nodeid> hashnode(unsigned int h, xhashmap& hnmap) {
+	optional<nodeid> res;
 	auto it = hnmap.find(h);
 	if (it != hnmap.end()) {
-		return it->second;
-	} else {
-		return -1;
+		res = it->second;
 	}
+	return res;
 }
 
 bv*
@@ -249,13 +251,13 @@ simulate(xbvmap& m, xhashmap& hnmap, xsimmap& simrep, const majesty::xmg& xmg) {
 		auto hashc = chashbv(bv);
 
 		auto hnode = hashnode(hash, hnmap);
-		if (hnode != -1) {
-			simrep[i] = hnode;
+		if (hnode) {
+			simrep[i] = *hnode;
 			continue;
 		}
 		hnode = hashnode(hashc, hnmap);
-		if (hnode != -1) {
-			simrep[i] = hnode;
+		if (hnode) {
+			simrep[i] = *hnode;
 		} else {
 			hnmap[hash] = i;
 			simrep[i] = i;

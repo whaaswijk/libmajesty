@@ -24,18 +24,18 @@ static inline unsigned cantor_pair(unsigned i, unsigned j) {
 	tn = x; tc = xc; x = y; xc = yc; y = tn; yc = tc; }
 
 static inline void sort_inputs(
-		int32_t& in1, bool& c1, 
-		int32_t& in2, bool& c2,
-		int32_t& in3, bool& c3) {
-		int32_t tn; bool tc;
+		nodeid& in1, bool& c1, 
+		nodeid& in2, bool& c2,
+		nodeid& in3, bool& c3) {
+		nodeid tn; bool tc;
 		SWAP(in2, c2, in3, c3);
 		SWAP(in1, c1, in3, c3);
 		SWAP(in1, c1, in2, c2);
 }
 
 static inline void 
-sort_inputs(int32_t& in1, bool& c1, int32_t& in2, bool& c2) {
-		int32_t tn; bool tc;
+sort_inputs(nodeid& in1, bool& c1, nodeid& in2, bool& c2) {
+		nodeid tn; bool tc;
 		SWAP(in1, c1, in2, c2);
 }
 
