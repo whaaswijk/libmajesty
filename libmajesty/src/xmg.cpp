@@ -22,7 +22,7 @@ MAJ3* hashnode(unsigned int h, hashmap& hnmap) {
 	}
 }
 
-int32_t hashnode(unsigned int h, xhashmap& hnmap) {
+nodeid hashnode(unsigned int h, xhashmap& hnmap) {
 	auto it = hnmap.find(h);
 	if (it != hnmap.end()) {
 		return it->second;
@@ -107,7 +107,7 @@ inithashmap(bvmap& bv_map, hashmap& hnmap, vector<MAJ3*>& inputs, MAJ3* one) {
 	}
 }
 
-void inithashmap(xbvmap& bv_map, xhashmap& hnmap, vector<int32_t>& inputs) {
+void inithashmap(xbvmap& bv_map, xhashmap& hnmap, vector<nodeid>& inputs) {
 	assert(hnmap.size() == 0);
 	auto ov = bv_map[0];
 	auto oh = hashbv(ov.get());
@@ -134,7 +134,7 @@ void initsim(bvmap& bv_map, hashmap& hnmap, vector<MAJ3*>& inputs, MAJ3* one) {
 	inithashmap(bv_map, hnmap, inputs, one);
 }
 
-void initsim(xbvmap& bv_map, xhashmap& hnmap, vector<int32_t>& inputs) {
+void initsim(xbvmap& bv_map, xhashmap& hnmap, vector<nodeid>& inputs) {
 	auto size = bv_size(BITVECTOR_SIZE);
 	shared_ptr<bv> ov(new bv(size));
 	for (auto i = 0u; i < size; i++) {
@@ -169,7 +169,7 @@ find_or_create_bv(const bv* v1, bool c1, const bv* v2, bool c2, const bv* v3,
 
 bv*
 find_or_create_bv(const bv* v1, bool c1, const bv* v2, bool c2, const bv* v3, 
-		bool c3, int32_t nodeid, xbvmap& bvmap) {
+		bool c3, nodeid nodeid, xbvmap& bvmap) {
 	auto v = bvmap.at(nodeid);
 	if (v == nullptr) {
 		auto v = shared_ptr<bv>(new_bv(v1, c1, v2, c2, v3, c3));
@@ -186,7 +186,7 @@ find_or_create_bv(const bv* v1, bool c1, const bv* v2, bool c2, const bv* v3,
 
 bv*
 find_or_create_bv(const bv* v1, bool c1, const bv* v2, bool c2, 
-		int32_t nodeid, xbvmap& bvmap) {
+		nodeid nodeid, xbvmap& bvmap) {
 	auto v = bvmap.at(nodeid);
 	if (v == nullptr) {
 		v = shared_ptr<bv>(new_bv(v1, c1, v2, c2));
@@ -267,7 +267,7 @@ using namespace Minisat;
 
 namespace majesty {
 
-	lbool equivalent(int32_t i1, int32_t i2, bool c, unsigned nr_backtracks, 
+	lbool equivalent(nodeid i1, nodeid i2, bool c, unsigned nr_backtracks, 
 			const varmap& v, Solver& solver) {
 		auto lit1 = mkLit(v.at(i1), false);
 		auto lit2 = mkLit(v.at(i2), c ? true : false);
@@ -307,7 +307,7 @@ namespace majesty {
 
 	// Append the SAT solver's counterexample
 	void appendcounter(xbvmap& m, const boost::dynamic_bitset<>& counter, 
-			vector<int32_t>& inputs) {
+			vector<nodeid>& inputs) {
 		for (auto i = 0u; i < inputs.size(); i++) {
 			auto input = inputs[i];
 			auto bv = m[input];
@@ -352,7 +352,7 @@ namespace majesty {
 		return res;
 	}
 
-	int32_t xmg::create_input() {
+	nodeid xmg::create_input() {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
 		in.ecnext = -1;
@@ -363,7 +363,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t xmg::create_input(const string& name) {
+	nodeid xmg::create_input(const string& name) {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
 		in.ecnext = -1;
@@ -375,7 +375,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t xmg::create_input(varmap& var_map, Solver& solver) {
+	nodeid xmg::create_input(varmap& var_map, Solver& solver) {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
 		in.ecnext = -1;
@@ -388,7 +388,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t xmg::create_node(maj3inputs) {
+	nodeid xmg::create_node(maj3inputs) {
 		node n;
 		n.flag = 0;
 		n.in1 = in1; if (c1) { set_c1(n); }
@@ -402,7 +402,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t xmg::create_node(maj3inputs, 
+	nodeid xmg::create_node(maj3inputs, 
 			varmap& var_map, Solver& solver, fanoutmap& f) {
 		node n;
 		n.flag = 0;
@@ -440,7 +440,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t xmg::create_node(xorinputs) {
+	nodeid xmg::create_node(xorinputs) {
 		node n;
 		n.flag = 0;
 		set_xor(n);
@@ -454,7 +454,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t xmg::create_node(xorinputs, varmap& var_map, 
+	nodeid xmg::create_node(xorinputs, varmap& var_map, 
 			Minisat::Solver& solver, fanoutmap& f) {
 		node n;
 		n.flag = 0;
@@ -487,7 +487,7 @@ namespace majesty {
 
 	}
 
-	pair<int32_t,bool> 
+	pair<nodeid,bool> 
 		xmg::find_or_create(xorinputs, strashmap& shmap) {
 		if (in1 == in2) {
 			return make_pair(0u, c1 == c2);
@@ -518,7 +518,7 @@ namespace majesty {
 	// Returns the index of a node corresponding to the
 	// specified inputs.
 	// Performs XOR propagation and 1-level strashing.
-	pair<int32_t,bool> 
+	pair<nodeid,bool> 
 		xmg::find_or_create(xorinputs, strashmap& shmap, 
 				varmap& v, Minisat::Solver& s, fanoutmap& f) {
 		if (in1 == in2) {
@@ -547,13 +547,13 @@ namespace majesty {
 		}
 	}
 
-	pair<int32_t,bool> xmg::rfind_or_create(maj3inputs, strashmap& shmap) {
+	pair<nodeid,bool> xmg::rfind_or_create(maj3inputs, strashmap& shmap) {
 		auto idx = 
 			shmap.find_or_add(in1, c1, in2, c2, in3, c3, *this);
 		return make_pair(idx, false);
 	}
 
-	pair<int32_t,bool> xmg::find_or_create(maj3inputs, strashmap& shmap) {
+	pair<nodeid,bool> xmg::find_or_create(maj3inputs, strashmap& shmap) {
 		if (in1 == in2) {
 			if (c1 == c2) {
 				return make_pair(in1, c1);
@@ -589,7 +589,7 @@ namespace majesty {
 	// Returns the index of a node corresponding to the
 	// specified inputs.
 	// Performs M_3 propagation and 1-level strashing.
-	pair<int32_t,bool> xmg::find_or_create(maj3inputs, strashmap& shmap, 
+	pair<nodeid,bool> xmg::find_or_create(maj3inputs, strashmap& shmap, 
 			varmap& v, Solver& s, fanoutmap& f) {
 		if (in1 == in2) {
 			if (c1 == c2) {
@@ -623,7 +623,7 @@ namespace majesty {
 		}
 	}
 
-	bool xmg::xorrecinfan(int32_t i1, int32_t i2) {
+	bool xmg::xorrecinfan(nodeid i1, nodeid i2) {
 		auto& n2 = _nodes[i2]; 
 		if (is_flag_set(n2)) {
 			return false;
@@ -644,7 +644,7 @@ namespace majesty {
 		}
 	}
 
-	bool xmg::majrecinfan(int32_t i1, int32_t i2) {
+	bool xmg::majrecinfan(nodeid i1, nodeid i2) {
 		auto& n2 = _nodes[i2]; 
 		if (is_flag_set(n2)) {
 			return false;
@@ -667,7 +667,7 @@ namespace majesty {
 		}
 	}
 
-	bool xmg::ecrecinfan(int32_t i1, int32_t i2) {
+	bool xmg::ecrecinfan(nodeid i1, nodeid i2) {
 		const auto& n2 = _nodes[i2];
 		auto nextid = n2.ecrep;
 		assert(nextid == i2);
@@ -695,7 +695,7 @@ namespace majesty {
 	}
 
 	// Checks if n1 is in the transitive fanin of n2
-	bool xmg::infan(int32_t i1, int32_t i2) {
+	bool xmg::infan(nodeid i1, nodeid i2) {
 		bool res;
 		const auto& n2 = _nodes[i2];
 		if (n2.ecrep == i2) { 
@@ -711,7 +711,7 @@ namespace majesty {
 		return res;
 	}
 
-	void xmg::set_choice(int32_t i1, int32_t i2, bool c, fanoutmap& f) {
+	void xmg::set_choice(nodeid i1, nodeid i2, bool c, fanoutmap& f) {
 		if (i1 == i2) {
 			// r is already the choice node for n
 			// this can happen due to structural hashing
@@ -795,7 +795,7 @@ namespace majesty {
 	}
 
 	xmg::xmg(MIG* mig, const xmg_params* p) {
-		unordered_map<MAJ3*,pair<int32_t,bool>> nodemap;
+		unordered_map<MAJ3*,pair<nodeid,bool>> nodemap;
 
 		Minisat::Solver solver;
 		// A map of nodes to their SAT variables
@@ -922,7 +922,7 @@ namespace majesty {
 	}
 
 	xmg::xmg(const xmg& xmg, const xmg_params* p) {
-		unordered_map<int32_t,pair<int32_t,bool>> nodemap;
+		unordered_map<nodeid,pair<nodeid,bool>> nodemap;
 
 		Minisat::Solver solver;
 		// A map of nodes to their SAT variables
@@ -949,7 +949,7 @@ namespace majesty {
 		// Perform random simulation on XMG, computing
 		//simrep[n] for every n in the XMG
 		const auto& nodes = xmg.nodes();
-		vector<int32_t> inputs(xmg.nin());
+		vector<nodeid> inputs(xmg.nin());
 		for (auto i = 0u; i < xmg.nin(); i++) {
 			inputs[i] = i+1;
 		}
@@ -966,7 +966,7 @@ namespace majesty {
 			const auto& p1node = _nodes[p1.first];
 			const auto& p2 = nodemap[node.in2];
 			const auto& p2node = _nodes[p2.first];
-			pair<int32_t,bool> np;
+			pair<nodeid,bool> np;
 			if (!is_xor(node)) {
 				const auto& p3 = nodemap[node.in3];
 				const auto& p3node = _nodes[p3.first];
@@ -992,7 +992,7 @@ namespace majesty {
 				continue;
 			}
 			auto rep = simrep[i];
-			if (static_cast<int32_t>(i) != rep)  {
+			if (static_cast<nodeid>(i) != rep)  {
 				bool c = false;
 				const auto rp = nodemap[rep];
 				const auto& rpnode = _nodes[rp.first];
@@ -1058,7 +1058,7 @@ namespace majesty {
 		cout << "Nr. undefined: " << stats.nr_undefined << endl;
 	}
 
-	void xmg::create_output(int32_t nodeid, bool c, const string& name) {
+	void xmg::create_output(nodeid nodeid, bool c, const string& name) {
 		auto& outnode = _nodes[nodeid];
 		set_po(outnode);
 		_outputs.push_back(nodeid);
@@ -1095,7 +1095,7 @@ namespace majesty {
 		mig->nodes = NULL;
 
 		vector<MAJ3*> nodes;
-		unordered_map<int32_t,MAJ3*> nodemap;
+		unordered_map<nodeid,MAJ3*> nodemap;
 		for (auto i = 0u; i < _nodes.size(); i++) {
 			const auto& node = _nodes[i];
 			if (is_pi(node)) {
@@ -1119,7 +1119,7 @@ namespace majesty {
 					strcpy(mig->innames[i-1], _innames[i-1].c_str());
 				}
 				nodemap[node.ecrep] = n;
-			} else if (node.ecrep != static_cast<int32_t>(i)) {
+			} else if (node.ecrep != static_cast<nodeid>(i)) {
 				continue;
 			} else {
 				auto n = new_node_nop(mig, nodemap[node.in1], is_c1(node),

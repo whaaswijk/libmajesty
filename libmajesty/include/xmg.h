@@ -10,32 +10,34 @@
 #include <map>
 #include <unordered_map>
 
-#define maj3signature int32_t, bool, int32_t, bool,\
-   	int32_t, bool
+using nodeid = uint32_t;
+using bv = std::vector<unsigned int>;
+using hashmap = std::unordered_map<unsigned int,MAJ3*>;
+using xhashmap = std::unordered_map<unsigned int,nodeid>;
+using bvmap = std::unordered_map<MAJ3*,std::shared_ptr<bv>>;
+using xbvmap = std::vector<std::shared_ptr<bv>>;
+using simmap = std::unordered_map<MAJ3*,MAJ3*>;
+using xsimmap = std::vector<nodeid>;
+using varmap = std::unordered_map<nodeid,Minisat::Var>;
+using fanoutmap = std::vector<std::vector<nodeid>>;
+using nodemap = std::unordered_map<nodeid,std::pair<nodeid,bool>>;
 
-#define xorsignature int32_t, bool, int32_t, bool
 
-#define maj3inputs int32_t in1, bool c1, int32_t in2, bool c2,\
-   	int32_t in3, bool c3
 
-#define xorinputs int32_t in1, bool c1, int32_t in2, bool c2
+#define maj3signature nodeid, bool, nodeid, bool,\
+   	nodeid, bool
+
+#define xorsignature nodeid, bool, nodeid, bool
+
+#define maj3inputs nodeid in1, bool c1, nodeid in2, bool c2,\
+   	nodeid in3, bool c3
+
+#define xorinputs nodeid in1, bool c1, nodeid in2, bool c2
 
 #define BITVECTOR_SIZE 8000
 #define DEFAULT_BACKTRACKS 4096
 
 struct MIG;
-
-using nodeid = int32_t;
-using bv = std::vector<unsigned int>;
-using hashmap = std::unordered_map<unsigned int,MAJ3*>;
-using xhashmap = std::unordered_map<unsigned int,int32_t>;
-using bvmap = std::unordered_map<MAJ3*,std::shared_ptr<bv>>;
-using xbvmap = std::vector<std::shared_ptr<bv>>;
-using simmap = std::unordered_map<MAJ3*,MAJ3*>;
-using xsimmap = std::vector<int32_t>;
-using varmap = std::unordered_map<int32_t,Minisat::Var>;
-using fanoutmap = std::vector<std::vector<int32_t>>;
-using nodemap = std::unordered_map<int32_t,std::pair<int32_t,bool>>;
 
 namespace majesty {
 	class strashmap;
@@ -58,7 +60,7 @@ namespace majesty {
 		 * Bit 7: if set this is an XOR node
 		 */
 		uint8_t flag;
-		int32_t ecrep, ecnext;
+		nodeid ecrep, ecnext;
 	};
 
 	struct xmg_stats {
@@ -177,23 +179,23 @@ namespace majesty {
 		friend class strashmap;
 		private:
 			std::vector<node> _nodes;
-			std::vector<int32_t> _outputs;
+			std::vector<nodeid> _outputs;
 			boost::dynamic_bitset<> _outcompl;
 			std::vector<std::string> _innames;
 			std::vector<std::string> _outnames;
 			
-			int32_t create_node(maj3signature, 
+			nodeid create_node(maj3signature, 
 					varmap&, Minisat::Solver&, fanoutmap&);
-			int32_t create_node(maj3signature);
-			int32_t create_node(xorsignature,
+			nodeid create_node(maj3signature);
+			nodeid create_node(xorsignature,
 					varmap&, Minisat::Solver&, fanoutmap&);
-			int32_t create_node(xorsignature);
+			nodeid create_node(xorsignature);
 							
-			void set_choice(int32_t, int32_t, bool, fanoutmap&);
-			bool majrecinfan(int32_t, int32_t);
-			bool xorrecinfan(int32_t, int32_t);
-			bool ecrecinfan(int32_t, int32_t);
-			bool infan(int32_t, int32_t);
+			void set_choice(nodeid, nodeid, bool, fanoutmap&);
+			bool majrecinfan(nodeid, nodeid);
+			bool xorrecinfan(nodeid, nodeid);
+			bool ecrecinfan(nodeid, nodeid);
+			bool infan(nodeid, nodeid);
 			void resetflag();
 
 		public:
@@ -209,7 +211,7 @@ namespace majesty {
 			// Counts the nr. of PO nodes
 			unsigned nout() const { return _outputs.size(); }
 			const std::vector<node>& nodes() const { return _nodes; }
-			const std::vector<int32_t>& outputs() const { return _outputs; }
+			const std::vector<nodeid>& outputs() const { return _outputs; }
 			const std::vector<std::string>& innames() const { 
 				return _innames;
 		   	}
@@ -220,17 +222,17 @@ namespace majesty {
 				return _outcompl;
 		   	}
 
-			int32_t create_input();
-			int32_t create_input(const std::string&);
-			int32_t create_input(varmap&, Minisat::Solver&);
-			void create_output(int32_t, bool, const std::string&);
-			std::pair<int32_t,bool> find_or_create(maj3signature, strashmap&);
-			std::pair<int32_t,bool> rfind_or_create(maj3signature, strashmap&);
-			std::pair<int32_t,bool> 
+			nodeid create_input();
+			nodeid create_input(const std::string&);
+			nodeid create_input(varmap&, Minisat::Solver&);
+			void create_output(nodeid, bool, const std::string&);
+			std::pair<nodeid,bool> find_or_create(maj3signature, strashmap&);
+			std::pair<nodeid,bool> rfind_or_create(maj3signature, strashmap&);
+			std::pair<nodeid,bool> 
 				find_or_create(maj3signature, strashmap&, 
 						varmap&, Minisat::Solver&, fanoutmap&);
-			std::pair<int32_t,bool> find_or_create(xorsignature, strashmap&);
-			std::pair<int32_t,bool> 
+			std::pair<nodeid,bool> find_or_create(xorsignature, strashmap&);
+			std::pair<nodeid,bool> 
 				find_or_create(xorsignature, strashmap&, 
 						varmap&, Minisat::Solver&, fanoutmap&);
 
