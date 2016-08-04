@@ -1,0 +1,1142 @@
+#include <xmg.h>
+#include "strashmap.h"
+#include "primes.h"
+#include <iostream>
+#include <random>
+#include "mlpext.h"
+#include <functional>
+
+using namespace std;
+
+static default_random_engine generator;
+static uniform_int_distribution<unsigned int>
+distribution(1,numeric_limits<unsigned int>::max());
+static auto rvector = bind(distribution, generator);
+
+MAJ3* hashnode(unsigned int h, hashmap& hnmap) {
+	auto it = hnmap.find(h);
+	if (it != hnmap.end()) {
+		return it->second;
+	} else {
+		return nullptr;
+	}
+}
+
+int32_t hashnode(unsigned int h, xhashmap& hnmap) {
+	auto it = hnmap.find(h);
+	if (it != hnmap.end()) {
+		return it->second;
+	} else {
+		return -1;
+	}
+}
+
+bv*
+new_bv(const bv* v1, bool c1, const bv* v2, bool c2, const bv* v3, bool c3) {
+	assert(v1->size() == v2->size());
+	assert(v1->size() == v3->size());
+	auto res = new bv(v1->size());
+	for (auto i = 0u; i < v1->size(); ++i) {
+		auto b1 = v1->at(i); if (c1) b1 = ~b1;
+		auto b2 = v2->at(i); if (c2) b2 = ~b2;
+		auto b3 = v3->at(i); if (c3) b3 = ~b3;
+		res->at(i) = (b1 & b2) | (b1 & b3) | (b2 & b3);
+	}
+
+	return res;
+}
+
+bv*
+new_bv(const bv* v1, bool c1, const bv* v2, bool c2) {
+	assert(v1->size() == v2->size());
+	auto res = new bv(v1->size());
+	for (auto i = 0u; i < v1->size(); ++i) {
+		auto b1 = v1->at(i); if (c1) b1 = ~b1;
+		auto b2 = v2->at(i); if (c2) b2 = ~b2;
+		res->at(i) = (b1 ^ b2);
+	}
+
+	return res;
+}
+
+
+unsigned int hashbv(const bv* v) {
+	assert(v->size() <= PRIMES.size());
+	auto val = 0u;
+
+	for (auto i = 0u; i < v->size(); i++) {
+		val ^= v->at(i) * PRIMES[i];
+	}
+
+	return val;
+}
+
+unsigned int chashbv(const bv* v) {
+	assert(v->size() <= PRIMES.size());
+	auto val = 0u;
+
+	for (auto i = 0u; i < v->size(); i++) {
+		val ^= (~v->at(i)) * PRIMES[i];
+	}
+
+	return val;
+}
+
+inline size_t bv_size(unsigned int nbits) {
+	auto bits_in_int = sizeof(unsigned int)*8;
+	auto nints = ceil((1.0*nbits)/bits_in_int);
+	return static_cast<unsigned int>(nints);
+}
+
+inline void randomize(bv* v) {
+	for (auto i = 0u; i < v->size(); ++i) {
+		v->at(i) = rvector();
+	}
+}
+
+void
+inithashmap(bvmap& bv_map, hashmap& hnmap, vector<MAJ3*>& inputs, MAJ3* one) {
+	assert(hnmap.size() == 0);
+	auto ov = bv_map[one];
+	auto oh = hashbv(ov.get());
+	hnmap[oh] = one;
+	for (auto input : inputs) {
+		auto v = bv_map[input];
+		auto h = hashbv(v.get());
+		hnmap[h] = input;
+	}
+}
+
+void inithashmap(xbvmap& bv_map, xhashmap& hnmap, vector<int32_t>& inputs) {
+	assert(hnmap.size() == 0);
+	auto ov = bv_map[0];
+	auto oh = hashbv(ov.get());
+	hnmap[oh] = 0;
+	for (auto input : inputs) {
+		auto v = bv_map[input];
+		auto h = hashbv(v.get());
+		hnmap[h] = input;
+	}
+}
+
+void initsim(bvmap& bv_map, hashmap& hnmap, vector<MAJ3*>& inputs, MAJ3* one) {
+	auto size = bv_size(BITVECTOR_SIZE);
+	shared_ptr<bv> ov(new bv(size));
+	for (auto i = 0u; i < size; i++) {
+		ov->at(i) = -1;
+	}
+	bv_map[one] = ov;
+	for (auto input : inputs) {
+		shared_ptr<bv> v(new bv(size));
+		randomize(v.get());
+		bv_map[input] = v;
+	}
+	inithashmap(bv_map, hnmap, inputs, one);
+}
+
+void initsim(xbvmap& bv_map, xhashmap& hnmap, vector<int32_t>& inputs) {
+	auto size = bv_size(BITVECTOR_SIZE);
+	shared_ptr<bv> ov(new bv(size));
+	for (auto i = 0u; i < size; i++) {
+		ov->at(i) = -1;
+	}
+	bv_map[0] = ov;
+	for (auto input : inputs) {
+		shared_ptr<bv> v(new bv(size));
+		randomize(v.get());
+		bv_map[input] = v;
+	}
+	inithashmap(bv_map, hnmap, inputs);
+}
+
+bv*
+find_or_create_bv(const bv* v1, bool c1, const bv* v2, bool c2, const bv* v3, 
+		bool c3, MAJ3* node, bvmap& bvmap) {
+	auto it = bvmap.find(node);
+	if (it == bvmap.end()) {
+		auto v = shared_ptr<bv>(new_bv(v1, c1, v2, c2, v3, c3));
+		bvmap[node] = v;
+		return v.get();
+	}
+	auto v = it->second.get();
+	assert(v->size() == (v1->size()-1));
+	auto b1 = v1->at(v->size()); if (c1) b1 = ~b1;
+	auto b2 = v2->at(v->size()); if (c2) b2 = ~b2;
+	auto b3 = v3->at(v->size()); if (c3) b3 = ~b3;
+	v->push_back((b1 & b2) | (b1 & b3) | (b2 & b3));
+	return v;
+}
+
+bv*
+find_or_create_bv(const bv* v1, bool c1, const bv* v2, bool c2, const bv* v3, 
+		bool c3, int32_t nodeid, xbvmap& bvmap) {
+	auto v = bvmap.at(nodeid);
+	if (v == nullptr) {
+		auto v = shared_ptr<bv>(new_bv(v1, c1, v2, c2, v3, c3));
+		bvmap[nodeid] = v;
+		return v.get();
+	}
+	assert(v->size() == (v1->size()-1));
+	auto b1 = v1->at(v->size()); if (c1) b1 = ~b1;
+	auto b2 = v2->at(v->size()); if (c2) b2 = ~b2;
+	auto b3 = v3->at(v->size()); if (c3) b3 = ~b3;
+	v->push_back((b1 & b2) | (b1 & b3) | (b2 & b3));
+	return v.get();
+}
+
+bv*
+find_or_create_bv(const bv* v1, bool c1, const bv* v2, bool c2, 
+		int32_t nodeid, xbvmap& bvmap) {
+	auto v = bvmap.at(nodeid);
+	if (v == nullptr) {
+		v = shared_ptr<bv>(new_bv(v1, c1, v2, c2));
+		bvmap[nodeid] = v;
+		return v.get();
+	}
+	assert(v->size() == (v1->size()-1));
+	auto b1 = v1->at(v->size()); if (c1) b1 = ~b1;
+	auto b2 = v2->at(v->size()); if (c2) b2 = ~b2;
+	v->push_back(b1 ^ b2); 
+	return v.get();
+}
+
+void
+simulate(bvmap& m, hashmap& hnmap, simmap& simrep, vector<MAJ3*>& nodes) {
+	for (auto i = 0u; i < nodes.size(); i++) {
+		auto node = nodes[i];
+		if (node->PI) {
+			continue;
+		}
+		auto bv = find_or_create_bv(m[node->in1].get(), node->compl1,
+				m[node->in2].get(), node->compl2,
+				m[node->in3].get(), node->compl3, node, m);
+		auto hash = hashbv(bv);
+		auto hashc = chashbv(bv);
+
+		auto hnode = hashnode(hash, hnmap);
+		if (hnode != nullptr) {
+			simrep[node] = hnode;
+			continue;
+		}
+		hnode = hashnode(hashc, hnmap);
+		if (hnode != nullptr) {
+			simrep[node] = hnode;
+		} else {
+			hnmap[hash] = node;
+			simrep[node] = node;
+		}
+	}
+}
+
+void 
+simulate(xbvmap& m, xhashmap& hnmap, xsimmap& simrep, const majesty::xmg& xmg) {
+	const auto& nodes = xmg.nodes();
+	for (auto i = 0u; i < nodes.size(); i++) {
+		auto node = nodes[i];
+		if (is_pi(node)) {
+			continue;
+		}
+		bv* bv;
+		if (is_xor(node)) {
+			bv = find_or_create_bv(m[node.in1].get(), is_c1(node),
+					m[node.in2].get(), is_c1(node), i, m);
+		} else {
+			bv = find_or_create_bv(m[node.in1].get(), is_c1(node),
+					m[node.in2].get(), is_c2(node),
+					m[node.in3].get(), is_c3(node), i, m);
+		}
+		auto hash = hashbv(bv);
+		auto hashc = chashbv(bv);
+
+		auto hnode = hashnode(hash, hnmap);
+		if (hnode != -1) {
+			simrep[i] = hnode;
+			continue;
+		}
+		hnode = hashnode(hashc, hnmap);
+		if (hnode != -1) {
+			simrep[i] = hnode;
+		} else {
+			hnmap[hash] = i;
+			simrep[i] = i;
+		}
+	}
+}
+
+using namespace Minisat;
+
+namespace majesty {
+
+	lbool equivalent(int32_t i1, int32_t i2, bool c, unsigned nr_backtracks, 
+			const varmap& v, Solver& solver) {
+		auto lit1 = mkLit(v.at(i1), false);
+		auto lit2 = mkLit(v.at(i2), c ? true : false);
+		auto onelit = mkLit(v.at(0), false);
+
+		vec<Lit> assumps;
+		assumps.push(~lit1);
+		assumps.push(lit2);
+		assumps.push(onelit);
+
+		// Check if both variables could ever be different
+		auto res = solver.frsolve(assumps, nr_backtracks);
+		if (res == l_True) {
+			return l_False;
+		} else if (res == l_Undef) {
+			return l_Undef;
+		}
+		assumps[0] = lit1;
+		assumps[1] = ~lit2;
+		res = solver.frsolve(assumps, nr_backtracks);
+		if (res == l_True) {
+			return l_False;
+		} else if (res == l_Undef) {
+			return l_Undef;
+		} else {
+			return l_True;
+		}
+	}
+
+	boost::dynamic_bitset<> counterexample(unsigned nin, varmap& v, Solver& s) {
+		boost::dynamic_bitset<> ctr;
+		for (auto i = 1u; i <= nin; i++) {
+			ctr.push_back(s.modelValue(v[i]) == l_True ? true : false);
+		}
+		return ctr;
+	}
+
+	// Append the SAT solver's counterexample
+	void appendcounter(xbvmap& m, const boost::dynamic_bitset<>& counter, 
+			vector<int32_t>& inputs) {
+		for (auto i = 0u; i < inputs.size(); i++) {
+			auto input = inputs[i];
+			auto bv = m[input];
+			auto newi = rvector();
+			newi &= ~1;
+			if (counter[i]) {
+				newi |= 1;
+			}
+			bv->push_back(newi);
+		}
+		auto ov = m[0];
+		ov->push_back(-1);
+	}
+
+	// Append the SAT solver's counterexample
+	void appendcounter(bvmap& m, const boost::dynamic_bitset<>& counter, 
+			vector<MAJ3*>& inputs, MAJ3* one) {
+		for (auto i = 0u; i < inputs.size(); i++) {
+			auto input = inputs[i];
+			auto bv = m[input];
+			auto newi = rvector();
+			newi &= ~1;
+			if (counter[i]) {
+				newi |= 1;
+			}
+			bv->push_back(newi);
+		}
+		auto ov = m[one];
+		ov->push_back(-1);
+	}
+
+	unsigned xmg::nin() const {
+		auto res = 0u;
+		for (auto i = 1u; i < _nodes.size(); i++) { // Skip one node
+			const auto& n = _nodes[i];
+			if (is_pi(n)) {
+				++res;
+			} else {
+				break;
+			}
+		}
+		return res;
+	}
+
+	int32_t xmg::create_input() {
+		node in;
+		in.flag = in.in1 = in.in2 = in.in3 = 0;
+		in.ecnext = -1;
+		set_pi(in);
+		auto idx = _nodes.size();
+		in.ecrep = idx;
+		_nodes.push_back(in);
+		return idx;
+	}
+
+	int32_t xmg::create_input(const string& name) {
+		node in;
+		in.flag = in.in1 = in.in2 = in.in3 = 0;
+		in.ecnext = -1;
+		set_pi(in);
+		auto idx = _nodes.size();
+		in.ecrep = idx;
+		_nodes.push_back(in);
+		_innames.push_back(name);
+		return idx;
+	}
+
+	int32_t xmg::create_input(varmap& var_map, Solver& solver) {
+		node in;
+		in.flag = in.in1 = in.in2 = in.in3 = 0;
+		in.ecnext = -1;
+		set_pi(in);
+		auto idx = _nodes.size();
+		in.ecrep = idx;
+		_nodes.push_back(in);
+		// Make a SAT variable for this input
+		var_map[idx] = solver.newVar();
+		return idx;
+	}
+
+	int32_t xmg::create_node(maj3inputs) {
+		node n;
+		n.flag = 0;
+		n.in1 = in1; if (c1) { set_c1(n); }
+		n.in2 = in2; if (c2) { set_c2(n); }
+		n.in3 = in3; if (c3) { set_c3(n); }
+		n.ecnext = -1;
+		auto idx = _nodes.size();
+		n.ecrep = idx;
+		_nodes.push_back(n);
+
+		return idx;
+	}
+
+	int32_t xmg::create_node(maj3inputs, 
+			varmap& var_map, Solver& solver, fanoutmap& f) {
+		node n;
+		n.flag = 0;
+		n.in1 = in1; if (c1) { set_c1(n); }
+		n.in2 = in2; if (c2) { set_c2(n); }
+		n.in3 = in3; if (c3) { set_c3(n); }
+		n.ecnext = -1;
+		auto idx = _nodes.size();
+		n.ecrep = idx;
+		_nodes.push_back(n);
+
+		f[in1].push_back(idx);
+		f[in2].push_back(idx);
+		f[in3].push_back(idx);
+
+		// Add SAT variable and clauses for this node
+		auto new_var = solver.newVar();
+		auto nlit = mkLit(new_var, false);
+		var_map[idx] = new_var;
+
+		auto lit1 = mkLit(var_map[in1], c1);
+		auto lit2 = mkLit(var_map[in2], c2);
+		auto lit3 = mkLit(var_map[in3], c3);
+
+		// Otherwise: generate MAJ3 clauses
+		// D = MAJ(A,B,C) ==>
+		// (¬a||¬b||d)&&(¬a||¬c||d)&&(a||b||¬d)&&(a||c||¬d)&&(¬b||¬c||d)&&(b||c||¬d)
+		solver.addClause(~lit1, ~lit2, nlit);
+		solver.addClause(~lit1, ~lit3, nlit);
+		solver.addClause(lit1, lit2, ~nlit);
+		solver.addClause(lit1, lit3, ~nlit);
+		solver.addClause(~lit2, ~lit3, nlit);
+		solver.addClause(lit2, lit3, ~nlit);
+
+		return idx;
+	}
+
+	int32_t xmg::create_node(xorinputs) {
+		node n;
+		n.flag = 0;
+		set_xor(n);
+		n.in1 = in1; if (c1) { set_c1(n); }
+		n.in2 = in2; if (c2) { set_c2(n); }
+		n.ecnext = -1;
+		auto idx = _nodes.size();
+		n.ecrep = idx;
+		_nodes.push_back(n);
+
+		return idx;
+	}
+
+	int32_t xmg::create_node(xorinputs, varmap& var_map, 
+			Minisat::Solver& solver, fanoutmap& f) {
+		node n;
+		n.flag = 0;
+		set_xor(n);
+		n.in1 = in1; if (c1) { set_c1(n); }
+		n.in2 = in2; if (c2) { set_c2(n); }
+		n.ecnext = -1;
+		auto idx = _nodes.size();
+		n.ecrep = idx;
+		_nodes.push_back(n);
+
+		f[in1].push_back(idx);
+		f[in2].push_back(idx);
+
+		// Add SAT variable and clauses for this node
+		auto new_var = solver.newVar();
+		auto nlit = mkLit(new_var, false);
+		var_map[idx] = new_var;
+
+		auto lit1 = mkLit(var_map[in1], c1);
+		auto lit2 = mkLit(var_map[in2], c2);
+
+		// Generate XOR clauses
+		solver.addClause(~lit1, ~lit2, ~nlit);
+		solver.addClause(lit1, lit2, ~nlit);
+		solver.addClause(lit1, ~lit2, nlit);
+		solver.addClause(~lit1, lit2, nlit);
+
+		return idx;
+
+	}
+
+	pair<int32_t,bool> 
+		xmg::find_or_create(xorinputs, strashmap& shmap) {
+		if (in1 == in2) {
+			return make_pair(0u, c1 == c2);
+		} else if (in1 == 0) {
+			return make_pair(in2, c1 == c2);
+		} else if (in2 == 0) {
+			return make_pair(in1, c1 == c2);
+		}
+		// Check if an trivially equivalent node already exists
+		// (strashing)
+		// In the case of XOR nodes we can ensure that inputs are
+		// never complemented
+		if (c1 && !c2) {
+			return make_pair(
+					shmap.find_or_add(in1, false, in2, false, *this),
+					true);
+		} else if (!c1 && c2) {
+			return make_pair(
+					shmap.find_or_add(in1, false, in2, false, *this),
+					true);
+		} else {
+			return make_pair(
+					shmap.find_or_add(in1, false, in2, false, *this),
+					false);
+		}
+	}
+
+	// Returns the index of a node corresponding to the
+	// specified inputs.
+	// Performs XOR propagation and 1-level strashing.
+	pair<int32_t,bool> 
+		xmg::find_or_create(xorinputs, strashmap& shmap, 
+				varmap& v, Minisat::Solver& s, fanoutmap& f) {
+		if (in1 == in2) {
+			return make_pair(0u, c1 == c2);
+		} else if (in1 == 0) {
+			return make_pair(in2, c1 == c2);
+		} else if (in2 == 0) {
+			return make_pair(in1, c1 == c2);
+		}
+		// Check if an trivially equivalent node already exists
+		// (strashing)
+		// In the case of XOR nodes we can ensure that inputs are
+		// never complemented
+		if (c1 && !c2) {
+			return make_pair(
+					shmap.find_or_add(in1, false, in2, false, *this, v, s, f), 
+					true);
+		} else if (!c1 && c2) {
+			return make_pair(
+					shmap.find_or_add(in1, false, in2, false, *this, v, s, f), 
+					true);
+		} else {
+			return make_pair(
+					shmap.find_or_add(in1, false, in2, false, *this, v, s, f), 
+					false);
+		}
+	}
+
+	pair<int32_t,bool> xmg::rfind_or_create(maj3inputs, strashmap& shmap) {
+		auto idx = 
+			shmap.find_or_add(in1, c1, in2, c2, in3, c3, *this);
+		return make_pair(idx, false);
+	}
+
+	pair<int32_t,bool> xmg::find_or_create(maj3inputs, strashmap& shmap) {
+		if (in1 == in2) {
+			if (c1 == c2) {
+				return make_pair(in1, c1);
+			} else {
+				return make_pair(in3, c3);
+			}
+		} else if (in1 == in3) {
+			if (c1 == c3) {
+				return make_pair(in1, c1);
+			} else {
+				return make_pair(in2, c2);
+			}
+		} else if (in2 == in3) {
+			if (c2 == c3) {
+				return make_pair(in2, c2);
+			} else {
+				return make_pair(in1, c1);
+			}
+		}
+		// Ensure that at most one input is complemented
+		if ((c1 && !c2 && !c3) || (!c1 && c2 && !c3) || (!c1 && !c2 && c3)
+				|| (!c1 && !c2 && !c3)) {
+			auto idx = 
+				shmap.find_or_add(in1, c1, in2, c2, in3, c3, *this);
+			return make_pair(idx, false);
+		} else {
+			auto idx = shmap.find_or_add(in1, c1 != true, 
+					in2, c2 != true, in3, c3 != true, *this);
+			return make_pair(idx, true);
+		}
+	}
+
+	// Returns the index of a node corresponding to the
+	// specified inputs.
+	// Performs M_3 propagation and 1-level strashing.
+	pair<int32_t,bool> xmg::find_or_create(maj3inputs, strashmap& shmap, 
+			varmap& v, Solver& s, fanoutmap& f) {
+		if (in1 == in2) {
+			if (c1 == c2) {
+				return make_pair(in1, c1);
+			} else {
+				return make_pair(in3, c3);
+			}
+		} else if (in1 == in3) {
+			if (c1 == c3) {
+				return make_pair(in1, c1);
+			} else {
+				return make_pair(in2, c2);
+			}
+		} else if (in2 == in3) {
+			if (c2 == c3) {
+				return make_pair(in2, c2);
+			} else {
+				return make_pair(in1, c1);
+			}
+		}
+		// Ensure that at most one input is complemented
+		if ((c1 && !c2 && !c3) || (!c1 && c2 && !c3) || (!c1 && !c2 && c3)
+				|| (!c1 && !c2 && !c3)) {
+			auto idx = 
+				shmap.find_or_add(in1, c1, in2, c2, in3, c3, *this, v, s, f);
+			return make_pair(idx, false);
+		} else {
+			auto idx = shmap.find_or_add(in1, c1 != true, 
+					in2, c2 != true, in3, c3 != true, *this, v, s, f);
+			return make_pair(idx, true);
+		}
+	}
+
+	bool xmg::xorrecinfan(int32_t i1, int32_t i2) {
+		auto& n2 = _nodes[i2]; 
+		if (is_flag_set(n2)) {
+			return false;
+		}
+		set_flag(n2);
+		if (i1 == i2) {
+			return true;
+		} 
+
+		if (is_pi(n2)) {
+			return false;
+		} else if (ecrecinfan(i1, n2.in1)) {
+			return true;
+		} else if (ecrecinfan(i1, n2.in2)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	bool xmg::majrecinfan(int32_t i1, int32_t i2) {
+		auto& n2 = _nodes[i2]; 
+		if (is_flag_set(n2)) {
+			return false;
+		}
+		set_flag(n2);
+		if (i1 == i2) {
+			return true;
+		} 
+
+		if (is_pi(n2)) {
+			return false;
+		} else if (ecrecinfan(i1, n2.in1)) {
+			return true;
+		} else if (ecrecinfan(i1, n2.in2)) {
+			return true;
+		} else if (ecrecinfan(i1, n2.in3)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	bool xmg::ecrecinfan(int32_t i1, int32_t i2) {
+		const auto& n2 = _nodes[i2];
+		auto nextid = n2.ecrep;
+		assert(nextid == i2);
+		do {
+			const auto nextnode = _nodes[nextid];
+			bool res;
+			if (is_xor(nextnode)) {
+				res = xorrecinfan(i1, nextid);
+			} else {
+				res = majrecinfan(i1, nextid);
+			}
+			if (res) {
+				return true;
+			}
+			const auto& nnode = _nodes[nextid];
+			nextid = nnode.ecnext;
+		} while (nextid != -1);
+		return false;
+	}
+
+	void xmg::resetflag() {
+		for (auto& n : _nodes) {
+			reset_flag(n);
+		}
+	}
+
+	// Checks if n1 is in the transitive fanin of n2
+	bool xmg::infan(int32_t i1, int32_t i2) {
+		bool res;
+		const auto& n2 = _nodes[i2];
+		if (n2.ecrep == i2) { 
+			res = ecrecinfan(i1, i2);
+		} else {
+			if (is_xor(n2)) {
+				res = xorrecinfan(i1, i2);
+			} else {
+				res = majrecinfan(i1, i2);
+			}
+		}
+		resetflag();
+		return res;
+	}
+
+	void xmg::set_choice(int32_t i1, int32_t i2, bool c, fanoutmap& f) {
+		if (i1 == i2) {
+			// r is already the choice node for n
+			// this can happen due to structural hashing
+			return;
+		}
+		bool addtoeqclass = !infan(i1, i2);
+		if (addtoeqclass) {
+			const auto& r = _nodes[i2];
+			auto nodeid = r.ecrep;
+			while (true) {
+				auto& node = _nodes[nodeid];
+				if (node.ecnext == -1) {
+					node.ecnext = i1;
+					break;
+				}
+				nodeid = node.ecnext;
+			}
+		}
+
+		auto& i1fanout = f.at(i1);
+		if (i1fanout.size() > 0) {
+			for (auto nodeid : i1fanout) {
+				auto& outnode = _nodes[nodeid];
+				f[i2].push_back(nodeid);
+				if (outnode.in1 == i1) {
+					outnode.in1 = i2;
+					if (c) {
+						if (is_c1(outnode)) {
+							reset_c1(outnode);
+						} else {
+							set_c1(outnode);
+						}
+					}
+				} else if (outnode.in2 == i1) {
+					outnode.in2 = i2;
+					if (c) {
+						if (is_c2(outnode)) {
+							reset_c2(outnode);
+						} else {
+							set_c2(outnode);
+						}
+					}
+				} else if (outnode.in3 == i1) {
+					outnode.in3 = i2;
+					if (c) {
+						if (is_c3(outnode)) {
+							reset_c3(outnode);
+						} else {
+							set_c3(outnode);
+						}
+					}
+				} else {
+					assert(false);
+				}
+			}
+			i1fanout.clear();
+		}
+
+		auto& n = _nodes[i1];
+		n.ecrep = i2;
+		if (c) {
+			set_c(n);
+		}
+	}
+	
+	xmg::xmg(xmg&& xmg) {
+		_nodes = std::move(xmg._nodes);
+		_outputs = std::move(xmg._outputs);
+		_outcompl = std::move(xmg._outcompl);
+		_innames = std::move(xmg._innames);
+		_outnames = std::move(xmg._outnames);
+	}
+
+	xmg& xmg::operator=(xmg&& xmg) {
+		_nodes = std::move(xmg._nodes);
+		_outputs = std::move(xmg._outputs);
+		_outcompl = std::move(xmg._outcompl);
+		_innames = std::move(xmg._innames);
+		_outnames = std::move(xmg._outnames);
+		return *this;
+	}
+
+	xmg::xmg(MIG* mig, const xmg_params* p) {
+		unordered_map<MAJ3*,pair<int32_t,bool>> nodemap;
+
+		Minisat::Solver solver;
+		// A map of nodes to their SAT variables
+		varmap var_map;
+		// A map from MAJ3 nodes to their corresponding bitvectors
+		bvmap bv_map;
+		// A map from nodes to their simulation representatives.
+		simmap simrep;
+		// A map of bitvector hashes to MAJ3 nodes.
+		hashmap hashnode_map;
+
+		fanoutmap fanout(mig->Nin+mig->Nnodes+1);
+
+		xmg_stats stats {
+			0u, // Nr. strash hits
+			0u, // nr_potentials
+			0u, // nr_matches
+			0u, // nr_misses
+			0u, // nr_undefined
+		};
+
+		strashmap shmap(mig->Nnodes/2, stats);
+
+		// Perform random simulation on MIG, computing
+		//simrep[n] for every n in the MIG
+		auto torder = mig_topsort(mig);
+		vector<MAJ3*> inputs(mig->Nin);
+		for (auto i = 0u; i < mig->Nin; i++) {
+			inputs[i] = mig->in[i];
+		}
+		initsim(bv_map, hashnode_map, inputs, mig->one);
+		simulate(bv_map, hashnode_map, simrep, torder);
+
+		// Create the "one" input
+		nodemap[mig->one] = make_pair(create_input(var_map, solver), false);
+		for (auto node : torder) {
+			if (node == mig->one) {
+				continue;
+			} else if (node->PI) {
+				nodemap[node] = make_pair(create_input(var_map, solver), false);
+				continue;
+			}
+			const auto& p1 = nodemap[node->in1];
+			const auto& p1node = _nodes[p1.first];
+			const auto& p2 = nodemap[node->in2];
+			const auto& p2node = _nodes[p2.first];
+			const auto& p3 = nodemap[node->in3];
+			const auto& p3node = _nodes[p3.first];
+			auto np = find_or_create(
+					p1node.ecrep, (is_c(p1node) != p1.second) != node->compl1,
+					p2node.ecrep, (is_c(p2node) != p2.second) != node->compl2, 
+					p3node.ecrep, (is_c(p3node) != p3.second) != node->compl3, 
+					shmap, var_map, solver, fanout);
+			if (is_pi(_nodes[np.first])) { 
+				// A majority propagation took place
+				nodemap[node] = np;
+				continue;
+			}
+			auto rep = simrep[node];
+			if (node != rep)  {
+				bool c = false;
+				const auto rp = nodemap[rep];
+				const auto& rpnode = _nodes[rp.first];
+				if (np.first != rp.first) {
+					++stats.nr_potentials;
+					const auto& bv_n = bv_map[node];
+					const auto& bv_r = bv_map[rep];
+					if (hashbv(bv_n.get()) != hashbv(bv_r.get())) {
+						c = true;
+					}
+					// Check for functional equivalence
+					auto equiv = equivalent(np.first, rp.first, c, 
+							p->nr_backtracks, var_map, solver);
+					if (equiv == l_True) {
+						++stats.nr_matches;
+						set_choice(np.first, rpnode.ecrep, 
+								(c != is_c(rpnode)), fanout);
+					} else if (equiv == l_False) {
+						// Resimulate MIG with counter example
+						++stats.nr_misses;
+						hashnode_map.clear();
+						inithashmap(bv_map, hashnode_map, inputs, mig->one);
+						auto counter = 
+							counterexample(mig->Nin, var_map, solver);
+						appendcounter(bv_map, counter, inputs, mig->one);
+						simulate(bv_map, hashnode_map, simrep, torder);
+					} else {
+						//hashnode_map.clear();
+						++stats.nr_undefined;
+					}
+				}
+			}
+			nodemap[node] = np;
+		}
+
+		for (auto i = 0u; i < mig->Nin; i++) {
+			_innames.push_back(string(mig->innames[i]));
+		}
+
+		for (auto i = 0u; i < mig->Nout; i++) {
+			const auto& np = nodemap[mig->out[i]];
+			const auto nodeid = np.first; const auto c = np.second;
+			const auto& node = _nodes[nodeid];
+			const auto noderep = node.ecrep; const auto nodec = is_c(node);
+			const auto migc = mig->outcompl[i];
+			_outputs.push_back(noderep);
+			_outcompl.push_back((c != migc) != nodec);
+			auto& outnode = _nodes[noderep];
+			set_po(outnode);
+			_outnames.push_back(string(mig->outnames[i]));
+		}
+
+		// Deallocate memory if possible
+		_nodes.resize(_nodes.size());
+
+		cout << "Nr. inputs: " << nin() << endl;
+		cout << "Nr. outputs: " << nout() << endl;
+		cout << "Nr. nodes: " << nnodes() << endl;
+		cout << "Nr. strash hits: " << stats.strash_hits << endl;
+		cout << "Nr. potentials: " << stats.nr_potentials << endl;
+		cout << "Nr. matches: " << stats.nr_matches << endl;
+		cout << "Nr. misses: " << stats.nr_misses << endl;
+		cout << "Nr. undefined: " << stats.nr_undefined << endl;
+	}
+
+	xmg::xmg(const xmg& xmg, const xmg_params* p) {
+		unordered_map<int32_t,pair<int32_t,bool>> nodemap;
+
+		Minisat::Solver solver;
+		// A map of nodes to their SAT variables
+		varmap var_map;
+		// A map from MAJ3 nodes to their corresponding bitvectors
+		xbvmap bv_map(xmg.nnodes(), nullptr);
+		// A map from nodes to their simulation representatives.
+		xsimmap simrep(xmg.nnodes());
+		// A map of bitvector hashes to MAJ3 nodes.
+		xhashmap hashnode_map;
+
+		fanoutmap fanout(xmg.nnodes());
+
+		xmg_stats stats {
+			0u, // Nr. strash hits
+			0u, // nr_potentials
+			0u, // nr_matches
+			0u, // nr_misses
+			0u, // nr_undefined
+		};
+
+		strashmap shmap(xmg.nnodes()/2, stats);
+
+		// Perform random simulation on XMG, computing
+		//simrep[n] for every n in the XMG
+		const auto& nodes = xmg.nodes();
+		vector<int32_t> inputs(xmg.nin());
+		for (auto i = 0u; i < xmg.nin(); i++) {
+			inputs[i] = i+1;
+		}
+		initsim(bv_map, hashnode_map, inputs);
+		simulate(bv_map, hashnode_map, simrep, xmg);
+
+		for (auto i = 0u; i < xmg.nnodes(); i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				nodemap[node.ecrep] = make_pair(create_input(var_map, solver), false);
+				continue;
+			}
+			const auto& p1 = nodemap[node.in1];
+			const auto& p1node = _nodes[p1.first];
+			const auto& p2 = nodemap[node.in2];
+			const auto& p2node = _nodes[p2.first];
+			pair<int32_t,bool> np;
+			if (!is_xor(node)) {
+				const auto& p3 = nodemap[node.in3];
+				const auto& p3node = _nodes[p3.first];
+				np = find_or_create(
+						p1node.ecrep, 
+						(is_c(p1node) != p1.second) != is_c1(node),
+						p2node.ecrep, 
+						(is_c(p2node) != p2.second) != is_c2(node),
+						p3node.ecrep, 
+						(is_c(p3node) != p3.second) != is_c3(node), 
+						shmap, var_map, solver, fanout);
+			} else {
+				np = find_or_create(
+						p1node.ecrep, 
+						(is_c(p1node) != p1.second) != is_c1(node),
+						p2node.ecrep, 
+						(is_c(p2node) != p2.second) != is_c2(node),
+						shmap, var_map, solver, fanout);
+			}
+			if (is_pi(_nodes[np.first])) { 
+				// A majority propagation took place
+				nodemap[i] = np;
+				continue;
+			}
+			auto rep = simrep[i];
+			if (static_cast<int32_t>(i) != rep)  {
+				bool c = false;
+				const auto rp = nodemap[rep];
+				const auto& rpnode = _nodes[rp.first];
+				if (np.first != rp.first) {
+					++stats.nr_potentials;
+					const auto& bv_n = bv_map[i];
+					const auto& bv_r = bv_map[rep];
+					if (hashbv(bv_n.get()) != hashbv(bv_r.get())) {
+						c = true;
+					}
+					// Check for functional equivalence
+					auto equiv = equivalent(np.first, rp.first, c, 
+							p->nr_backtracks, var_map, solver);
+					if (equiv == l_True) {
+						++stats.nr_matches;
+						set_choice(np.first, rpnode.ecrep, 
+								(c != is_c(rpnode)), fanout);
+					} else if (equiv == l_False) {
+						// Resimulate xmg with counter example
+						++stats.nr_misses;
+						hashnode_map.clear();
+						inithashmap(bv_map, hashnode_map, inputs);
+						auto counter = 
+							counterexample(xmg.nin(), var_map, solver);
+						appendcounter(bv_map, counter, inputs);
+						simulate(bv_map, hashnode_map, simrep, xmg);
+					} else {
+						//hashnode_map.clear();
+						++stats.nr_undefined;
+					}
+				}
+			}
+			nodemap[i] = np;
+		}
+
+		for (auto i = 0u; i < xmg.nin(); i++) {
+			_innames.push_back(xmg._innames[i]);
+		}
+
+		for (auto i = 0u; i < xmg.nout(); i++) {
+			const auto& np = nodemap[xmg._outputs[i]];
+			const auto nodeid = np.first; const auto c = np.second;
+			const auto& node = _nodes[nodeid];
+			const auto noderep = node.ecrep; const auto nodec = is_c(node);
+			const auto xmgc = xmg._outcompl[i];
+			_outputs.push_back(noderep);
+			_outcompl.push_back((c != xmgc) != nodec);
+			auto& outnode = _nodes[noderep];
+			set_po(outnode);
+			_outnames.push_back(xmg._outnames[i]);
+		}
+
+		// Deallocate memory if possible
+		_nodes.resize(_nodes.size());
+
+		cout << "Nr. inputs: " << nin() << endl;
+		cout << "Nr. outputs: " << nout() << endl;
+		cout << "Nr. nodes: " << nnodes() << endl;
+		cout << "Nr. strash hits: " << stats.strash_hits << endl;
+		cout << "Nr. potentials: " << stats.nr_potentials << endl;
+		cout << "Nr. matches: " << stats.nr_matches << endl;
+		cout << "Nr. misses: " << stats.nr_misses << endl;
+		cout << "Nr. undefined: " << stats.nr_undefined << endl;
+	}
+
+	void xmg::create_output(int32_t nodeid, bool c, const string& name) {
+		auto& outnode = _nodes[nodeid];
+		set_po(outnode);
+		_outputs.push_back(nodeid);
+		_outcompl.push_back(c);
+		_outnames.push_back(name);
+	}
+
+
+	unique_ptr<xmg_params> default_xmg_params() {
+		unique_ptr<xmg_params> res(new xmg_params);
+		res->nr_backtracks = DEFAULT_BACKTRACKS;
+		return res;
+	}
+
+	bool xmg::is_mig() const {
+		for (const auto& node : _nodes) {
+			if (!(is_pi(node) || is_maj(node))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	MIG* xmg::extractmig() const {
+		MIG* mig = (MIG*)malloc(sizeof(MIG));
+		mig->Nin = nin();
+		mig->Nout = nout();
+		mig->in = (MAJ3**)malloc(sizeof(MAJ3*)*mig->Nin);
+		mig->innames = (char**)malloc(sizeof(char*)*mig->Nin);
+		mig->out = (MAJ3**)malloc(sizeof(MAJ3*)*mig->Nout);
+		mig->outnames = (char**)malloc(sizeof(char*)*mig->Nout);
+		mig->outcompl = (unsigned*)malloc(sizeof(unsigned)*mig->Nout);
+		mig->Nnodes = 0;
+		mig->nodes = NULL;
+
+		vector<MAJ3*> nodes;
+		unordered_map<int32_t,MAJ3*> nodemap;
+		for (auto i = 0u; i < _nodes.size(); i++) {
+			const auto& node = _nodes[i];
+			if (is_pi(node)) {
+				auto n = (MAJ3*)malloc(sizeof(MAJ3));
+				n->in1=n->in2=n->in3=NULL;
+				n->outEdges=NULL;
+				n->value=2;
+				n->aux=NULL;
+				n->fanout=0;
+				n->label=i;
+				n->flag=0;
+				n->compl1=n->compl2=n->compl3=0;
+				n->PI=1;
+				n->PO=0;
+				n->level = 0;
+				if (i == 0) { // One node
+					mig->one = n;
+				} else {
+					--n->label;
+					mig->innames[i-1] = (char*)malloc(sizeof(char)*MAXCAR);
+					strcpy(mig->innames[i-1], _innames[i-1].c_str());
+				}
+				nodemap[node.ecrep] = n;
+			} else if (node.ecrep != static_cast<int32_t>(i)) {
+				continue;
+			} else {
+				auto n = new_node_nop(mig, nodemap[node.in1], is_c1(node),
+						nodemap[node.in2], is_c2(node), 
+						nodemap[node.in3], is_c3(node));
+				nodemap[node.ecrep] = n;
+			}
+		}
+
+		for (auto i = 0u; i < nout(); i++) {
+			mig->out[i] = nodemap[_outputs[i]];
+			mig->outcompl[i] = _outcompl[i];
+			mig->outnames[i] = (char*)malloc(sizeof(char)*MAXCAR);
+			strcpy(mig->outnames[i], _outnames[i].c_str());
+		}
+
+		return mig;
+	}
+}
+
