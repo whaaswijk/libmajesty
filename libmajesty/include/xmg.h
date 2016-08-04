@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 using nodeid = uint32_t;
+#define EC_NULL numeric_limits<uint32_t>::max()
 using bv = std::vector<unsigned int>;
 using hashmap = std::unordered_map<unsigned int,MAJ3*>;
 using xhashmap = std::unordered_map<unsigned int,nodeid>;
@@ -23,7 +24,6 @@ using varmap = std::unordered_map<nodeid,Minisat::Var>;
 using fanoutmap = std::vector<std::vector<nodeid>>;
 using nodemap = std::unordered_map<nodeid,std::pair<nodeid,bool>>;
 
-#define EC_NULL numeric_limits<nodeid>::max()
 
 #define maj3signature nodeid, bool, nodeid, bool,\
    	nodeid, bool

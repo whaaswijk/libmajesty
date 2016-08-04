@@ -176,6 +176,7 @@ xmg* apply_inv_prop(const xmg& mig, nodeid id) {
 				in2.first, in2.second != true, 
 				in3.first, in3.second != true, shmap);
 			invnode.second = true;
+			nodemap[i] = invnode;
 		} else {
 			const auto& in1 = nodemap[node.in1];
 			const auto& in2 = nodemap[node.in2];
@@ -223,7 +224,7 @@ xmg* apply_unary_move(const xmg& mig, UNARY_MOVE move_type, nodeid id) {
 void mig_to_array(const xmg& mig, nodeid* narray) {
 	const auto& nodes = mig.nodes();
 	const auto nnodes = mig.nnodes();
-	for (auto i = 0; i < nnodes; i++) {
+	for (auto i = 0u; i < nnodes; i++) {
 		const auto& node = nodes[i];
 		if (is_pi(node)) {
 			assert(node.in1 == 0 && node.in2 == 0 && node.in3 == 0);

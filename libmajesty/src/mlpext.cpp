@@ -130,7 +130,7 @@ vector<unsigned int> outidx(MIG* m, MAJ3* n) {
 
 namespace majesty {
 	static inline string node_name(
-			const int32_t idx, 
+			const nodeid idx, 
 			const vector<node>& nodes, 
 			const vector<string>& innames,
 			bool c) {
@@ -192,7 +192,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				continue;
-			} else if (static_cast<int32_t>(i) != node.ecrep) {
+			} else if (static_cast<nodeid>(i) != node.ecrep) {
 				continue;
 			}
 			if (init) {
@@ -207,7 +207,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				continue;
-			} else if (static_cast<int32_t>(i) != node.ecrep) {
+			} else if (static_cast<nodeid>(i) != node.ecrep) {
 				continue;
 			}
 			file << "assign w" << node.ecrep << " = ";
