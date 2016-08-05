@@ -7,12 +7,13 @@ using namespace std;
 
 namespace majesty {
 
-	xmg random_mig(mt19937_64& rng, unsigned ninputs, unsigned nnodes) {
+	xmg* random_mig(mt19937_64& rng, unsigned ninputs, unsigned nnodes) {
 		static uniform_int_distribution<mt19937_64::result_type> rule_dist(0, 9);
 		static uniform_int_distribution<mt19937_64::result_type> rule_sel(0, 1);
-		static vector<nodeid> n1(3), c1(3);
+		static vector<nodeid> n1(3);
+		static vector<bool> c1(3);
 
-		xmg mig;
+		auto mig = new xmg();
 		xmg_stats stats{
 				0u, // Nr. strash hits
 				0u, // nr_potentials
@@ -22,59 +23,59 @@ namespace majesty {
 		};
 		strashmap shmap(nnodes / 2, stats);
 		// Create the "one" input
-		mig.create_input();
+		mig->create_input();
 		for (auto i = 0u; i < ninputs; i++) {
-			mig.create_input();
+			mig->create_input();
 		}
-		while (mig.nnodes() < nnodes) {
-			uniform_int_distribution<mt19937_64::result_type> node_dist(0, mig.nnodes() - 1);
+		while (mig->nnodes() < nnodes) {
+			uniform_int_distribution<mt19937_64::result_type> node_dist(0, mig->nnodes() - 1);
 			if (rule_dist(rng) == 0) { // Ensure that one of the rules applies
 				// For associativity we need a random non-PI node, so check that
 				// such a node exists. If not, make random Maj3 node instead.
-				if (rule_sel(rng) == 0 || mig.nin() + 1 == mig.nnodes()) { // Maj3
-					n1[0] = node_dist(rng);
+				if (rule_sel(rng) == 0 || mig->nin() + 1 == mig->nnodes()) { // Maj3
+					n1[0] = static_cast<nodeid>(node_dist(rng));
 					c1[0] = rule_sel(rng) == 0;
 					n1[1] = n1[0];
 					c1[1] = rule_sel(rng) == 0;
-					n1[2] = node_dist(rng);
+					n1[2] = static_cast<nodeid>(node_dist(rng));
 					c1[2] = rule_sel(rng) == 0;
 					random_shuffle(n1.begin(), n1.end());
 					random_shuffle(c1.begin(), c1.end());
-					mig.rfind_or_create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2],
+					mig->rfind_or_create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2],
 						shmap);
 				} else {
 					uniform_int_distribution<mt19937_64::result_type>
-						nonpi_dist(mig.nin() + 1, mig.nnodes() - 1);
-					n1[0] = nonpi_dist(rng);
-					assert(!is_pi(mig.nodes()[n1[0]]));
-					n1[1] = mig.nodes()[n1[0]].in1;
-					n1[2] = node_dist(rng);
+						nonpi_dist(mig->nin() + 1, mig->nnodes() - 1);
+					n1[0] = static_cast<nodeid>(nonpi_dist(rng));
+					assert(!is_pi(mig->nodes()[n1[0]]));
+					n1[1] = mig->nodes()[n1[0]].in1;
+					n1[2] = static_cast<nodeid>(node_dist(rng));
 					c1[0] = rule_sel(rng) == 0;
 					c1[1] = rule_sel(rng) == 0;
 					c1[2] = rule_sel(rng) == 0;
 					random_shuffle(n1.begin(), n1.end());
 					random_shuffle(c1.begin(), c1.end());
-					mig.rfind_or_create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2],
+					mig->rfind_or_create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2],
 						shmap);
 				}
 			} else { // Make a random node
-				mig.rfind_or_create(
-					node_dist(rng), rule_sel(rng) == 0,
-					node_dist(rng), rule_sel(rng) == 0,
-					node_dist(rng), rule_sel(rng) == 0, shmap);
+				mig->rfind_or_create(
+					static_cast<nodeid>(node_dist(rng)), rule_sel(rng) == 0,
+					static_cast<nodeid>(node_dist(rng)), rule_sel(rng) == 0,
+					static_cast<nodeid>(node_dist(rng)), rule_sel(rng) == 0, shmap);
 			}
 		}
 
 		return mig;
 	}
 
-	xmg mig_manager::create_random_graph(unsigned ninputs, unsigned nnodes) {
+	xmg* mig_manager::create_random_graph(unsigned ninputs, unsigned nnodes) {
 		return random_mig(rng, ninputs, nnodes);
 	}
 
 	float compute_reward(const majesty::xmg& mig_orig, const majesty::xmg& mig_final) {
-		float nonodes = mig_orig.nnodes();
-		float nfnodes = mig_final.nnodes();
+		float nonodes = static_cast<float>(mig_orig.nnodes());
+		float nfnodes = static_cast<float>(mig_final.nnodes());
 		return nfnodes / nonodes;
 	}
 

@@ -55,7 +55,7 @@ namespace majesty {
 			rng.seed(seed);
 		}
 
-		xmg create_random_graph(unsigned ninputs, unsigned nnodes);
+		xmg* create_random_graph(unsigned ninputs, unsigned nnodes);
 	};
 
 	xmg* apply_unary_move(const xmg&, UNARY_MOVE, nodeid);
