@@ -209,9 +209,10 @@ simulate(bvmap& m, hashmap& hnmap, simmap& simrep, vector<MAJ3*>& nodes) {
 		if (node->PI) {
 			continue;
 		}
-		auto bv = find_or_create_bv(m[node->in1].get(), node->compl1,
-				m[node->in2].get(), node->compl2,
-				m[node->in3].get(), node->compl3, node, m);
+		auto bv = find_or_create_bv(
+			m[node->in1].get(), static_cast<bool>(node->compl1),
+			m[node->in2].get(), static_cast<bool>(node->compl2),
+			m[node->in3].get(), static_cast<bool>(node->compl3), node, m);
 		auto hash = hashbv(bv);
 		auto hashc = chashbv(bv);
 
@@ -549,10 +550,43 @@ namespace majesty {
 		}
 	}
 
-	pair<nodeid,bool> xmg::rfind_or_create(maj3inputs, strashmap& shmap) {
-		auto idx = 
-			shmap.find_or_add(in1, c1, in2, c2, in3, c3, *this);
-		return make_pair(idx, false);
+	pair<nodeid,bool> xmg::create(maj3inputs) {
+		sort_inputs(in1, c1, in2, c2, in3, c3);
+		return make_pair(create_node(in1, c1, in2, c2, in3, c3), false);
+	}
+	
+	pair<nodeid, bool> xmg::create(input in1, input in2, input in3) {
+		return create(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second);
+	}
+
+	pair<nodeid,bool> xmg::prop_create(maj3inputs) {
+		sort_inputs(in1, c1, in2, c2, in3, c3);
+		if (in1 == in2) {
+			if (c1 == c2) {
+				return make_pair(in1, c1);
+			} else {
+				return make_pair(in3, c3);
+			}
+		} else if (in1 == in3) {
+			if (c1 == c3) {
+				return make_pair(in1, c1);
+			} else {
+				return make_pair(in2, c2);
+			}
+		} else if (in2 == in3) {
+			if (c2 == c3) {
+				return make_pair(in2, c2);
+			} else {
+				return make_pair(in1, c1);
+			}
+		}
+		// Ensure that at most one input is complemented
+		if ((c1 && !c2 && !c3) || (!c1 && c2 && !c3) || (!c1 && !c2 && c3)
+				|| (!c1 && !c2 && !c3)) {
+			return make_pair(create_node(in1, c1, in2, c2, in3, c3), false);
+		} else {
+			return make_pair(create_node(in1, c1 != true, in2, c2 != true, in3, c3 != true), true);
+		}
 	}
 
 	pair<nodeid,bool> xmg::find_or_create(maj3inputs, strashmap& shmap) {
@@ -586,6 +620,10 @@ namespace majesty {
 					in2, c2 != true, in3, c3 != true, *this);
 			return make_pair(idx, true);
 		}
+	}
+
+	pair<nodeid, bool> xmg::prop_create(input in1, input in2, input in3) {
+		return prop_create(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second);
 	}
 
 	// Returns the index of a node corresponding to the
@@ -902,7 +940,7 @@ namespace majesty {
 			const auto nodeid = np.first; const auto c = np.second;
 			const auto& node = _nodes[nodeid];
 			const auto noderep = node.ecrep; const auto nodec = is_c(node);
-			const auto migc = mig->outcompl[i];
+			const auto migc = static_cast<bool>(mig->outcompl[i]);
 			_outputs.push_back(noderep);
 			_outcompl.push_back((c != migc) != nodec);
 			auto& outnode = _nodes[noderep];
@@ -1102,6 +1140,7 @@ namespace majesty {
 			const auto& node = _nodes[i];
 			if (is_pi(node)) {
 				auto n = (MAJ3*)malloc(sizeof(MAJ3));
+				assert(n != NULL);
 				n->in1=n->in2=n->in3=NULL;
 				n->outEdges=NULL;
 				n->value=2;
@@ -1118,6 +1157,7 @@ namespace majesty {
 				} else {
 					--n->label;
 					mig->innames[i-1] = (char*)malloc(sizeof(char)*MAXCAR);
+					assert(mig->innames[i - 1] != NULL);
 					strcpy(mig->innames[i-1], _innames[i-1].c_str());
 				}
 				nodemap[node.ecrep] = n;
@@ -1131,10 +1171,11 @@ namespace majesty {
 			}
 		}
 
-		for (auto i = 0u; i < nout(); i++) {
+		for (auto i = 0u; i < mig->Nout; i++) {
 			mig->out[i] = nodemap[_outputs[i]];
 			mig->outcompl[i] = _outcompl[i];
 			mig->outnames[i] = (char*)malloc(sizeof(char)*MAXCAR);
+			assert(mig->outnames[i] != NULL);
 			strcpy(mig->outnames[i], _outnames[i].c_str());
 		}
 

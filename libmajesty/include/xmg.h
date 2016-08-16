@@ -13,6 +13,7 @@
 #include <functional>
 
 using nodeid = uint32_t;
+using input = std::pair<nodeid,bool>;
 #define EC_NULL numeric_limits<uint32_t>::max()
 using bv = std::vector<unsigned int>;
 using hashmap = std::unordered_map<unsigned int,MAJ3*>;
@@ -40,6 +41,42 @@ using nodemap = std::unordered_map<nodeid,std::pair<nodeid,bool>>;
 #define DEFAULT_BACKTRACKS 4096
 
 struct MIG;
+
+/* function pair
+Synopsis [NxN->N pairing function]
+
+Description [Cantor pairing function to uniquely map 2 integer into another
+integer]
+
+Side effects [-]
+*/ 
+static inline unsigned cantor_pair(unsigned i, unsigned j) { 
+	unsigned int p;
+
+	p=((i+j)*(i+j+1)/2)+i;
+
+	return p;
+}
+
+
+#define SWAP(x, xc, y, yc) if (y < x) {\
+	tn = x; tc = xc; x = y; xc = yc; y = tn; yc = tc; }
+
+static inline void sort_inputs(
+		nodeid& in1, bool& c1, 
+		nodeid& in2, bool& c2,
+		nodeid& in3, bool& c3) {
+		nodeid tn; bool tc;
+		SWAP(in2, c2, in3, c3);
+		SWAP(in1, c1, in3, c3);
+		SWAP(in1, c1, in2, c2);
+}
+
+static inline void 
+sort_inputs(nodeid& in1, bool& c1, nodeid& in2, bool& c2) {
+		nodeid tn; bool tc;
+		SWAP(in1, c1, in2, c2);
+}
 
 namespace majesty {
 	class strashmap;
@@ -241,8 +278,14 @@ namespace majesty {
 			nodeid create_input(const std::string&);
 			nodeid create_input(varmap&, Minisat::Solver&);
 			void create_output(nodeid, bool, const std::string&);
+			// Creates a raw node, without strashing or propagation
+			std::pair<nodeid,bool> create(maj3signature);
+			std::pair<nodeid,bool> create(input, input, input);
+			// Creates a node with propagation but without strashing
+			std::pair<nodeid,bool> prop_create(maj3signature);
+			std::pair<nodeid,bool> prop_create(input, input, input);
+			// Creates a node using both strashing and propagation
 			std::pair<nodeid,bool> find_or_create(maj3signature, strashmap&);
-			std::pair<nodeid,bool> rfind_or_create(maj3signature, strashmap&);
 			std::pair<nodeid,bool> 
 				find_or_create(maj3signature, strashmap&, 
 						varmap&, Minisat::Solver&, fanoutmap&);

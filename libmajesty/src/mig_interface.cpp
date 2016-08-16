@@ -15,14 +15,6 @@ namespace majesty {
 		static vector<bool> c1(3);
 
 		auto mig = new xmg();
-		xmg_stats stats{
-				0u, // Nr. strash hits
-				0u, // nr_potentials
-				0u, // nr_matches
-				0u, // nr_misses
-				0u, // nr_undefined
-		};
-		strashmap shmap(nnodes / 2, stats);
 		// Create the "one" input
 		mig->create_input();
 		for (auto i = 0u; i < ninputs; i++) {
@@ -42,8 +34,7 @@ namespace majesty {
 					c1[2] = rule_sel(rng) == 0;
 					random_shuffle(n1.begin(), n1.end());
 					random_shuffle(c1.begin(), c1.end());
-					mig->rfind_or_create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2],
-						shmap);
+					mig->create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2]);
 				} else {
 					uniform_int_distribution<mt19937_64::result_type>
 						nonpi_dist(mig->nin() + 1, mig->nnodes() - 1);
@@ -56,14 +47,13 @@ namespace majesty {
 					c1[2] = rule_sel(rng) == 0;
 					random_shuffle(n1.begin(), n1.end());
 					random_shuffle(c1.begin(), c1.end());
-					mig->rfind_or_create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2],
-						shmap);
+					mig->create(n1[0], c1[0], n1[1], c1[1], n1[2], c1[2]);
 				}
 			} else { // Make a random node
-				mig->rfind_or_create(
+				mig->create(
 					static_cast<nodeid>(node_dist(rng)), rule_sel(rng) == 0,
 					static_cast<nodeid>(node_dist(rng)), rule_sel(rng) == 0,
-					static_cast<nodeid>(node_dist(rng)), rule_sel(rng) == 0, shmap);
+					static_cast<nodeid>(node_dist(rng)), rule_sel(rng) == 0);
 			}
 		}
 
@@ -111,16 +101,9 @@ namespace majesty {
 	xmg* apply_maj3(const xmg& mig, nodeid id) {
 		auto res = new xmg();
 
-		xmg_stats stats{
-				0u, // Nr. strash hits
-				0u, // nr_potentials
-				0u, // nr_matches
-				0u, // nr_misses
-				0u, // nr_undefined
-		};
+
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
-		strashmap shmap(nnodes / 2, stats);
 		unordered_map<nodeid, pair<nodeid, bool>> nodemap;
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
@@ -133,10 +116,10 @@ namespace majesty {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
 				const auto& in3 = nodemap[node.in3];
-				nodemap[i] = res->rfind_or_create(
+				nodemap[i] = res->create(
 					in1.first, in1.second != is_c1(node),
 					in2.first, in2.second != is_c2(node),
-					in3.first, in3.second != is_c3(node), shmap);
+					in3.first, in3.second != is_c3(node));
 			}
 		}
 
@@ -154,16 +137,8 @@ namespace majesty {
 	xmg* apply_inv_prop(const xmg& mig, nodeid id) {
 		auto res = new xmg();
 
-		xmg_stats stats{
-				0u, // Nr. strash hits
-				0u, // nr_potentials
-				0u, // nr_matches
-				0u, // nr_misses
-				0u, // nr_undefined
-		};
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
-		strashmap shmap(nnodes / 2, stats);
 		unordered_map<nodeid, pair<nodeid, bool>> nodemap;
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
@@ -174,20 +149,20 @@ namespace majesty {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
 				const auto& in3 = nodemap[node.in3];
-				auto invnode = res->rfind_or_create(
+				auto invnode = res->create(
 					in1.first, in1.second != true,
 					in2.first, in2.second != true,
-					in3.first, in3.second != true, shmap);
+					in3.first, in3.second != true);
 				invnode.second = true;
 				nodemap[i] = invnode;
 			} else {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
 				const auto& in3 = nodemap[node.in3];
-				nodemap[i] = res->rfind_or_create(
+				nodemap[i] = res->create(
 					in1.first, in1.second != is_c1(node),
 					in2.first, in2.second != is_c2(node),
-					in3.first, in3.second != is_c3(node), shmap);
+					in3.first, in3.second != is_c3(node));
 			}
 		}
 
@@ -338,29 +313,20 @@ namespace majesty {
 		}
 		assert(fanout >= 1);
 
-		xmg_stats stats{
-				0u, // Nr. strash hits
-				0u, // nr_potentials
-				0u, // nr_matches
-				0u, // nr_misses
-				0u, // nr_undefined
-		};
-		strashmap shmap(nnodes / 2, stats);
 		nodemap nodemap;
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				res->create_input();
-				nodemap[i] = make_pair(i, false);
+				nodemap[i] = make_pair(res->create_input(), false);
 			} else if (i == parentnp.first) {
 				if (fanout > 1) { // Duplicate
 					const auto& in1 = nodemap[node.in1];
 					const auto& in2 = nodemap[node.in2];
 					const auto& in3 = nodemap[node.in3];
-					nodemap[i] = res->rfind_or_create(
+					nodemap[i] = res->create(
 						in1.first, in1.second != is_c1(node),
 						in2.first, in2.second != is_c2(node),
-						in3.first, in3.second != is_c3(node), shmap
+						in3.first, in3.second != is_c3(node)
 					);
 				} 
 			} else if (i == id1) {
@@ -371,26 +337,26 @@ namespace majesty {
 				auto newpin2 = nodemap[pin2.first];
 				auto pin3 = newgrandchildren[2];
 				auto newpin3 = nodemap[pin3.first];
-				auto newparent = res->rfind_or_create(
+				auto newparent = res->create(
 					newpin1.first, newpin1.second != pin1.second,
 					newpin2.first, newpin2.second != pin2.second,
-					newpin3.first, newpin3.second != pin3.second, shmap
+					newpin3.first, newpin3.second != pin3.second
 				);
 				auto newgpin1 = nodemap[common_childnp.first];
 				auto newgpin2 = nodemap[grandchildnp.first];
-				nodemap[i] = res->rfind_or_create(
+				nodemap[i] = res->create(
 					newgpin1.first, newgpin1.second != common_childnp.second,
 					newgpin2.first, newgpin2.second != grandchildnp.second,
-					newparent.first, newparent.second != parentnp.second, shmap
+					newparent.first, newparent.second != parentnp.second
 				);
 			} else {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
 				const auto& in3 = nodemap[node.in3];
-				nodemap[i] = res->rfind_or_create(
+				nodemap[i] = res->create(
 					in1.first, in1.second != is_c1(node),
 					in2.first, in2.second != is_c2(node),
-					in3.first, in3.second != is_c3(node), shmap);
+					in3.first, in3.second != is_c3(node));
 			}
 		}
 

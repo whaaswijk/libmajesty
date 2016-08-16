@@ -3,42 +3,6 @@
 #include <iostream>
 #include "mlpext.h"
 
-/* function pair
-Synopsis [NxN->N pairing function]
-
-Description [Cantor pairing function to uniquely map 2 integer into another
-integer]
-
-Side effects [-]
-*/ 
-static inline unsigned cantor_pair(unsigned i, unsigned j) { 
-	unsigned int p;
-
-	p=((i+j)*(i+j+1)/2)+i;
-
-	return p;
-}
-
-
-#define SWAP(x, xc, y, yc) if (y < x) {\
-	tn = x; tc = xc; x = y; xc = yc; y = tn; yc = tc; }
-
-static inline void sort_inputs(
-		nodeid& in1, bool& c1, 
-		nodeid& in2, bool& c2,
-		nodeid& in3, bool& c3) {
-		nodeid tn; bool tc;
-		SWAP(in2, c2, in3, c3);
-		SWAP(in1, c1, in3, c3);
-		SWAP(in1, c1, in2, c2);
-}
-
-static inline void 
-sort_inputs(nodeid& in1, bool& c1, nodeid& in2, bool& c2) {
-		nodeid tn; bool tc;
-		SWAP(in1, c1, in2, c2);
-}
-
 namespace majesty {
 
 	unsigned strashmap::hash(maj3inputs) const {
