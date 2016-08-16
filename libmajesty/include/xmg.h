@@ -10,6 +10,7 @@
 #include "../src/mlp.h"
 #include <map>
 #include <unordered_map>
+#include <functional>
 
 using nodeid = uint32_t;
 #define EC_NULL numeric_limits<uint32_t>::max()
@@ -176,6 +177,21 @@ namespace majesty {
 		clear_bit(n.flag, 6);
 	}
 
+	static inline std::vector<std::pair<nodeid, bool>> get_children(const node& node) {
+		return { std::make_pair(node.in1, is_c1(node)), std::make_pair(node.in2, is_c2(node)), std::make_pair(node.in3, is_c3(node)) };
+	}
+
+	static inline std::vector<std::pair<nodeid, bool>> filter_nodes(const std::vector<std::pair<nodeid, bool>>& nodes, 
+		std::function<bool(std::pair<nodeid,bool>)> filter) {
+		std::vector<std::pair<nodeid, bool>> res;
+		for (const auto& np : nodes) {
+			if (filter(np)) {
+				res.push_back(np);
+			}
+		}
+		return res;
+	}
+
 	class xmg {
 		friend class strashmap;
 		private:
@@ -196,11 +212,9 @@ namespace majesty {
 			bool majrecinfan(nodeid, nodeid);
 			bool xorrecinfan(nodeid, nodeid);
 			bool ecrecinfan(nodeid, nodeid);
-			bool infan(nodeid, nodeid);
-			void resetflag();
 
 		public:
-			xmg() { }
+			xmg() {  }
 			xmg(xmg&&);
 			xmg& operator=(xmg&&);
 			xmg(MIG* mig, const xmg_params*);
@@ -236,6 +250,8 @@ namespace majesty {
 			std::pair<nodeid,bool> 
 				find_or_create(xorsignature, strashmap&, 
 						varmap&, Minisat::Solver&, fanoutmap&);
+			bool infan(nodeid, nodeid);
+			void resetflag();
 
 			bool is_mig() const;
 			MIG* extractmig() const;

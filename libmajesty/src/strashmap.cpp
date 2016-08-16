@@ -63,7 +63,7 @@ namespace majesty {
 		_table.resize(size);
 	}
 
-	int32_t strashmap::find(maj3inputs, xmg& m) const {
+	nodeid strashmap::find(maj3inputs, xmg& m) const {
 		sort_inputs(in1, c1, in2, c2, in3, c3);
 		auto key = hash(in1, c1, in2, c2, in3, c3);
 		const auto& entries = _table[key];
@@ -84,7 +84,7 @@ namespace majesty {
 		return -1;
 	}
 
-	int32_t strashmap::find(xorinputs, xmg& m) const {
+	nodeid strashmap::find(xorinputs, xmg& m) const {
 		sort_inputs(in1, c1, in2, c2);
 		auto key = hash(in1, c1, in2, c2);
 		const auto& entries = _table[key];
@@ -103,7 +103,7 @@ namespace majesty {
 		return -1;
 	}
 	
-	int32_t strashmap::find_or_add(maj3inputs, xmg& m) {
+	nodeid strashmap::find_or_add(maj3inputs, xmg& m) {
 		auto found = find(in1, c1, in2, c2, in3, c3, m);
 		if (found != -1) {
 			return found;
@@ -116,7 +116,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t strashmap::find_or_add(maj3inputs, xmg& m, 
+	nodeid strashmap::find_or_add(maj3inputs, xmg& m, 
 			varmap& v, Minisat::Solver& s, fanoutmap& f) {
 		auto found = find(in1, c1, in2, c2, in3, c3, m);
 		if (found != -1) {
@@ -130,7 +130,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t strashmap::find_or_add(xorinputs, xmg& m) {
+	nodeid strashmap::find_or_add(xorinputs, xmg& m) {
 		auto found = find(in1, c1, in2, c2, m);
 		if (found != -1) {
 			return found;
@@ -143,7 +143,7 @@ namespace majesty {
 		return idx;
 	}
 
-	int32_t strashmap::find_or_add(xorinputs, xmg& m, 
+	nodeid strashmap::find_or_add(xorinputs, xmg& m, 
 			varmap& v, Minisat::Solver& s, fanoutmap& f) {
 		auto found = find(in1, c1, in2, c2, m);
 		if (found != -1) {

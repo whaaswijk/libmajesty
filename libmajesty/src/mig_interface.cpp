@@ -2,6 +2,7 @@
 #include <xmg.h>
 #include "strashmap.h"
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -223,20 +224,204 @@ namespace majesty {
 		}
 	}
 
-	void mig_to_array(const xmg& mig, nodeid* narray) {
+	// Checks if two nodes share the same input with the same polarity.
+	// Used to implement the associativity axiom.
+	inline bool share_input_polarity(const node& n1, const node& n2) {
+		return ( 
+			(n1.in1 == n2.in1 && is_c1(n1) == is_c1(n2)) ||
+			(n1.in1 == n2.in2 && is_c1(n1) == is_c2(n2)) ||
+			(n1.in1 == n2.in3 && is_c1(n1) == is_c3(n2)) ||
+			(n1.in2 == n2.in1 && is_c2(n1) == is_c1(n2)) ||
+			(n1.in2 == n2.in2 && is_c2(n1) == is_c2(n2)) ||
+			(n1.in2 == n2.in3 && is_c2(n1) == is_c3(n2)) ||
+			(n1.in3 == n2.in1 && is_c3(n1) == is_c1(n2)) ||
+			(n1.in3 == n2.in2 && is_c3(n1) == is_c2(n2)) ||
+			(n1.in3 == n2.in3 && is_c3(n1) == is_c3(n2)) 
+			);
+	}
+
+	// Returns the id of the common child shared by two nodes. NOTE: fails if no such child exists!
+	inline pair<nodeid,bool> shared_input_polarity(const node& n1, const node& n2) {
+		if (n1.in1 == n2.in1 && is_c1(n1) == is_c1(n2)) {
+			return make_pair(n1.in1, is_c1(n1));
+		} else if (n1.in1 == n2.in2 && is_c1(n1) == is_c2(n2)) {
+			return make_pair(n1.in1, is_c1(n1));
+		} else if (n1.in1 == n2.in3 && is_c1(n1) == is_c3(n2)) {
+			return make_pair(n1.in1, is_c1(n1));
+		} else if (n1.in2 == n2.in1 && is_c2(n1) == is_c1(n2)) {
+			return make_pair(n1.in2, is_c2(n1));
+		} else if (n1.in2 == n2.in2 && is_c2(n1) == is_c2(n2)) {
+			return make_pair(n1.in2, is_c2(n1));
+		} else if (n1.in2 == n2.in3 && is_c2(n1) == is_c3(n2)) {
+			return make_pair(n1.in2, is_c2(n1));
+		} else if (n1.in3 == n2.in1 && is_c3(n1) == is_c1(n2)) {
+			return make_pair(n1.in3, is_c3(n1));
+		} else if (n1.in3 == n2.in2 && is_c3(n1) == is_c2(n2)) {
+			return make_pair(n1.in3, is_c3(n1));
+		} else if (n1.in3 == n2.in3 && is_c3(n1) == is_c3(n2)) {
+			return make_pair(n1.in3, is_c3(n1));
+		} else {
+			cerr << "Error: shared input not found";
+			exit(1);
+		}
+	}
+
+	xmg* swap(const xmg& mig, nodeid id1, nodeid id2) {
+		auto res = new xmg();
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
+		
+		// First, check if the call is not ambiguous.
+		const auto& gp = nodes[id1];
+		if (is_pi(gp)) { // Grandparent obviously may not be a PI
+			return NULL;
+		}
+		auto oldgpchildren = get_children(gp);
+		auto filt_parents = filter_nodes(oldgpchildren, [&nodes, &gp, id2](pair<nodeid,bool> np) {
+			auto parent = nodes[np.first];
+			if (!is_pi(parent) && share_input_polarity(gp, parent)) {
+				if (parent.in1 == id2 || parent.in2 == id2 || parent.in3 == id2) {
+					return true;
+				}
+			}
+			return false;
+		});
+		if (filt_parents.size() == 0) {
+			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
+			return NULL;
+		} else if (filt_parents.size() > 1) {
+			// The call is ambiguous: there are multiple parents for which the axiom applies. This means that there
+			// are multiple options to swap. We do not allow for ambiguity.
+			return NULL;
+		}
+		// If we reach this point, there is one unambigious child of the grandparent to swap with:
+		// the child that is not the shared child and not the parent.
+		const auto parentnp = filt_parents[0];
+		const auto& parent = nodes[parentnp.first];
+		auto common_childnp = shared_input_polarity(gp, parent);
+		auto swap_children = filter_nodes(oldgpchildren, [&parentnp, &common_childnp](pair<nodeid, bool> np) {
+			if (np.first == parentnp.first || np.first == common_childnp.first) {
+				return false;
+			}
+			return true;
+		});
+		assert(swap_children.size() == 1);
+		auto swap_childnp = swap_children[0];
+		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
+		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
+		auto oldgrandchildren = get_children(parent);
+		auto newgrandchildren = filter_nodes(oldgrandchildren, [id2](pair<nodeid, bool> np) {
+			if (np.first == id2) {
+				return false;
+			}
+			return true;
+		});
+		assert(newgrandchildren.size() == 2);
+		newgrandchildren.push_back(swap_childnp);
+		auto grandchildren = filter_nodes(oldgrandchildren, [id2](pair<nodeid, bool> np) {
+			if (np.first == id2) {
+				return true;
+			}
+			return false;
+		});
+		assert(grandchildren.size() == 1);
+		auto grandchildnp = grandchildren[0];
+		// Count the fanout of the parent node. If it's > 1, we need to duplicate it.
+		auto fanout = 0u;
+		for (const auto& node : nodes) {
+			if (is_pi(node)) {
+				continue;
+			}
+			if (node.in1 == parentnp.first || node.in2 == parentnp.first || node.in3 == parentnp.first) {
+				++fanout;
+			}
+		}
+		assert(fanout >= 1);
+
+		xmg_stats stats{
+				0u, // Nr. strash hits
+				0u, // nr_potentials
+				0u, // nr_matches
+				0u, // nr_misses
+				0u, // nr_undefined
+		};
+		strashmap shmap(nnodes / 2, stats);
+		nodemap nodemap;
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				assert(node.in1 == 0 && node.in2 == 0 && node.in3 == 0);
+				res->create_input();
+				nodemap[i] = make_pair(i, false);
+			} else if (i == parentnp.first) {
+				if (fanout > 1) { // Duplicate
+					const auto& in1 = nodemap[node.in1];
+					const auto& in2 = nodemap[node.in2];
+					const auto& in3 = nodemap[node.in3];
+					nodemap[i] = res->rfind_or_create(
+						in1.first, in1.second != is_c1(node),
+						in2.first, in2.second != is_c2(node),
+						in3.first, in3.second != is_c3(node), shmap
+					);
+				} 
+			} else if (i == id1) {
+				// Create the new parent node first.
+				auto pin1 = newgrandchildren[0];
+				auto newpin1 = nodemap[pin1.first];
+				auto pin2 = newgrandchildren[1];
+				auto newpin2 = nodemap[pin2.first];
+				auto pin3 = newgrandchildren[2];
+				auto newpin3 = nodemap[pin3.first];
+				auto newparent = res->rfind_or_create(
+					newpin1.first, newpin1.second != pin1.second,
+					newpin2.first, newpin2.second != pin2.second,
+					newpin3.first, newpin3.second != pin3.second, shmap
+				);
+				auto newgpin1 = nodemap[common_childnp.first];
+				auto newgpin2 = nodemap[grandchildnp.first];
+				nodemap[i] = res->rfind_or_create(
+					newgpin1.first, newgpin1.second != common_childnp.second,
+					newgpin2.first, newgpin2.second != grandchildnp.second,
+					newparent.first, newparent.second != parentnp.second, shmap
+				);
+			} else {
+				const auto& in1 = nodemap[node.in1];
+				const auto& in2 = nodemap[node.in2];
+				const auto& in3 = nodemap[node.in3];
+				nodemap[i] = res->rfind_or_create(
+					in1.first, in1.second != is_c1(node),
+					in2.first, in2.second != is_c2(node),
+					in3.first, in3.second != is_c3(node), shmap);
 			}
-			narray[(i * 6) + 0] = node.in1;
-			narray[(i * 6) + 1] = is_c1(node);
-			narray[(i * 6) + 2] = node.in2;
-			narray[(i * 6) + 3] = is_c2(node);
-			narray[(i * 6) + 4] = node.in3;
-			narray[(i * 6) + 5] = is_c3(node);
 		}
+
+		const auto& outputs = mig.outputs();
+		const auto& outcompl = mig.outcompl();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto nodeid = outputs[i];
+			const auto np = nodemap[nodeid];
+			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+		}
+
+		return res;
+	}
+
+	xmg* apply_binary_move(const xmg& mig, BINARY_MOVE move_type, nodeid id1, nodeid id2) {
+		const auto& node1 = mig.nodes()[id1];
+		const auto& node2 = mig.nodes()[id2];
+		switch (move_type) {
+		case SWAP:
+			return swap(mig, id1, id2);
+		case MAJ3_XXY:
+		case MAJ3_XYY:
+		default:
+			return NULL;
+			break;
+		}
+	}
+	
+	vector<move> compute_moves(const xmg& mig) {
+		vector<move> moves;
+
+		return moves;
 	}
 }

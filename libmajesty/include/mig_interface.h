@@ -5,6 +5,11 @@
 
 namespace majesty {
 
+	enum MOVE_TYPE {
+		UNARY = 0,
+		BINARY
+	};
+
 	enum UNARY_MOVE {
 		MAJ3_LEFT_RIGHT = 0,
 		INVERTER_PROP
@@ -14,6 +19,18 @@ namespace majesty {
 		MAJ3_XXY = 0,
 		MAJ3_XYY,
 		SWAP
+	};
+
+	union MOVE_IDX {
+		UNARY_MOVE uidx;
+		BINARY_MOVE bidx;
+	};
+
+	struct move {
+		MOVE_TYPE type;
+		MOVE_IDX move_idx;
+		nodeid nodeid1;
+		nodeid nodeid2;
 	};
 
 	const unsigned NR_UNARY_MOVES = 2;
@@ -59,7 +76,7 @@ namespace majesty {
 	};
 
 	xmg* apply_unary_move(const xmg&, UNARY_MOVE, nodeid);
-	xmg* apply_binary_move(const xmg&, BINARY_MOVE, nodeid, nodeid);
-	void mig_to_array(const xmg&, nodeid*);
+	xmg* apply_binary_move(xmg&, BINARY_MOVE, nodeid, nodeid);
 	float compute_reward(const xmg&, const xmg&);
+	std::vector<move> compute_moves(const xmg&);
 };
