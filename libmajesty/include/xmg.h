@@ -218,6 +218,20 @@ namespace majesty {
 		return { std::make_pair(node.in1, is_c1(node)), std::make_pair(node.in2, is_c2(node)), std::make_pair(node.in3, is_c3(node)) };
 	}
 
+	// Drops the first occurrences of a child from a vector of nodes.
+	static inline std::vector<std::pair<nodeid, bool>> drop_child(const std::vector<std::pair<nodeid,bool>> children, std::pair<nodeid,bool> child) {
+		std::vector<std::pair<nodeid, bool>> res;
+		bool dropped = false;
+		for (const auto& c : children) {
+			if (!dropped && c.first == child.first && c.second == child.second) {
+				dropped = true;
+				continue;
+			}
+			res.push_back(c);
+		}
+		return res;
+	}
+
 	static inline std::vector<std::pair<nodeid, bool>> filter_nodes(const std::vector<std::pair<nodeid, bool>>& nodes, 
 		std::function<bool(std::pair<nodeid,bool>)> filter) {
 		std::vector<std::pair<nodeid, bool>> res;

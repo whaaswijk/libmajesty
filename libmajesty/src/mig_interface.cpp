@@ -285,33 +285,26 @@ namespace majesty {
 		const auto parentnp = filt_parents[0];
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
-		auto swap_children = filter_nodes(oldgpchildren, [&parentnp, &common_childnp](pair<nodeid, bool> np) {
-			if (np.first == parentnp.first || np.first == common_childnp.first) {
-				return false;
-			}
-			return true;
-		});
-		assert(swap_children.size() == 1);
-		auto swap_childnp = swap_children[0];
+		auto swap_childnp = drop_child(drop_child(oldgpchildren, parentnp), common_childnp)[0];
 		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
 		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
 		auto oldgrandchildren = get_children(parent);
-		auto newgrandchildren = filter_nodes(oldgrandchildren, [id2](pair<nodeid, bool> np) {
-			if (np.first == id2) {
-				return false;
-			}
-			return true;
-		});
-		assert(newgrandchildren.size() == 2);
-		newgrandchildren.push_back(swap_childnp);
-		auto grandchildren = filter_nodes(oldgrandchildren, [id2](pair<nodeid, bool> np) {
-			if (np.first == id2) {
+		auto filtgrandchildren = filter_nodes(drop_child(oldgrandchildren, common_childnp), [id2](pair<nodeid, bool> child) {
+			if (child.first == id2) {
 				return true;
 			}
 			return false;
 		});
-		assert(grandchildren.size() == 1);
-		auto grandchildnp = grandchildren[0];
+		if (filtgrandchildren.size() == 2) {
+			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now. if y = z, we're not sure which node we're referring to.
+			return NULL;
+		}
+		assert(filtgrandchildren.size() == 1);
+		auto grandchildnp = filtgrandchildren[0];
+		auto ynodenp = drop_child(drop_child(oldgrandchildren, common_childnp), grandchildnp)[0];
+		vector<pair<nodeid,bool>> newgrandchildren = { common_childnp, swap_childnp, ynodenp };
+
 		// Count the fanout of the parent node. If it's > 1, we need to duplicate it.
 		auto fanout = 0u;
 		for (const auto& node : nodes) {
