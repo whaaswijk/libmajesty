@@ -73,10 +73,11 @@ namespace majesty {
 		}
 
 		xmg* create_random_graph(unsigned ninputs, unsigned nnodes);
+		xmg* create_random_graph(unsigned ninputs, unsigned nnodes, unsigned noutputs);
 	};
 
 	xmg* apply_unary_move(const xmg&, UNARY_MOVE, nodeid);
-	xmg* apply_binary_move(xmg&, BINARY_MOVE, nodeid, nodeid);
+	xmg* apply_binary_move(const xmg&, BINARY_MOVE, nodeid, nodeid);
 	float compute_reward(const xmg&, const xmg&);
 	std::vector<move> compute_moves(const xmg&);
 };

@@ -405,22 +405,7 @@ namespace majesty {
 		return idx;
 	}
 
-	nodeid xmg::create_node(maj3inputs, 
-			varmap& var_map, Solver& solver, fanoutmap& f) {
-		node n;
-		n.flag = 0;
-		n.in1 = in1; if (c1) { set_c1(n); }
-		n.in2 = in2; if (c2) { set_c2(n); }
-		n.in3 = in3; if (c3) { set_c3(n); }
-		n.ecnext = EC_NULL;
-		auto idx = _nodes.size();
-		n.ecrep = idx;
-		_nodes.push_back(n);
-
-		f[in1].push_back(idx);
-		f[in2].push_back(idx);
-		f[in3].push_back(idx);
-
+	inline void add_clauses(maj3inputs, nodeid idx, varmap& var_map, Solver& solver) {
 		// Add SAT variable and clauses for this node
 		auto new_var = solver.newVar();
 		auto nlit = mkLit(new_var, false);
@@ -439,7 +424,26 @@ namespace majesty {
 		solver.addClause(lit1, lit3, ~nlit);
 		solver.addClause(~lit2, ~lit3, nlit);
 		solver.addClause(lit2, lit3, ~nlit);
+	}
 
+	nodeid xmg::create_node(maj3inputs, 
+			varmap& var_map, Solver& solver, fanoutmap& f) {
+		node n;
+		n.flag = 0;
+		n.in1 = in1; if (c1) { set_c1(n); }
+		n.in2 = in2; if (c2) { set_c2(n); }
+		n.in3 = in3; if (c3) { set_c3(n); }
+		n.ecnext = EC_NULL;
+		auto idx = _nodes.size();
+		n.ecrep = idx;
+		_nodes.push_back(n);
+
+		f[in1].push_back(idx);
+		f[in2].push_back(idx);
+		f[in3].push_back(idx);
+
+		add_clauses(in1, c1, in2, c2, in3, c3, idx, var_map, solver);
+		
 		return idx;
 	}
 
@@ -455,6 +459,22 @@ namespace majesty {
 		_nodes.push_back(n);
 
 		return idx;
+	}
+	
+	inline void add_clauses(xorinputs, nodeid idx, varmap& var_map, Solver& solver) {
+		// Add SAT variable and clauses for this node
+		auto new_var = solver.newVar();
+		auto nlit = mkLit(new_var, false);
+		var_map[idx] = new_var;
+
+		auto lit1 = mkLit(var_map[in1], c1);
+		auto lit2 = mkLit(var_map[in2], c2);
+
+		// Generate XOR clauses
+		solver.addClause(~lit1, ~lit2, ~nlit);
+		solver.addClause(lit1, lit2, ~nlit);
+		solver.addClause(lit1, ~lit2, nlit);
+		solver.addClause(~lit1, lit2, nlit);
 	}
 
 	nodeid xmg::create_node(xorinputs, varmap& var_map, 
@@ -472,19 +492,7 @@ namespace majesty {
 		f[in1].push_back(idx);
 		f[in2].push_back(idx);
 
-		// Add SAT variable and clauses for this node
-		auto new_var = solver.newVar();
-		auto nlit = mkLit(new_var, false);
-		var_map[idx] = new_var;
-
-		auto lit1 = mkLit(var_map[in1], c1);
-		auto lit2 = mkLit(var_map[in2], c2);
-
-		// Generate XOR clauses
-		solver.addClause(~lit1, ~lit2, ~nlit);
-		solver.addClause(lit1, lit2, ~nlit);
-		solver.addClause(lit1, ~lit2, nlit);
-		solver.addClause(~lit1, lit2, nlit);
+		add_clauses(in1, c1, in2, c2, idx, var_map, solver);
 
 		return idx;
 
@@ -1180,6 +1188,98 @@ namespace majesty {
 		}
 
 		return mig;
+	}
+
+	bool xmg::equals(const xmg& other) const {
+		if (other.nin() != nin() || other.nout() != nout()) {
+			return false;
+		}
+		Solver solver;
+		varmap vm1, vm2;
+		const auto nin = other.nin();
+		for (auto i = 0u; i <= nin; i++) {
+			vm1[i] = solver.newVar();
+			vm2[i] = vm1[i];
+		}
+
+		for (auto i = 0u; i < nnodes(); i++) {
+			const auto& node = nodes()[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			if (is_xor(node)) {
+				add_clauses(node.in1, is_c1(node), node.in2, is_c2(node), i, vm1, solver);
+			} else {
+				add_clauses(node.in1, is_c1(node), node.in2, is_c2(node), node.in3, is_c3(node), i, vm1, solver);
+			}
+		}
+
+		for (auto i = 0u; i < other.nnodes(); i++) {
+			const auto& node = other.nodes()[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			if (is_xor(node)) {
+				add_clauses(node.in1, is_c1(node), node.in2, is_c2(node), i, vm2, solver);
+			} else {
+				add_clauses(node.in1, is_c1(node), node.in2, is_c2(node), node.in3, is_c3(node), i, vm2, solver);
+			}
+		}
+
+		// XOR the ouputs 
+		varmap outvar_map;
+		for (auto i = 0u; i < nout(); i++) {
+			auto var1 = vm1[_outputs[i]];
+			auto c1 = _outcompl[i];
+			auto var2 = vm2[other._outputs[i]];
+			auto c2 = other._outcompl[i];
+
+			auto new_var = solver.newVar();
+			outvar_map[i] = new_var;
+			auto nlit = mkLit(new_var, false);
+			auto lit1 = mkLit(var1, c1);
+			auto lit2 = mkLit(var2, c2);
+
+			// Generate XOR clauses
+			solver.addClause(~lit1, ~lit2, ~nlit);
+			solver.addClause(lit1, lit2, ~nlit);
+			solver.addClause(lit1, ~lit2, nlit);
+			solver.addClause(~lit1, lit2, nlit);
+		}
+
+		// OR all the outputs together
+		Lit miterlit;
+		varmap orvar_map;
+		auto onelit = mkLit(vm1.at(0), false);
+		for (auto i = 1u; i < nout(); i++) {
+			auto or_var = solver.newVar();
+			auto nlit = mkLit(or_var, false);
+			orvar_map[i] = or_var;
+
+			auto lit1 = mkLit(outvar_map[i - 1], false);
+			auto lit2 = mkLit(outvar_map[i], false);
+
+			solver.addClause(~lit1, ~lit2, nlit);
+			solver.addClause(~lit1, ~onelit, nlit);
+			solver.addClause(lit1, lit2, ~nlit);
+			solver.addClause(lit1, onelit, ~nlit);
+			solver.addClause(~lit2, ~onelit, nlit);
+			solver.addClause(lit2, onelit, ~nlit);
+
+			if (i == (nout() - 1)) { // The final output variable will be the miter output
+				miterlit = mkLit(or_var, false);
+			}
+		}
+
+		// Solve the miter
+		vec<Lit> assumps;
+		assumps.push(miterlit);
+		assumps.push(onelit);
+		if (solver.solve(assumps)) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 }
 

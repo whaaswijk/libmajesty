@@ -7,8 +7,8 @@
 using namespace std;
 
 namespace majesty {
-
-	xmg* random_mig(mt19937_64& rng, unsigned ninputs, unsigned nnodes) {
+	
+	xmg* random_mig(mt19937_64& rng, unsigned ninputs, unsigned nnodes, unsigned noutputs) {
 		static uniform_int_distribution<mt19937_64::result_type> rule_dist(0, 9);
 		static uniform_int_distribution<mt19937_64::result_type> rule_sel(0, 1);
 		static vector<nodeid> n1(3);
@@ -57,11 +57,22 @@ namespace majesty {
 			}
 		}
 
+		uniform_int_distribution<mt19937_64::result_type> node_dist(0, mig->nnodes() - 1);
+		for (auto i = 0u; i < noutputs; i++) {
+			auto outidx = static_cast<nodeid>(node_dist(rng));
+			auto outcompl = rule_sel(rng) == 0;
+			mig->create_output(outidx, outcompl, "out" + i);
+		}
+
 		return mig;
 	}
 
 	xmg* mig_manager::create_random_graph(unsigned ninputs, unsigned nnodes) {
-		return random_mig(rng, ninputs, nnodes);
+		return random_mig(rng, ninputs, nnodes, ninputs);
+	}
+	
+	xmg* mig_manager::create_random_graph(unsigned ninputs, unsigned nnodes, unsigned noutputs) {
+		return random_mig(rng, ninputs, nnodes, noutputs);
 	}
 
 	float compute_reward(const majesty::xmg& mig_orig, const majesty::xmg& mig_final) {

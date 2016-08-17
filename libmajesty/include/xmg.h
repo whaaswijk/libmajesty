@@ -298,6 +298,9 @@ namespace majesty {
 
 			bool is_mig() const;
 			MIG* extractmig() const;
+
+			// Check for equality using combinational equivalence checking
+			bool equals(const xmg&) const;
 	};
 }
 
