@@ -188,27 +188,7 @@ namespace majesty {
 		return res;
 	}
 
-	xmg* apply_unary_move(const xmg& mig, UNARY_MOVE move_type, nodeid id) {
-		const auto& node = mig.nodes()[id];
-		if (is_pi(node)) {
-			return NULL;
-		}
-		switch (move_type) {
-		case MAJ3_LEFT_RIGHT:
-			if (maj3_applies(node)) {
-				return apply_maj3(mig, id);
-			} else {
-				return NULL;
-			}
-			break;
-		case INVERTER_PROP:
-			return apply_inv_prop(mig, id);
-			break;
-		default:
-			return NULL;
-			break;
-		}
-	}
+	
 
 	// Checks if two nodes share the same input with the same polarity.
 	// Used to implement the associativity axiom.
@@ -379,12 +359,19 @@ namespace majesty {
 		return res;
 	}
 
-	xmg* apply_binary_move(const xmg& mig, BINARY_MOVE move_type, nodeid id1, nodeid id2) {
-		const auto& node1 = mig.nodes()[id1];
-		const auto& node2 = mig.nodes()[id2];
-		switch (move_type) {
+	xmg* apply__move(const xmg& mig, move& move) {
+		switch (move.type) {
+		case MAJ3_PROP:
+			if (maj3_applies(mig.nodes()[move.nodeid1])) {
+				return apply_maj3(mig, move.nodeid1);
+			} else {
+				return NULL;
+			}
+		case INVERTER_PROP:
+			return apply_inv_prop(mig, move.nodeid1);
+			break;
 		case SWAP:
-			return swap(mig, id1, id2);
+			return swap(mig, move.nodeid1, move.nodeid2);
 		case MAJ3_XXY:
 		case MAJ3_XYY:
 		default:
@@ -392,9 +379,88 @@ namespace majesty {
 			break;
 		}
 	}
-	
+
+	bool swap_applies(const vector<node>& nodes, nodeid& gpid, nodeid z) {
+		const auto& gp = nodes[gpid];
+		if (is_pi(gp)) { // Grandparent obviously may not be a PI
+			return false;
+		}
+		auto gpchildren = get_children(gp);
+		auto filt_parents = filter_nodes(gpchildren, [&nodes, &gp, z](pair<nodeid,bool> np) {
+			auto parent = nodes[np.first];
+			if (!is_pi(parent) && share_input_polarity(gp, parent)) {
+				if (parent.in1 == z || parent.in2 == z || parent.in3 == z) {
+					return true;
+				}
+			}
+			return false;
+		});
+		if (filt_parents.size() == 0) {
+			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
+			return false;
+		} else if (filt_parents.size() > 1) {
+			// The call is ambiguous: there are multiple parents for which the axiom applies. This means that there
+			// are multiple options to swap. We do not allow for ambiguity.
+			return false;
+		}
+		const auto parentnp = filt_parents[0];
+		const auto& parent = nodes[parentnp.first];
+		auto common_childnp = shared_input_polarity(gp, parent);
+		auto swap_childnp = drop_child(drop_child(gpchildren, parentnp), common_childnp)[0];
+		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
+		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
+		auto oldgrandchildren = get_children(parent);
+		auto filtgrandchildren = filter_nodes(drop_child(oldgrandchildren, common_childnp), [z](pair<nodeid, bool> child) {
+			if (child.first == z) {
+				return true;
+			}
+			return false;
+		});
+		if (filtgrandchildren.size() == 0) { 
+			// After removing the common child, there is no grandchild z (id2) left. This means that the network is trying to swap
+			// the common child itself which is not allowed.
+			return false;
+		} else if (filtgrandchildren.size() > 1) {
+			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now, if y = z, we're not sure which node we're referring to.
+			return false;
+		}
+
+		return true;
+	}
+
 	vector<move> compute_moves(const xmg& mig) {
 		vector<move> moves;
+
+		const auto& nodes = mig.nodes();
+		const auto nnodes = mig.nnodes();
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			{
+				// Note that inverter propagation always applies.
+				move move = {};
+				move.type = INVERTER_PROP;
+				move.nodeid1 = i;
+				moves.push_back(move);
+			}
+			if (maj3_applies(node)) {
+				move move = {};
+				move.type = MAJ3_PROP;
+				move.nodeid1 = i;
+				moves.push_back(move);
+			}
+			for (auto j = 0u; j < nnodes; j++) {
+				if (swap_applies(nodes, i, j)) {
+					move move = {};
+					move.type = SWAP;
+					move.nodeid1 = i;
+					move.nodeid2 = j;
+				}
+			}
+		}
 
 		return moves;
 	}

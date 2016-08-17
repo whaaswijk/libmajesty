@@ -5,39 +5,25 @@
 
 namespace majesty {
 
-	enum MOVE_TYPE {
-		UNARY = 0,
-		BINARY
-	};
-
-	enum UNARY_MOVE {
-		MAJ3_LEFT_RIGHT = 0,
-		INVERTER_PROP
-	};
-
-	enum BINARY_MOVE {
-		MAJ3_XXY = 0,
+	enum MoveType {
+		MAJ3_PROP = 0,
+		INVERTER_PROP,
+		MAJ3_XXY,
 		MAJ3_XYY,
 		SWAP
 	};
 
-	union MOVE_IDX {
-		UNARY_MOVE uidx;
-		BINARY_MOVE bidx;
-	};
-
 	struct move {
-		MOVE_TYPE type;
-		MOVE_IDX move_idx;
+		MoveType type;
 		nodeid nodeid1;
 		nodeid nodeid2;
+		nodeid nodeid3;
 	};
 
 	const unsigned NR_UNARY_MOVES = 2;
 	const unsigned NR_BINARY_MOVES = 3;
 	const unsigned NR_EDGE_TYPES = 2;
 	const unsigned DEFAULT_SEED = 100;
-
 
 	class mig_manager {
 	private:
@@ -76,8 +62,7 @@ namespace majesty {
 		xmg* create_random_graph(unsigned ninputs, unsigned nnodes, unsigned noutputs);
 	};
 
-	xmg* apply_unary_move(const xmg&, UNARY_MOVE, nodeid);
-	xmg* apply_binary_move(const xmg&, BINARY_MOVE, nodeid, nodeid);
+	xmg* apply_move(const xmg&, move&);
 	float compute_reward(const xmg&, const xmg&);
 	std::vector<move> compute_moves(const xmg&);
 };
