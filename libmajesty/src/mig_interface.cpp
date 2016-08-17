@@ -295,7 +295,11 @@ namespace majesty {
 			}
 			return false;
 		});
-		if (filtgrandchildren.size() == 2) {
+		if (filtgrandchildren.size() == 0) { 
+			// After removing the common child, there is no grandchild z (id2) left. This means that the network is trying to swap
+			// the common child itself which is not allowed.
+			return NULL;
+		} else if (filtgrandchildren.size() == 2) {
 			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
 			// z is id2. Now. if y = z, we're not sure which node we're referring to.
 			return NULL;
