@@ -112,6 +112,14 @@ namespace majesty {
 
 		return res;
 	}
+
+	inline vector<unsigned> inv(const vector<unsigned>& perm) {
+		vector<unsigned> invperm(perm.size());
+		for ( auto i = 0u; i < perm.size(); ++i ) { invperm[perm[i]] = i; }
+		return invperm;
+	}
+
+
 	
 	xmg xmg_from_string(const string& str, unsigned ninputs, const tt& phase, const vector<unsigned>& perm) {
 		xmg res;
@@ -121,8 +129,9 @@ namespace majesty {
 		for (auto i = 0u; i < ninputs; i++) {
 			res.create_input(string(1, 'a'+(char)i));
 		}
+		auto invperm = inv(perm);
 		for (auto i = 0u; i < ninputs; i++) {
-			nodemap[perm[i] + 1] = make_pair(i+1, phase.test(i));
+			nodemap[invperm[i] + 1] = make_pair(i+1, phase.test(i));
 		}
 
 		const auto majbrackets = find_bracket_pairs(str, '<', '>');
@@ -140,5 +149,44 @@ namespace majesty {
 		res.create_output(last_idx, complout, "F");
 
 		return res;
+	}
+
+	pair<nodeid, bool> mig_shannon_decompose_node(nodemap& nodemap, const tt& func) {
+		static const tt const_0 = tt_const0();
+		static const tt const_1 = tt_const1();
+		tt copy(func);
+		tt_to_minbase(copy);
+		if (copy == const_0) {
+			return make_pair(0, true);
+		} else if (copy == const_1) {
+			return make_pair(0, false);
+		}
+		return make_pair(0, false);
+	}
+
+	xmg* mig_shannon_decompose(unsigned ninputs, const tt& func) {
+		assert(ninputs <= 6);
+		xmg* res = new xmg();
+
+		nodemap nodemap;
+		nodemap[0] = make_pair(res->create_input(), false);
+
+		for (auto i = 0u; i < ninputs; i++) {
+			nodemap[i + 1] = make_pair(res->create_input(string(1, 'a' + (char)i)), false);
+		}
+		auto output = mig_shannon_decompose_node(nodemap, func);
+		res->create_output(output.first, output.second, "F");
+
+		return res;
+	}
+
+	xmg* mig_decompose(unsigned ninputs, unsigned function) {
+		tt func(1u << ninputs, function);
+		return mig_shannon_decompose(ninputs, func);
+	}
+
+	xmg* mig_decompose(unsigned ninputs, const string& function) {
+		tt func(function);
+		return mig_shannon_decompose(ninputs, func);
 	}
 }

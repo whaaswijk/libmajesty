@@ -60,9 +60,12 @@ namespace majesty {
 
 		xmg* create_random_graph(unsigned ninputs, unsigned nnodes);
 		xmg* create_random_graph(unsigned ninputs, unsigned nnodes, unsigned noutputs);
+		xmg* random_decomposition(unsigned ninputs);
 	};
 
 	xmg* apply_move(const xmg&, move&);
 	float compute_reward(const xmg&, const xmg&);
 	std::vector<move> compute_moves(const xmg&);
+	xmg* mig_decompose(unsigned ninputs, unsigned function);
+	xmg* mig_decompose(unsigned ninputs, const std::string& function);
 };

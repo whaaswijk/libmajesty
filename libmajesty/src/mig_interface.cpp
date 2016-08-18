@@ -3,6 +3,7 @@
 #include "strashmap.h"
 #include <algorithm>
 #include <iostream>
+#include <truth_table_utils.hpp>
 
 using namespace std;
 
@@ -161,9 +162,9 @@ namespace majesty {
 				const auto& in2 = nodemap[node.in2];
 				const auto& in3 = nodemap[node.in3];
 				auto invnode = res->create(
-					in1.first, in1.second != true,
-					in2.first, in2.second != true,
-					in3.first, in3.second != true);
+					in1.first, (in1.second != is_c1(node)) != true,
+					in2.first, (in2.second != is_c2(node)) != true,
+					in3.first, (in3.second != is_c3(node)) != true);
 				invnode.second = true;
 				nodemap[i] = invnode;
 			} else {
@@ -465,4 +466,6 @@ namespace majesty {
 
 		return moves;
 	}
+
+	
 }
