@@ -25,6 +25,18 @@ namespace majesty {
 	const unsigned NR_EDGE_TYPES = 2;
 	const unsigned DEFAULT_SEED = 100;
 
+	inline unsigned get_nr_unary_moves() {
+		return NR_UNARY_MOVES;
+	}
+
+	inline unsigned get_nr_binary_moves() {
+		return NR_BINARY_MOVES;
+	}
+
+	inline unsigned get_nr_edge_types() {
+		return NR_EDGE_TYPES;
+	}
+
 	class mig_manager {
 	private:
 		unsigned seed = 0;
@@ -36,18 +48,6 @@ namespace majesty {
 
 		mig_manager(unsigned seed) : seed(seed) {
 			rng.seed(seed);
-		}
-
-		unsigned get_nr_unary_moves() const {
-			return NR_UNARY_MOVES;
-		}
-
-		unsigned get_nr_binary_moves() const {
-			return NR_BINARY_MOVES;
-		}
-
-		unsigned get_nr_edge_types() const {
-			return NR_EDGE_TYPES;
 		}
 
 		unsigned get_seed() {
