@@ -458,6 +458,7 @@ namespace majesty {
 					move.type = SWAP;
 					move.nodeid1 = i;
 					move.nodeid2 = j;
+					moves.push_back(move);
 				}
 			}
 		}
