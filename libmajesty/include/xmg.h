@@ -303,6 +303,8 @@ namespace majesty {
 			std::pair<nodeid,bool> 
 				find_or_create(maj3signature, strashmap&, 
 						varmap&, Minisat::Solver&, fanoutmap&);
+			// Creates a raw node, without strashing or propagation
+			std::pair<nodeid,bool> create(xorsignature);
 			std::pair<nodeid,bool> find_or_create(xorsignature, strashmap&);
 			std::pair<nodeid,bool> 
 				find_or_create(xorsignature, strashmap&, 
@@ -316,6 +318,10 @@ namespace majesty {
 			// Check for equality using combinational equivalence checking
 			bool equals(const xmg&) const;
 	};
+	
+	void write_verilog(const std::string&, const majesty::xmg&);
+	void write_verilog(const char*, const majesty::xmg&);
+	void write_verilog(std::ofstream&, const majesty::xmg&);
 }
 
 #endif

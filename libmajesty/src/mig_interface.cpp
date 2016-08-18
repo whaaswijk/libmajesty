@@ -359,7 +359,7 @@ namespace majesty {
 		return res;
 	}
 
-	xmg* apply__move(const xmg& mig, move& move) {
+	xmg* apply_move(const xmg& mig, move& move) {
 		switch (move.type) {
 		case MAJ3_PROP:
 			if (maj3_applies(mig.nodes()[move.nodeid1])) {

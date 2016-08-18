@@ -6,6 +6,7 @@
 #include "mlpext.h"
 #include <functional>
 #include <boost/optional.hpp>
+#include "mlpext.h"
 
 using namespace std;
 using boost::optional;
@@ -496,6 +497,12 @@ namespace majesty {
 
 		return idx;
 
+	}
+
+
+	pair<nodeid,bool> xmg::create(xorinputs) {
+		sort_inputs(in1, c1, in2, c2);
+		return make_pair(create_node(in1, c1, in2, c2), false);
 	}
 
 	pair<nodeid,bool> 
@@ -1281,5 +1288,16 @@ namespace majesty {
 			return true;
 		}
 	}
+
+	void write_verilog(const string& filename, const majesty::xmg& xmg) {
+		write_verilog(filename.c_str(), xmg);
+	}
+	
+	void write_verilog(const char* filename, const majesty::xmg& xmg) {
+		ofstream outfile(filename);
+		write_verilog(outfile, xmg);
+		outfile.close();
+	}
+
 }
 

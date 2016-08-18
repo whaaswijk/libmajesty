@@ -165,7 +165,8 @@ namespace majesty {
 		const auto& innames = xmg.innames();
 		const auto& outnames = xmg.outnames();
 		const auto& nodes = xmg.nodes();
-		for(auto i = 0u; i < xmg.nin(); i++){
+		const auto nin = xmg.nin();
+		for(auto i = 0u; i < nin; i++){
 			file << innames[i] << ", ";
 		}
 		file << endl << "\t\t\t";
@@ -174,11 +175,13 @@ namespace majesty {
 		}
 		file << outnames[xmg.nout()-1] << ");" << endl;
 
-		file << "input ";
-		for(auto i = 0u; i < (xmg.nin()-1); i++){
-			file << innames[i] << ", ";
-		}	
-		file << innames[xmg.nin()-1] << ";" << endl;
+		if (nin > 0) {
+			file << "input ";
+			for (auto i = 0u; i < nin - 1; i++) {
+				file << innames[i] << ", ";
+			}
+			file << innames[nin - 1] << ";" << endl;
+		}
 
 		file << "output ";
 		for(auto i = 0u; i< (xmg.nout()-1); i++){
@@ -186,24 +189,27 @@ namespace majesty {
 		}	
 		file << outnames[xmg.nout()-1] << ";" << endl;
 
-		file << "wire ";
-		bool init = false;
-		for(auto i = 0u; i < xmg.nnodes(); i++) {
-			const auto& node = nodes[i];
-			if (is_pi(node)) {
-				continue;
-			} else if (static_cast<nodeid>(i) != node.ecrep) {
-				continue;
+		if (nin > 0) {
+			file << "wire ";
+			bool begun = false;
+			for (auto i = 0u; i < xmg.nnodes(); i++) {
+				const auto& node = nodes[i];
+				if (is_pi(node)) {
+					continue;
+				} else if (static_cast<nodeid>(i) != node.ecrep) {
+					continue;
+				}
+				if (begun) {
+					file << ", ";
+				} else {
+					begun = true;
+				}
+				file << "w" << node.ecrep;
 			}
-			if (init) {
-				file << ", ";
-			}
-			init = true;
-			file << "w" << node.ecrep;
-		}	
-		file << ";" << endl;
+			file << ";" << endl;
+		}
 
-		for(auto i = 0u; i < xmg.nnodes(); i++) {
+		for (auto i = 0u; i < xmg.nnodes(); i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				continue;
