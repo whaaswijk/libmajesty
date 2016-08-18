@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iostream>
 #include <truth_table_utils.hpp>
+#include <convert.h>
 
 using namespace std;
 
@@ -74,6 +75,13 @@ namespace majesty {
 	
 	xmg* mig_manager::create_random_graph(unsigned ninputs, unsigned nnodes, unsigned noutputs) {
 		return random_mig(rng, ninputs, nnodes, noutputs);
+	}
+
+	xmg* mig_manager::random_mig_decomposition(unsigned ninputs) {
+		auto num_funcs = (1u << (1u << ninputs));
+		static uniform_int_distribution<mt19937_64::result_type> rule_dist(0, num_funcs-1);
+		auto rand_func = rule_dist(rng);
+		return new xmg(mig_decompose(ninputs, rand_func));
 	}
 
 	float compute_reward(const majesty::xmg& mig_orig, const majesty::xmg& mig_final) {

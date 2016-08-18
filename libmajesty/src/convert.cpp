@@ -151,41 +151,99 @@ namespace majesty {
 		return res;
 	}
 
-	pair<nodeid, bool> mig_shannon_decompose_node(nodemap& nodemap, const tt& func) {
-		static const tt const_0 = tt_const0();
-		static const tt const_1 = tt_const1();
-		tt copy(func);
-		tt_to_minbase(copy);
-		if (copy == const_0) {
-			return make_pair(0, true);
-		} else if (copy == const_1) {
-			return make_pair(0, false);
-		}
-		return make_pair(0, false);
+	tt maj_tt_const0()
+	{
+		return boost::dynamic_bitset<>(1u, 0u);
 	}
 
-	xmg* mig_shannon_decompose(unsigned ninputs, const tt& func) {
+	tt maj_tt_const1()
+	{
+		return ~maj_tt_const0();
+	}
+
+	tt maj_tt_cof0(const tt& t, unsigned i, unsigned ninputs) {
+		auto n = tt_num_vars(t);
+		assert(i < n);
+		auto tv = ~tt_nth_var(i);
+		tv.resize(1u << ninputs);
+		// tt_extend(tv, n);
+
+		auto tc = t;
+		// if (n < tt_store::i().width) { tt_extend(tc, tt_store::i().width); }
+
+		return (tc & tv) | ((tc & tv) << (1 << i));
+	}
+
+	tt maj_tt_cof1(const tt& t, unsigned i, unsigned ninputs) {
+		auto n = tt_num_vars(t);
+		assert(i < n);
+		auto tv = tt_nth_var(i);
+		tv.resize(1u << ninputs);
+
+		//tt_extend(tv, n);
+
+		auto tc = t;
+		//if (n < tt_store::i().width) { tt_extend(tc, tt_store::i().width); }
+
+		return (tc & tv) | ((tc & tv) >> (1 << i));
+	}
+
+	
+	pair<nodeid, bool> mig_shannon_decompose_node(xmg& mig, const nodemap& nodemap, const tt& func, const unsigned ninputs, unsigned var_idx) {
+		assert(tt_num_vars(func) == ninputs);
+		auto const0 = maj_tt_const0();
+		tt_extend(const0, 6u);
+		auto const1 = maj_tt_const1();
+		tt_extend(const1, 6u);
+
+		tt copy(func);
+		tt_to_minbase(copy);
+		tt_extend(copy, 6u);
+		auto copystring = to_string(copy);
+		if (copy == const0) {
+			return make_pair(0, true);
+		} else if (copy == const1) {
+			return make_pair(0, false);
+		}
+
+		auto var_node = nodemap.at(var_idx+1); // +1 because idx 0 is the "one" node
+		auto compl_var_node = var_node;
+		compl_var_node.second = true;
+		
+		auto cof1 = maj_tt_cof1(func, var_idx, ninputs);
+		auto cof1_node = mig_shannon_decompose_node(mig, nodemap, cof1, ninputs, var_idx + 1);
+		auto cof1_and = mig.create(make_pair(0, true), cof1_node, var_node);
+
+		auto cof0 = maj_tt_cof0(func, var_idx, ninputs);
+		auto cof0_node = mig_shannon_decompose_node(mig, nodemap, cof0, ninputs, var_idx + 1);
+		auto cof0_and = mig.create(make_pair(0, true), cof0_node, compl_var_node);
+
+		return mig.create(make_pair(0, false), cof1_and, cof0_and);
+	}
+
+	xmg mig_shannon_decompose(unsigned ninputs, const tt& func) {
 		assert(ninputs <= 6);
-		xmg* res = new xmg();
+		xmg res;
 
 		nodemap nodemap;
-		nodemap[0] = make_pair(res->create_input(), false);
+		nodemap[0] = make_pair(res.create_input(), false);
 
 		for (auto i = 0u; i < ninputs; i++) {
-			nodemap[i + 1] = make_pair(res->create_input(string(1, 'a' + (char)i)), false);
+			nodemap[i + 1] = make_pair(res.create_input(string(1, 'a' + (char)i)), false);
 		}
-		auto output = mig_shannon_decompose_node(nodemap, func);
-		res->create_output(output.first, output.second, "F");
+		assert(tt_num_vars(func) == ninputs);
+		auto output = mig_shannon_decompose_node(res, nodemap, func, ninputs, 0);
+		res.create_output(output.first, output.second, "F");
 
 		return res;
 	}
 
-	xmg* mig_decompose(unsigned ninputs, unsigned function) {
+	xmg mig_decompose(unsigned ninputs, unsigned function) {
 		tt func(1u << ninputs, function);
 		return mig_shannon_decompose(ninputs, func);
 	}
 
-	xmg* mig_decompose(unsigned ninputs, const string& function) {
+	xmg mig_decompose(unsigned ninputs, const string& function) {
 		tt func(function);
 		return mig_shannon_decompose(ninputs, func);
 	}

@@ -162,6 +162,7 @@ tt tt_cof1( const tt& t, unsigned i )
   auto n = tt_num_vars( t );
   assert( i < n );
   auto tv = tt_nth_var( i );
+  
   tt_extend( tv, n );
 
   auto tc = t;
