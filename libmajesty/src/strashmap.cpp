@@ -3,6 +3,8 @@
 #include <iostream>
 #include "mlpext.h"
 
+using namespace boost;
+
 namespace majesty {
 
 	unsigned strashmap::hash(maj3inputs) const {
@@ -27,7 +29,8 @@ namespace majesty {
 		_table.resize(size);
 	}
 
-	nodeid strashmap::find(maj3inputs, xmg& m) const {
+	optional<nodeid> strashmap::find(maj3inputs, xmg& m) const {
+		optional<nodeid> res;
 		sort_inputs(in1, c1, in2, c2, in3, c3);
 		auto key = hash(in1, c1, in2, c2, in3, c3);
 		const auto& entries = _table[key];
@@ -45,10 +48,11 @@ namespace majesty {
 				return idx;
 			}
 		}
-		return -1;
+		return res;
 	}
 
-	nodeid strashmap::find(xorinputs, xmg& m) const {
+	optional<nodeid> strashmap::find(xorinputs, xmg& m) const {
+		optional<nodeid> res;
 		sort_inputs(in1, c1, in2, c2);
 		auto key = hash(in1, c1, in2, c2);
 		const auto& entries = _table[key];
@@ -64,13 +68,13 @@ namespace majesty {
 				return idx;
 			}
 		}
-		return -1;
+		return res;
 	}
 	
 	nodeid strashmap::find_or_add(maj3inputs, xmg& m) {
 		auto found = find(in1, c1, in2, c2, in3, c3, m);
-		if (found != -1) {
-			return found;
+		if (found) {
+			return *found;
 		}
 		sort_inputs(in1, c1, in2, c2, in3, c3);
 		auto idx = m.create_node(in1, c1, in2, c2, in3, c3);
@@ -83,8 +87,8 @@ namespace majesty {
 	nodeid strashmap::find_or_add(maj3inputs, xmg& m, 
 			varmap& v, Minisat::Solver& s, fanoutmap& f) {
 		auto found = find(in1, c1, in2, c2, in3, c3, m);
-		if (found != -1) {
-			return found;
+		if (found) {
+			return *found;
 		}
 		sort_inputs(in1, c1, in2, c2, in3, c3);
 		auto idx = m.create_node(in1, c1, in2, c2, in3, c3, v, s, f);
@@ -96,8 +100,8 @@ namespace majesty {
 
 	nodeid strashmap::find_or_add(xorinputs, xmg& m) {
 		auto found = find(in1, c1, in2, c2, m);
-		if (found != -1) {
-			return found;
+		if (found) {
+			return *found;
 		}
 		sort_inputs(in1, c1, in2, c2);
 		auto idx = m.create_node(in1, c1, in2, c2);
@@ -110,8 +114,8 @@ namespace majesty {
 	nodeid strashmap::find_or_add(xorinputs, xmg& m, 
 			varmap& v, Minisat::Solver& s, fanoutmap& f) {
 		auto found = find(in1, c1, in2, c2, m);
-		if (found != -1) {
-			return found;
+		if (found) {
+			return *found;
 		}
 		sort_inputs(in1, c1, in2, c2);
 		auto idx = m.create_node(in1, c1, in2, c2, v, s, f);

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "xmg.h"
+#include <boost/optional/optional.hpp>
 
 
 namespace majesty {
@@ -14,13 +15,13 @@ namespace majesty {
 
 		public:
 			strashmap(size_t, xmg_stats&);
-			nodeid find(maj3signature, xmg&) const;
+			boost::optional<nodeid> find(maj3signature, xmg&) const;
 			nodeid find_or_add(maj3signature, xmg&);
 			nodeid find_or_add(maj3signature, xmg&, 
 					varmap&, Minisat::Solver&, fanoutmap&);
 			unsigned hash(maj3signature) const;
 
-			nodeid find(xorsignature, xmg&) const;
+			boost::optional<nodeid> find(xorsignature, xmg&) const;
 			nodeid find_or_add(xorsignature, xmg&);
 			nodeid find_or_add(xorsignature, xmg&, 
 					varmap&, Minisat::Solver&, fanoutmap&);
