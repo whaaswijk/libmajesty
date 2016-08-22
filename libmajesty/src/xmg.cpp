@@ -1307,24 +1307,29 @@ namespace majesty {
 		Lit miterlit;
 		varmap orvar_map;
 		auto onelit = mkLit(vm1.at(0), false);
-		for (auto i = 1u; i < nout(); i++) {
-			auto or_var = solver.newVar();
-			auto nlit = mkLit(or_var, false);
-			orvar_map[i] = or_var;
+		if (nout() > 1) {
+			for (auto i = 1u; i < nout(); i++) {
+				auto or_var = solver.newVar();
+				auto nlit = mkLit(or_var, false);
+				orvar_map[i] = or_var;
 
-			auto lit1 = mkLit(outvar_map[i - 1], false);
-			auto lit2 = mkLit(outvar_map[i], false);
+				auto lit1 = mkLit(outvar_map[i - 1], false);
+				auto lit2 = mkLit(outvar_map[i], false);
 
-			solver.addClause(~lit1, ~lit2, nlit);
-			solver.addClause(~lit1, ~onelit, nlit);
-			solver.addClause(lit1, lit2, ~nlit);
-			solver.addClause(lit1, onelit, ~nlit);
-			solver.addClause(~lit2, ~onelit, nlit);
-			solver.addClause(lit2, onelit, ~nlit);
+				solver.addClause(~lit1, ~lit2, nlit);
+				solver.addClause(~lit1, ~onelit, nlit);
+				solver.addClause(lit1, lit2, ~nlit);
+				solver.addClause(lit1, onelit, ~nlit);
+				solver.addClause(~lit2, ~onelit, nlit);
+				solver.addClause(lit2, onelit, ~nlit);
 
-			if (i == (nout() - 1)) { // The final output variable will be the miter output
-				miterlit = mkLit(or_var, false);
+				if (i == (nout() - 1)) { // The final output variable will be the miter output
+					miterlit = mkLit(or_var, false);
+				}
 			}
+		} else {
+			assert(nout() == 1);
+			miterlit = mkLit(outvar_map[0], false);
 		}
 
 		// Solve the miter
