@@ -272,6 +272,10 @@ namespace majesty {
 		// If we reach this point, there is one unambigious child of the grandparent to swap with:
 		// the child that is not the shared child and not the parent.
 		const auto parentnp = filt_parents[0];
+		// If the parent is complemented, we need to apply inverter propagation first.
+		if (parentnp.second) {
+			return false;
+		}
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
 		auto swap_childnp = drop_child(drop_child(oldgpchildren, parentnp), common_childnp)[0];
@@ -413,6 +417,11 @@ namespace majesty {
 			return false;
 		}
 		const auto parentnp = filt_parents[0];
+		// If the parent is complemented, we need to apply inverter propagation first.
+		if (parentnp.second) {
+			return false;
+		}
+
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
 		auto swap_childnp = drop_child(drop_child(gpchildren, parentnp), common_childnp)[0];
