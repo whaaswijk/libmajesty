@@ -248,7 +248,7 @@ namespace majesty {
 		private:
 			std::vector<node> _nodes;
 			std::vector<nodeid> _outputs;
-			boost::dynamic_bitset<> _outcompl;
+			std::vector<bool> _outcompl;
 			std::vector<std::string> _innames;
 			std::vector<std::string> _outnames;
 			
@@ -284,7 +284,7 @@ namespace majesty {
 			const std::vector<std::string>& outnames() const { 
 				return _outnames;
 		   	}
-			const boost::dynamic_bitset<>& outcompl() const { 
+			const std::vector<bool>& outcompl() const { 
 				return _outcompl;
 		   	}
 
