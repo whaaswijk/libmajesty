@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
@@ -258,12 +259,21 @@ namespace majesty {
 		auto success = system(cmdstr.c_str());
 		assert(success == 0);
 		ifstream infile("cirkit.log");
+		//stringstream infile("[{ \"command\": \"tt 1000\", \"time\" : \"2016-08-23 15:00:20\", \"tt\" : \"1000\" }, { \"command\": \"exact_mig\", \"time\" : \"2016-08-23 15:00:20\", \"min_depth\" : false, \"all_solutions\" : false, \"start\" : 1, \"runtime\" : 0.02 }, { \"command\": \"convert --mig_to_expr\", \"time\" : \"2016-08-23 15:00:20\" }, { \"command\": \"ps -e\", \"time\" : \"2016-08-23 15:00:29\", \"expression\" : \"<0ab>\" }]");
+
 		boost::property_tree::ptree pt;
 		boost::property_tree::read_json(infile, pt);
+		string expression;
 		for (ptree::const_iterator it = pt.begin(); it != pt.end(); ++it) {
-			cout << it->first << ":" << it->second.get_value<string>() << endl;
+			auto obj = it->second;
+			for (auto it2 = obj.begin(); it2 != obj.end(); it2++) {
+				//cout << it2->first << ":" << it2->second.get_value<string>() << endl;
+				if (it2->first == "expression") {
+					expression = it2->second.get_value<string>();
+				}
+			}
 		}
 		auto ninputs = tt_num_vars(func);
-		return xmg_from_string(ninputs, "<ab0>");
+		return xmg_from_string(ninputs, expression);
 	}
 }
