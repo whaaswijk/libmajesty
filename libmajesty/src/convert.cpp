@@ -255,7 +255,7 @@ namespace majesty {
 	}
 
 	xmg exact_mig(const tt& func) {
-		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\"";
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
 		auto success = system(cmdstr.c_str());
 		assert(success == 0);
 		ifstream infile("cirkit.log");
@@ -274,6 +274,7 @@ namespace majesty {
 			}
 		}
 		auto ninputs = tt_num_vars(func);
-		return xmg_from_string(ninputs, expression);
+		auto exact_parsed = xmg_from_string(ninputs, expression);
+		return strash(exact_parsed);
 	}
 }
