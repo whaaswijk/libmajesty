@@ -505,8 +505,11 @@ namespace majesty {
 		return make_pair(create_node(in1, c1, in2, c2), false);
 	}
 
-	pair<nodeid,bool> 
-		xmg::find_or_create(xorinputs, strashmap& shmap) {
+	pair<nodeid, bool> xmg::create(input in1, input in2) {
+		return create(in1.first, in1.second, in2.first, in2.second);
+	}
+
+	pair<nodeid,bool> xmg::find_or_create(xorinputs, strashmap& shmap) {
 		if (in1 == in2) {
 			return make_pair(0u, c1 == c2);
 		} else if (in1 == 0) {
@@ -1117,6 +1120,44 @@ namespace majesty {
 		cout << "Nr. undefined: " << stats.nr_undefined << endl;
 	}
 
+	xmg::xmg(const xmg& sxmg) {
+		nodemap nodemap;
+		const auto& nodes = sxmg.nodes();
+		const auto nnodes = sxmg.nnodes();
+
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				nodemap[i] = make_pair(create_input(), false);
+			} else if (is_xor(node)) {
+				auto in1 = nodemap[node.in1];
+				in1.second = (in1.second != is_c1(node));
+				auto in2 = nodemap[node.in2];
+				in2.second = (in2.second != is_c2(node));
+				nodemap[i] = create(in1, in2);
+			} else {
+				auto in1 = nodemap[node.in1];
+				in1.second = (in1.second != is_c1(node));
+				auto in2 = nodemap[node.in2];
+				in2.second = (in2.second != is_c2(node));
+				auto in3 = nodemap[node.in3];
+				in3.second = (in3.second != is_c3(node));
+				nodemap[i] = create(in1, in2, in3);
+			}
+		}
+
+		const auto& outputs = sxmg.outputs();
+		const auto& outcompl = sxmg.outcompl();
+		const auto& outnames = sxmg.outnames();
+		const auto nouts = outputs.size();
+		for (auto i = 0u; i < nouts; i++) {
+			auto outid = outputs[i];
+			auto outc = outcompl[i];
+			auto outnode = nodemap[outid];
+			create_output(outnode.first, outnode.second != outc, outnames[i]);
+		}
+	}
+
 	xmg strash(const xmg& sxmg) {
 		xmg res;
 
@@ -1353,5 +1394,56 @@ namespace majesty {
 		outfile.close();
 	}
 
+	bool simulate_node(const node& n, unordered_map<nodeid, bool> simval) {
+		if (is_xor(n)) {
+			auto in1val = simval[n.in1];
+			auto truein1 = (is_c1(n) ? !in1val : in1val);
+			auto in2val = simval[n.in2];
+			auto truein2 = (is_c2(n) ? !in2val : in2val);
+			return truein1 != truein2;
+		} else {
+			auto in1val = simval[n.in1];
+			auto truein1 = (is_c1(n) ? !in1val : in1val);
+			auto in2val = simval[n.in2];
+			auto truein2 = (is_c2(n) ? !in2val : in2val);
+			auto in3val = simval[n.in3];
+			auto truein3 = (is_c3(n) ? !in3val : in3val);
+			return (truein1 && truein2) || (truein1 && truein3) || (truein2 && truein3);
+		}
+	}
+
+	boost::dynamic_bitset<> simulate(const xmg& xmg) {
+		assert(xmg.nin() <= 4);
+		assert(xmg.nout() == 1);
+		boost::dynamic_bitset<> func;
+
+		const auto nin = xmg.nin();
+		const auto& nodes = xmg.nodes();
+		const auto& nnodes = xmg.nnodes();
+		const auto& outputs = xmg.outputs();
+		const auto& outcompl = xmg.outcompl();
+		const auto nsimvectors = (1u << nin);
+		unordered_map<nodeid, bool> simval;
+		for (auto j = 0u; j < nsimvectors; j++) {
+			boost::dynamic_bitset<> invec(nin, j);
+			for (auto i = 0u; i < nnodes; i++) {
+				const auto& node = nodes[i];
+				if (is_pi(node)) {
+					if (i == 0u) { // Const 1
+						simval[i] = true;
+					} else {
+						simval[i] = invec.test(i - 1);
+					}
+				} else {
+					simval[i] = simulate_node(node, simval);
+				}
+			}
+			auto outval = outcompl[0] ? !simval[outputs[0]] : simval[outputs[0]];
+			func.push_back(outval);
+		}
+		assert(func.size() == nsimvectors);
+
+		return func;
+	}
 }
 

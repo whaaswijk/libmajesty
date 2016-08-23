@@ -266,6 +266,7 @@ namespace majesty {
 
 		public:
 			xmg() {  }
+			xmg(const xmg&);
 			xmg(xmg&&);
 			xmg& operator=(xmg&&);
 			xmg(MIG* mig, const xmg_params*);
@@ -306,6 +307,7 @@ namespace majesty {
 						varmap&, Minisat::Solver&, fanoutmap&);
 			// Creates a raw node, without strashing or propagation
 			std::pair<nodeid,bool> create(xorsignature);
+			std::pair<nodeid, bool> create(input, input);
 			std::pair<nodeid,bool> find_or_create(xorsignature, strashmap&);
 			std::pair<nodeid,bool> 
 				find_or_create(xorsignature, strashmap&, 
@@ -325,6 +327,9 @@ namespace majesty {
 	void write_verilog(const std::string&, const majesty::xmg&);
 	void write_verilog(const char*, const majesty::xmg&);
 	void write_verilog(std::ofstream&, const majesty::xmg&);
+
+	// Simulates every possible input vector on an xmg and returns the function it computes
+	boost::dynamic_bitset<> simulate_xmg(const xmg&);
 }
 
 #endif

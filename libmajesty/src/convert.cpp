@@ -2,9 +2,14 @@
 #include <stack>
 #include <map>
 #include <unordered_map>
+#include <cstdlib>
+#include <fstream>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 using namespace std;
 using namespace cirkit;
+using boost::property_tree::ptree;
 
 using bracket_map_t = unordered_map<unsigned,unsigned>;
 
@@ -87,7 +92,7 @@ namespace majesty {
 		return pairs;
 	}
 
-	xmg xmg_from_string(const string& str, unsigned ninputs) {
+	xmg xmg_from_string(unsigned ninputs, const string& str) {
 		xmg res;
 
 		nodemap nodemap;
@@ -121,7 +126,7 @@ namespace majesty {
 
 
 	
-	xmg xmg_from_string(const string& str, unsigned ninputs, const tt& phase, const vector<unsigned>& perm) {
+	xmg xmg_from_string(unsigned ninputs, const string& str, const tt& phase, const vector<unsigned>& perm) {
 		xmg res;
 
 		nodemap nodemap;
@@ -246,5 +251,19 @@ namespace majesty {
 	xmg mig_decompose(unsigned ninputs, const string& function) {
 		tt func(function);
 		return mig_shannon_decompose(ninputs, func);
+	}
+
+	xmg exact_mig(const tt& func) {
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e;\"";
+		auto success = system(cmdstr.c_str());
+		assert(success == 0);
+		ifstream infile("cirkit.log");
+		boost::property_tree::ptree pt;
+		boost::property_tree::read_json(infile, pt);
+		for (ptree::const_iterator it = pt.begin(); it != pt.end(); ++it) {
+			cout << it->first << ":" << it->second.get_value<string>() << endl;
+		}
+		auto ninputs = tt_num_vars(func);
+		return xmg_from_string(ninputs, "<ab0>");
 	}
 }

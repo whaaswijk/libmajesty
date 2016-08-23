@@ -5,6 +5,7 @@
 #include <iostream>
 #include <truth_table_utils.hpp>
 #include <convert.h>
+#include <boost/integer/integer_log2.hpp>
 
 using namespace std;
 
@@ -82,6 +83,11 @@ namespace majesty {
 		static uniform_int_distribution<mt19937_64::result_type> rule_dist(0, num_funcs-1);
 		auto rand_func = rule_dist(rng);
 		return new xmg(mig_decompose(ninputs, rand_func));
+	}
+
+	xmg* mig_decompose(const string& func) {
+		auto ninputs = boost::integer_log2(func.size());
+		return new xmg(mig_decompose(ninputs, func));
 	}
 
 	float compute_reward(const majesty::xmg& mig_orig, const majesty::xmg& mig_final) {
@@ -483,6 +489,9 @@ namespace majesty {
 
 		return moves;
 	}
-
 	
+	xmg* get_optimum_mig(const xmg& mig) {
+		auto func = simulate_xmg(mig);
+		return new xmg(exact_mig(func));
+	}
 }
