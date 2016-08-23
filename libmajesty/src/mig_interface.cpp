@@ -5,7 +5,7 @@
 #include <iostream>
 #include <truth_table_utils.hpp>
 #include <convert.h>
-#include <boost/integer/integer_log2.hpp>
+#include <boost/pending/integer_log2.hpp>
 
 using namespace std;
 
@@ -284,7 +284,7 @@ namespace majesty {
 		const auto parentnp = filt_parents[0];
 		// If the parent is complemented, we need to apply inverter propagation first.
 		if (parentnp.second) {
-			return false;
+			return NULL;
 		}
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
