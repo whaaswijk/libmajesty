@@ -498,4 +498,8 @@ namespace majesty {
 		auto func = simulate_xmg(mig);
 		return new xmg(exact_mig(func));
 	}
+
+	xmg* strash_xmg(const xmg& mig) {
+		return new xmg(strash(mig));
+	}
 }
