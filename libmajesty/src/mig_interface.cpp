@@ -85,8 +85,12 @@ namespace majesty {
 		return new xmg(mig_decompose(ninputs, rand_func));
 	}
 
-	xmg* mig_decompose(const string& func) {
+	xmg* mig_string_decompose(const string& func) {
 		auto ninputs = boost::integer_log2(func.size());
+		return new xmg(mig_decompose(ninputs, func));
+	}
+
+	xmg* mig_int_decompose(unsigned ninputs, unsigned func) {
 		return new xmg(mig_decompose(ninputs, func));
 	}
 

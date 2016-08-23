@@ -66,6 +66,8 @@ namespace majesty {
 	xmg* apply_move(const xmg&, move&);
 	float compute_reward(const xmg&, const xmg&);
 	std::vector<move> compute_moves(const xmg&);
+
+	xmg* mig_string_decompose(const std::string& truth_table);
+	xmg* mig_int_decompose(unsigned ninputs, unsigned truth_table);
 	xmg* get_optimum_mig(const xmg&);
-	xmg* mig_decompose(const std::string& truth_table);
 };
