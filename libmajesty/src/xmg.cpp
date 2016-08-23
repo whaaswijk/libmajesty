@@ -1412,7 +1412,7 @@ namespace majesty {
 		}
 	}
 
-	boost::dynamic_bitset<> simulate(const xmg& xmg) {
+	boost::dynamic_bitset<> simulate_xmg(const xmg& xmg) {
 		assert(xmg.nin() <= 4);
 		assert(xmg.nout() == 1);
 		boost::dynamic_bitset<> func;
