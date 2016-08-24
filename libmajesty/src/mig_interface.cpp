@@ -89,6 +89,10 @@ namespace majesty {
 		auto ninputs = boost::integer_log2(func.size());
 		return new xmg(mig_decompose(ninputs, func));
 	}
+	
+	xmg* mig_expression_decompose(unsigned ninputs, const string& expr) {
+		return new xmg(xmg_from_string(ninputs, expr));
+	}
 
 	xmg* mig_int_decompose(unsigned ninputs, unsigned func) {
 		return new xmg(mig_decompose(ninputs, func));
@@ -330,7 +334,7 @@ namespace majesty {
 			if (is_pi(node)) {
 				nodemap[i] = make_pair(res->create_input(), false);
 			} else if (i == parentnp.first) {
-				if (fanout > 1) { // Duplicate
+				if (fanout > 1 || is_po(node)) { // Duplicate
 					const auto& in1 = nodemap[node.in1];
 					const auto& in2 = nodemap[node.in2];
 					const auto& in3 = nodemap[node.in3];
@@ -341,6 +345,134 @@ namespace majesty {
 					);
 				} 
 			} else if (i == id1) {
+				// Create the new parent node first.
+				auto pin1 = newgrandchildren[0];
+				auto newpin1 = nodemap[pin1.first];
+				auto pin2 = newgrandchildren[1];
+				auto newpin2 = nodemap[pin2.first];
+				auto pin3 = newgrandchildren[2];
+				auto newpin3 = nodemap[pin3.first];
+				auto newparent = res->create(
+					newpin1.first, newpin1.second != pin1.second,
+					newpin2.first, newpin2.second != pin2.second,
+					newpin3.first, newpin3.second != pin3.second
+				);
+				auto newgpin1 = nodemap[common_childnp.first];
+				auto newgpin2 = nodemap[grandchildnp.first];
+				nodemap[i] = res->create(
+					newgpin1.first, newgpin1.second != common_childnp.second,
+					newgpin2.first, newgpin2.second != grandchildnp.second,
+					newparent.first, newparent.second != parentnp.second
+				);
+			} else {
+				const auto& in1 = nodemap[node.in1];
+				const auto& in2 = nodemap[node.in2];
+				const auto& in3 = nodemap[node.in3];
+				nodemap[i] = res->create(
+					in1.first, in1.second != is_c1(node),
+					in2.first, in2.second != is_c2(node),
+					in3.first, in3.second != is_c3(node));
+			}
+		}
+
+		const auto& outputs = mig.outputs();
+		const auto& outcompl = mig.outcompl();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto nodeid = outputs[i];
+			const auto np = nodemap[nodeid];
+			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+		}
+
+		return res;
+	}
+
+	xmg* swap_ternary(const xmg& mig, nodeid gpid, nodeid pid, nodeid gcid) {
+		auto res = new xmg();
+		const auto& nodes = mig.nodes();
+		const auto nnodes = mig.nnodes();
+		
+		// First, check if the call is not ambiguous.
+		const auto& gp = nodes[gpid];
+		if (is_pi(gp)) { // Grandparent obviously may not be a PI
+			return NULL;
+		}
+		auto oldgpchildren = get_children(gp);
+		auto filt_parents = filter_nodes(oldgpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
+			auto parent = nodes[np.first];
+			if (np.first != pid && !is_pi(parent) && share_input_polarity(gp, parent)) {
+				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
+					return true;
+				}
+			}
+			return false;
+		});
+		if (filt_parents.size() == 0) {
+			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
+			return NULL;
+		}
+		assert(filt_parents.size() == 0);
+		// If we reach this point, there is one unambigious child of the grandparent to swap with:
+		// the child that is not the shared child and not the parent.
+		const auto parentnp = filt_parents[0];
+		// If the parent is complemented, we need to apply inverter propagation first.
+		if (parentnp.second) {
+			return NULL;
+		}
+		const auto& parent = nodes[parentnp.first];
+		auto common_childnp = shared_input_polarity(gp, parent);
+		auto swap_childnp = drop_child(drop_child(oldgpchildren, parentnp), common_childnp)[0];
+		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
+		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
+		auto oldgrandchildren = get_children(parent);
+		auto filtgrandchildren = filter_nodes(drop_child(oldgrandchildren, common_childnp), [gcid](pair<nodeid, bool> child) {
+			if (child.first == gcid) {
+				return true;
+			}
+			return false;
+		});
+		if (filtgrandchildren.size() == 0) { 
+			// After removing the common child, there is no grandchild z (id2) left. Either the common child was the grandchild
+			// to be swapped, or the given grandchild was never actually a grandchild. 
+			return NULL;
+		} else if (filtgrandchildren.size() == 2) {
+			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now. if y = z, we're not sure which node we're referring to.
+			return NULL;
+		}
+		assert(filtgrandchildren.size() == 1);
+		auto grandchildnp = filtgrandchildren[0];
+		auto ynodenp = drop_child(drop_child(oldgrandchildren, common_childnp), grandchildnp)[0];
+		vector<pair<nodeid,bool>> newgrandchildren = { common_childnp, swap_childnp, ynodenp };
+
+		// Count the fanout of the parent node. If it's > 1, we need to duplicate it.
+		auto fanout = 0u;
+		for (const auto& node : nodes) {
+			if (is_pi(node)) {
+				continue;
+			}
+			if (node.in1 == parentnp.first || node.in2 == parentnp.first || node.in3 == parentnp.first) {
+				++fanout;
+			}
+		}
+		assert(fanout >= 1);
+
+		nodemap nodemap;
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				nodemap[i] = make_pair(res->create_input(), false);
+			} else if (i == parentnp.first) {
+				if (fanout > 1 || is_po(node)) { // Duplicate
+					const auto& in1 = nodemap[node.in1];
+					const auto& in2 = nodemap[node.in2];
+					const auto& in3 = nodemap[node.in3];
+					nodemap[i] = res->create(
+						in1.first, in1.second != is_c1(node),
+						in2.first, in2.second != is_c2(node),
+						in3.first, in3.second != is_c3(node)
+					);
+				} 
+			} else if (i == gpid) {
 				// Create the new parent node first.
 				auto pin1 = newgrandchildren[0];
 				auto newpin1 = nodemap[pin1.first];
@@ -395,6 +527,10 @@ namespace majesty {
 			break;
 		case SWAP:
 			return swap(mig, move.nodeid1, move.nodeid2);
+			break;
+		case SWAP_TERNARY:
+			return swap_ternary(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			break;
 		case MAJ3_XXY:
 		case MAJ3_XYY:
 		default:
@@ -403,7 +539,7 @@ namespace majesty {
 		}
 	}
 
-	bool swap_applies(const vector<node>& nodes, nodeid& gpid, nodeid z) {
+	bool swap_applies(const vector<node>& nodes, nodeid gpid, nodeid z) {
 		const auto& gp = nodes[gpid];
 		if (is_pi(gp)) { // Grandparent obviously may not be a PI
 			return false;
@@ -457,6 +593,59 @@ namespace majesty {
 		return true;
 	}
 
+
+
+	bool swap_ternary_applies(const vector<node>& nodes, nodeid gpid, nodeid pid, nodeid gcid) {
+		const auto& gp = nodes[gpid];
+		if (is_pi(gp)) { // Grandparent obviously may not be a PI
+			return false;
+		}
+		auto gpchildren = get_children(gp);
+		auto filt_parents = filter_nodes(gpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
+			auto parent = nodes[np.first];
+			if (np.first != pid && !is_pi(parent) && share_input_polarity(gp, parent)) {
+				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
+					return true;
+				}
+			}
+			return false;
+		});
+		if (filt_parents.size() == 0) {
+			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
+			return false;
+		}
+		assert(filt_parents.size() == 1);
+		const auto parentnp = filt_parents[0];
+		// If the parent is complemented, we need to apply inverter propagation first.
+		if (parentnp.second) {
+			return false;
+		}
+
+		const auto& parent = nodes[parentnp.first];
+		auto common_childnp = shared_input_polarity(gp, parent);
+		auto swap_childnp = drop_child(drop_child(gpchildren, parentnp), common_childnp)[0];
+		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
+		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
+		auto oldgrandchildren = get_children(parent);
+		auto filtgrandchildren = filter_nodes(drop_child(oldgrandchildren, common_childnp), [gcid](pair<nodeid, bool> child) {
+			if (child.first == gcid) {
+				return true;
+			}
+			return false;
+		});
+		if (filtgrandchildren.size() == 0) { 
+			// After removing the common child, there is no grandchild z (id2) left. Either the common child was the grandchild
+			// to be swapped, or the given grandchild was never actually a grandchild.
+			return false;
+		} else if (filtgrandchildren.size() > 1) {
+			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now, if y = z, we're not sure which node we're referring to.
+			return false;
+		}
+
+		return true;
+	}
+
 	vector<move> compute_moves(const xmg& mig) {
 		vector<move> moves;
 
@@ -487,6 +676,16 @@ namespace majesty {
 					move.nodeid1 = i;
 					move.nodeid2 = j;
 					moves.push_back(move);
+				}
+				for (auto k = 0u; k < nnodes; k++) {
+					if (swap_ternary_applies(nodes, i, j, k)) {
+						move move = {};
+						move.type = SWAP_TERNARY;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+					}
 				}
 			}
 		}

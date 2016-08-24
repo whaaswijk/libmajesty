@@ -10,7 +10,8 @@ namespace majesty {
 		INVERTER_PROP,
 		MAJ3_XXY,
 		MAJ3_XYY,
-		SWAP
+		SWAP,
+		SWAP_TERNARY
 	};
 
 	struct move {
@@ -21,7 +22,8 @@ namespace majesty {
 	};
 
 	const unsigned NR_UNARY_MOVES = 2;
-	const unsigned NR_BINARY_MOVES = 3;
+	const unsigned NR_BINARY_MOVES = 0;
+	const unsigned NR_TERNARY_MOVES = 3;
 	const unsigned NR_EDGE_TYPES = 2;
 	const unsigned DEFAULT_SEED = 100;
 
@@ -31,6 +33,10 @@ namespace majesty {
 
 	inline unsigned get_nr_binary_moves() {
 		return NR_BINARY_MOVES;
+	}
+
+	inline unsigned get_nr_ternary_moves() {
+		return NR_TERNARY_MOVES;
 	}
 
 	inline unsigned get_nr_edge_types() {
@@ -68,6 +74,7 @@ namespace majesty {
 	std::vector<move> compute_moves(const xmg&);
 
 	xmg* mig_string_decompose(const std::string& truth_table);
+	xmg* mig_expression_decompose(unsigned ninputs, const std::string& expr);
 	xmg* mig_int_decompose(unsigned ninputs, unsigned truth_table);
 	xmg* get_optimum_mig(const xmg&);
 	xmg* strash_xmg(const xmg&);
