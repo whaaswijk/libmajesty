@@ -143,8 +143,8 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				auto is_c = is_pi_c(node);
-				res->create_input();
-				nodemap[i] = make_pair(i, is_c);
+				res->create_input(is_c);
+				nodemap[i] = make_pair(i, false);
 			} else if (i == id) {
 				nodemap[i] = maj3_prop(node);
 			} else {
@@ -193,7 +193,8 @@ namespace majesty {
 					nodemap[i] = invnode;
 				}
 			} else if (is_pi(node)) {
-				nodemap[i] = make_pair(res->create_input(), false);
+				auto is_c = (is_pi_c(node) != true);
+				nodemap[i] = make_pair(res->create_input(is_c), false);
 			} else {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
@@ -347,7 +348,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				auto is_c = is_pi_c(node);
-				nodemap[i] = make_pair(res->create_input(), is_c);
+				nodemap[i] = make_pair(res->create_input(is_c), false);
 			} else if (i == parentnp.first) {
 				if (fanout > 1 || is_po(node)) { // Duplicate
 					const auto& in1 = nodemap[node.in1];
@@ -489,7 +490,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				auto is_c = is_pi_c(node);
-				nodemap[i] = make_pair(res->create_input(), is_c);
+				nodemap[i] = make_pair(res->create_input(is_c), false);
 			} else if (i == parentnp.first) {
 				if (fanout > 1 || is_po(node)) { // Duplicate
 					const auto& in1 = nodemap[node.in1];
