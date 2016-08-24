@@ -193,8 +193,7 @@ namespace majesty {
 					nodemap[i] = invnode;
 				}
 			} else if (is_pi(node)) {
-				auto is_c = (is_pi_c(node) != true);
-				nodemap[i] = make_pair(res->create_input(is_c), false);
+				nodemap[i] = make_pair(res->create_input(is_pi_c(node)), false);
 			} else {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
