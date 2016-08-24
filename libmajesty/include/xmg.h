@@ -294,6 +294,7 @@ namespace majesty {
 		   	}
 
 			nodeid create_input();
+			nodeid create_input(bool c);
 			nodeid create_input(const std::string&);
 			nodeid create_input(varmap&, Minisat::Solver&);
 			void create_output(nodeid, bool, const std::string&);

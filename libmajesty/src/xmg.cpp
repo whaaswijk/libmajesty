@@ -367,6 +367,18 @@ namespace majesty {
 		return idx;
 	}
 
+	nodeid xmg::create_input(bool c) {
+		node in;
+		in.flag = in.in1 = in.in2 = in.in3 = 0;
+		in.ecnext = EC_NULL;
+		set_pi(in);
+		set_c1(in);
+		auto idx = _nodes.size();
+		in.ecrep = idx;
+		_nodes.push_back(in);
+		return idx;
+	}
+
 	nodeid xmg::create_input(const string& name) {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
