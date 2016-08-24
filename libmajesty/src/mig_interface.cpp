@@ -179,7 +179,7 @@ namespace majesty {
 			if (i == id) {
 				if (is_pi(node)) {
 					auto is_c = (is_pi_c(node) != true);
-					nodemap[i] = make_pair(res->create_input(), is_c);
+					nodemap[i] = make_pair(res->create_input(is_c), is_c);
 				} else if (i == id) {
 					const auto& in1 = nodemap[node.in1];
 					const auto& in2 = nodemap[node.in2];
