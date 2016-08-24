@@ -22,7 +22,7 @@ namespace majesty {
 	};
 
 	const unsigned NR_UNARY_MOVES = 2;
-	const unsigned NR_BINARY_MOVES = 0;
+	const unsigned NR_BINARY_MOVES = 3;
 	const unsigned NR_TERNARY_MOVES = 3;
 	const unsigned NR_EDGE_TYPES = 2;
 	const unsigned DEFAULT_SEED = 100;
