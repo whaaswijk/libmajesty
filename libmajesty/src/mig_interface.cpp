@@ -190,7 +190,7 @@ namespace majesty {
 					invnode.second = true;
 					nodemap[i] = invnode;
 				}
-			} if (is_pi(node)) {
+			} else if (is_pi(node)) {
 				nodemap[i] = make_pair(res->create_input(), false);
 			} else {
 				const auto& in1 = nodemap[node.in1];
