@@ -146,6 +146,10 @@ namespace majesty {
 		return is_set(n.flag, 5);
 	}
 
+	static inline bool is_pi_c(const node& n) {
+		return is_pi(n) && is_c1(n);
+	}
+
 	static inline bool is_flag_set(const node& n) {
 		return is_set(n.flag, 6);
 	}

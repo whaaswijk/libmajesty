@@ -143,4 +143,11 @@
     <Text Include="src\CMakeLists.txt" />
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="pymajesty\build.sh" />
+    <None Include="pymajesty\mig_interface.pxd" />
+    <None Include="pymajesty\node_utils.pxd" />
+    <None Include="pymajesty\pymig.pyx" />
+    <None Include="pymajesty\setup.py" />
+  </ItemGroup>
 </Project>

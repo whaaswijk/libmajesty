@@ -1294,9 +1294,27 @@ namespace majesty {
 		Solver solver;
 		varmap vm1, vm2;
 		const auto nin = other.nin();
+		Lit onelit;
 		for (auto i = 0u; i <= nin; i++) {
-			vm1[i] = solver.newVar();
-			vm2[i] = vm1[i];
+			const auto& node1 = nodes()[i];
+			const auto& node2 = other.nodes()[i];
+			auto newvar = solver.newVar();
+			if (i == 0) {
+				onelit = mkLit(newvar, false);
+			}
+			auto complvar = solver.newVar();
+			solver.addClause(mkLit(newvar, true), mkLit(complvar, true));
+			solver.addClause(mkLit(newvar, false), mkLit(complvar, false));
+			if (is_pi_c(node1)) {
+				vm1[i] = complvar;
+			} else {
+				vm1[i] = newvar;
+			}
+			if (is_pi_c(node2)) {
+				vm2[i] = complvar;
+			} else {
+				vm2[i] = newvar;
+			}
 		}
 
 		for (auto i = 0u; i < nnodes(); i++) {
@@ -1347,7 +1365,6 @@ namespace majesty {
 		// OR all the outputs together
 		Lit miterlit;
 		varmap orvar_map;
-		auto onelit = mkLit(vm1.at(0), false);
 		if (nout() > 1) {
 			for (auto i = 1u; i < nout(); i++) {
 				auto or_var = solver.newVar();
@@ -1429,10 +1446,11 @@ namespace majesty {
 			for (auto i = 0u; i < nnodes; i++) {
 				const auto& node = nodes[i];
 				if (is_pi(node)) {
+					auto is_complemented = is_pi_c(node);
 					if (i == 0u) { // Const 1
-						simval[i] = true;
+						simval[i] = is_complemented != true;
 					} else {
-						simval[i] = invec.test(i - 1);
+						simval[i] = is_complemented != invec.test(i - 1);
 					}
 				} else {
 					simval[i] = simulate_node(node, simval);

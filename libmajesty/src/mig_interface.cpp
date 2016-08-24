@@ -176,19 +176,22 @@ namespace majesty {
 		unordered_map<nodeid, pair<nodeid, bool>> nodemap;
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
-			if (is_pi(node)) {
-				res->create_input();
-				nodemap[i] = make_pair(i, false);
-			} else if (i == id) {
-				const auto& in1 = nodemap[node.in1];
-				const auto& in2 = nodemap[node.in2];
-				const auto& in3 = nodemap[node.in3];
-				auto invnode = res->create(
-					in1.first, (in1.second != is_c1(node)) != true,
-					in2.first, (in2.second != is_c2(node)) != true,
-					in3.first, (in3.second != is_c3(node)) != true);
-				invnode.second = true;
-				nodemap[i] = invnode;
+			if (i == id) {
+				if (is_pi(node)) {
+					nodemap[i] = make_pair(res->create_input(), is_pi_c(node) != true);
+				} else if (i == id) {
+					const auto& in1 = nodemap[node.in1];
+					const auto& in2 = nodemap[node.in2];
+					const auto& in3 = nodemap[node.in3];
+					auto invnode = res->create(
+						in1.first, (in1.second != is_c1(node)) != true,
+						in2.first, (in2.second != is_c2(node)) != true,
+						in3.first, (in3.second != is_c3(node)) != true);
+					invnode.second = true;
+					nodemap[i] = invnode;
+				}
+			} if (is_pi(node)) {
+				nodemap[i] = make_pair(res->create_input(), false);
 			} else {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
@@ -676,15 +679,15 @@ namespace majesty {
 		const auto nnodes = mig.nnodes();
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
-			if (is_pi(node)) {
-				continue;
-			}
 			{
 				// Note that inverter propagation always applies.
 				move move = {};
 				move.type = INVERTER_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
+			}
+			if (is_pi(node)) {
+				continue;
 			}
 			if (maj3_applies(node)) {
 				move move = {};
