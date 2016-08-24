@@ -1192,7 +1192,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				auto is_c = is_pi_c(node);
-				nodemap[i] = make_pair(res.create_input(is_c), is_c);
+				nodemap[i] = make_pair(res.create_input(), is_c);
 			} else {
 				auto in1 = nodemap[node.in1];
 				in1.second = (in1.second != is_c1(node));
@@ -1314,12 +1314,14 @@ namespace majesty {
 			const auto& node1 = nodes()[i];
 			const auto& node2 = other.nodes()[i];
 			auto newvar = solver.newVar();
+			auto newlit = mkLit(newvar, false);
 			if (i == 0) {
-				onelit = mkLit(newvar, false);
+				onelit = newlit;
 			}
 			auto complvar = solver.newVar();
-			solver.addClause(mkLit(newvar, true), mkLit(complvar, true));
-			solver.addClause(mkLit(newvar, false), mkLit(complvar, false));
+			auto compllit = mkLit(complvar, false);
+			solver.addClause(~newlit, ~compllit);
+			solver.addClause(newlit, compllit);
 			if (is_pi_c(node1)) {
 				vm1[i] = complvar;
 			} else {
