@@ -190,11 +190,13 @@ namespace cirkit
 
 		auto invo = (min == t2);
 
-		if (false /* verbose */)
+		/* Fails to build on  lsisrv1
+		if (false /* verbose )
 		{
 			std::cout << "[i] swaps: " << any_join(swap_array, " ") << std::endl
 				<< "[i] flips: " << any_join(flip_array, " ") << std::endl;
 		}
+		*/
 
 		int best_flip = total_flips;
 		int best_swap = total_swaps;
