@@ -1191,7 +1191,8 @@ namespace majesty {
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				nodemap[i] = make_pair(res.create_input(), false);
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res.create_input(is_c), is_c);
 			} else {
 				auto in1 = nodemap[node.in1];
 				in1.second = (in1.second != is_c1(node));

@@ -142,8 +142,9 @@ namespace majesty {
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				res->create_input();
-				nodemap[i] = make_pair(i, false);
+				auto is_c = is_pi_c(node);
+				res->create_input(is_c);
+				nodemap[i] = make_pair(i, is_c);
 			} else if (i == id) {
 				nodemap[i] = maj3_prop(node);
 			} else {
@@ -315,11 +316,16 @@ namespace majesty {
 			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
 			auto filtgp1 = filtgrandchildren[0];
 			auto filtgp2 = filtgrandchildren[1];
-			if (filtgp1.second != filtgp2.second) {
-				return NULL;
+			if (filtgp1.second != filtgp2.second) { 
+				// To avoid ambiguity we use the non-complemented child. The system can use inverter propagation to select the
+				// other child instead.
+				if (filtgp1.second) {
+					filtgrandchildren = { filtgp2 };
+				} else {
+					filtgrandchildren = { filtgp1 };
+				}
 			}
 		}
-		assert(filtgrandchildren.size() == 1);
 		auto grandchildnp = filtgrandchildren[0];
 		auto ynodenp = drop_child(drop_child(oldgrandchildren, common_childnp), grandchildnp)[0];
 		vector<pair<nodeid,bool>> newgrandchildren = { common_childnp, swap_childnp, ynodenp };
@@ -340,7 +346,8 @@ namespace majesty {
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				nodemap[i] = make_pair(res->create_input(), false);
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res->create_input(is_c), is_c);
 			} else if (i == parentnp.first) {
 				if (fanout > 1 || is_po(node)) { // Duplicate
 					const auto& in1 = nodemap[node.in1];
@@ -452,10 +459,15 @@ namespace majesty {
 			auto filtgp1 = filtgrandchildren[0];
 			auto filtgp2 = filtgrandchildren[1];
 			if (filtgp1.second != filtgp2.second) {
-				return NULL;
+				// To avoid ambiguity we use the non-complemented child. The system can use inverter propagation to select the
+				// other child instead.
+				if (filtgp1.second) {
+					filtgrandchildren = { filtgp2 };
+				} else {
+					filtgrandchildren = { filtgp1 };
+				}
 			}
 		}
-		assert(filtgrandchildren.size() == 1);
 		auto grandchildnp = filtgrandchildren[0];
 		auto ynodenp = drop_child(drop_child(oldgrandchildren, common_childnp), grandchildnp)[0];
 		vector<pair<nodeid,bool>> newgrandchildren = { common_childnp, swap_childnp, ynodenp };
@@ -476,7 +488,8 @@ namespace majesty {
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				nodemap[i] = make_pair(res->create_input(), false);
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res->create_input(is_c), is_c);
 			} else if (i == parentnp.first) {
 				if (fanout > 1 || is_po(node)) { // Duplicate
 					const auto& in1 = nodemap[node.in1];
