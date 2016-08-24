@@ -307,9 +307,13 @@ namespace majesty {
 			// the common child itself which is not allowed.
 			return NULL;
 		} else if (filtgrandchildren.size() == 2) {
-			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
-			// z is id2. Now. if y = z, we're not sure which node we're referring to.
-			return NULL;
+			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
+			auto filtgp1 = filtgrandchildren[0];
+			auto filtgp2 = filtgrandchildren[1];
+			if (filtgp1.second != filtgp2.second) {
+				return NULL;
+			}
 		}
 		assert(filtgrandchildren.size() == 1);
 		auto grandchildnp = filtgrandchildren[0];
@@ -439,9 +443,13 @@ namespace majesty {
 			// to be swapped, or the given grandchild was never actually a grandchild. 
 			return NULL;
 		} else if (filtgrandchildren.size() == 2) {
-			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
-			// z is id2. Now. if y = z, we're not sure which node we're referring to.
-			return NULL;
+			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
+			auto filtgp1 = filtgrandchildren[0];
+			auto filtgp2 = filtgrandchildren[1];
+			if (filtgp1.second != filtgp2.second) {
+				return NULL;
+			}
 		}
 		assert(filtgrandchildren.size() == 1);
 		auto grandchildnp = filtgrandchildren[0];
@@ -589,9 +597,13 @@ namespace majesty {
 			// the common child itself which is not allowed.
 			return false;
 		} else if (filtgrandchildren.size() > 1) {
-			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
-			// z is id2. Now, if y = z, we're not sure which node we're referring to.
-			return false;
+			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
+			auto filtgp1 = filtgrandchildren[0];
+			auto filtgp2 = filtgrandchildren[1];
+			if (filtgp1.second != filtgp2.second) {
+				return false;
+			}
 		}
 
 		return true;
@@ -645,9 +657,13 @@ namespace majesty {
 			// to be swapped, or the given grandchild was never actually a grandchild.
 			return false;
 		} else if (filtgrandchildren.size() > 1) {
-			// NOTE: ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
-			// z is id2. Now, if y = z, we're not sure which node we're referring to.
-			return false;
+			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
+			auto filtgp1 = filtgrandchildren[0];
+			auto filtgp2 = filtgrandchildren[1];
+			if (filtgp1.second != filtgp2.second) {
+				return false;
+			}
 		}
 
 		return true;
