@@ -372,7 +372,9 @@ namespace majesty {
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
 		in.ecnext = EC_NULL;
 		set_pi(in);
-		set_c1(in);
+		if (c) {
+			set_c1(in);
+		}
 		auto idx = _nodes.size();
 		in.ecrep = idx;
 		_nodes.push_back(in);
