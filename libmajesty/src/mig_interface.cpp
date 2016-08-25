@@ -811,13 +811,18 @@ namespace majesty {
 		auto remainingchild2 = nodes[remainingchild2p.first];
 		auto remainingchild1children = get_children(remainingchild1);
 		auto remainingchild2children = get_children(remainingchild2);
-		for (const auto& ch : remainingchild1children) {
-			if ((remainingchild2.in1 == ch.first && is_c1(remainingchild2) == ch.second) ||
-				(remainingchild2.in2 == ch.first && is_c2(remainingchild2) == ch.second) ||
-				(remainingchild2.in3 == ch.first && is_c3(remainingchild2) == ch.second)) {
-				shared_children.push_back(ch);
+		for (const auto& ch1 : remainingchild1children) {
+			for (const auto ch2 : remainingchild2children) {
+				if (ch1.first == ch2.first && ch1.second == ch2.second) {
+					shared_children.push_back(ch1);
+					// Avoid duplicates.
+					remainingchild2children = drop_child(remainingchild2children, ch1);
+					break;
+				}
 			}
 		}
+		// Reset after removing potential duplicates.
+		remainingchild2children = get_children(remainingchild2);
 		if (shared_children.size() < 2) {
 			// The two inner nodes don't actually share 2 children to distribute.
 			return NULL;
