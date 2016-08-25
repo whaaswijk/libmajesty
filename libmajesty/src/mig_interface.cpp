@@ -881,11 +881,11 @@ namespace majesty {
 					newdistnodep.first, newdistnodep.second != distnodep.second
 				);
 
-				auto newremainingchild1p = nodemap[remainingchild1p.first];
-				auto newremainingchild2p = nodemap[remainingchild2p.first];
+				auto newremainingchild1p = nodemap[shared_children[0].first];
+				auto newremainingchild2p = nodemap[shared_children[1].first];
 				nodemap[i] = res->create(
-					newremainingchild1p.first, newremainingchild1p.second != remainingchild1p.second, 
-					newremainingchild2p.first, newremainingchild2p.second != remainingchild2p.second, 
+					newremainingchild1p.first, newremainingchild1p.second != shared_children[0].second, 
+					newremainingchild2p.first, newremainingchild2p.second != shared_children[1].second, 
 					newdistchildp.first, newdistchildp.second 
 				);
 			} else {
@@ -1039,7 +1039,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			{
 				// Note that inverter propagation always applies.
-				move move = {};
+				move move;
 				move.type = INVERTER_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
@@ -1048,14 +1048,14 @@ namespace majesty {
 				continue;
 			}
 			if (maj3_applies(node)) {
-				move move = {};
+				move move;
 				move.type = MAJ3_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
 			for (auto j = 0u; j < nnodes; j++) {
 				if (swap_applies(nodes, i, j)) {
-					move move = {};
+					move move;
 					move.type = SWAP;
 					move.nodeid1 = i;
 					move.nodeid2 = j;
@@ -1070,7 +1070,7 @@ namespace majesty {
 				}
 				for (auto k = 0u; k < nnodes; k++) {
 					if (swap_ternary_applies(nodes, i, j, k)) {
-						move move = {};
+						move move;
 						move.type = SWAP_TERNARY;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
@@ -1078,7 +1078,7 @@ namespace majesty {
 						moves.push_back(move);
 					}
 					if (dist_left_right_applies(nodes, i, j, k)) {
-						move move = {};
+						move move;
 						move.type = DIST_LEFT_RIGHT;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
