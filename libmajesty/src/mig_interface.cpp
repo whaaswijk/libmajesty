@@ -749,16 +749,21 @@ namespace majesty {
 			}
 		}
 		vector<input> shared_children;
+		
 		auto remainingchild1p = remainingchildren[0];
 		auto remainingchild1 = nodes[remainingchild1p.first];
 		auto remainingchild2p = remainingchildren[1];
 		auto remainingchild2 = nodes[remainingchild2p.first];
 		auto remainingchild1children = get_children(remainingchild1);
-		for (const auto& ch : remainingchild1children) {
-			if ((remainingchild2.in1 == ch.first && is_c1(remainingchild2) == ch.second) ||
-				(remainingchild2.in2 == ch.first && is_c2(remainingchild2) == ch.second) ||
-				(remainingchild2.in3 == ch.first && is_c3(remainingchild2) == ch.second)) {
-				shared_children.push_back(ch);
+		auto remainingchild2children = get_children(remainingchild2);
+		for (const auto& ch1 : remainingchild1children) {
+			for (const auto ch2 : remainingchild2children) {
+				if (ch1.first == ch2.first && ch1.second == ch2.second) {
+					shared_children.push_back(ch1);
+					// Avoid duplicates.
+					remainingchild2children = drop_child(remainingchild2children, ch1);
+					break;
+				}
 			}
 		}
 		if (shared_children.size() < 2) {
