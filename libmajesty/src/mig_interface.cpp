@@ -714,6 +714,202 @@ namespace majesty {
 		return true;
 	}
 
+	bool dist_right_left_applies(const vector<node>& nodes, nodeid outnodeid, nodeid distnodeid) {
+		const auto& outnode = nodes[outnodeid];
+		if (is_pi(outnode)) { // Grandparent obviously may not be a PI
+			return false;
+		}
+		auto outnodechildren = get_children(outnode);
+
+		// Note that this call is potentially ambiguous: distR->L applies iff the two inner children of the outer node
+		// share two nodes. However there are (3 choose 2) = 3 ways for the inner nodes to share 2 children. We always
+		// pick the first pair in this case.
+		// Futhermore: distnodeid does not unambiguously identify the node over which to distribute: the outer node
+		// may have both a complemented and a non-complemented node with the same id. We again pick the first one.
+
+		auto filtered_outernodes = filter_nodes(outnodechildren, [&nodes, &outnode, distnodeid](pair<nodeid,bool> np) {
+			auto innernode = nodes[np.first];
+			if (np.first == distnodeid) {
+				return true;
+			}
+			return false;
+		});
+		if (filtered_outernodes.size() == 0) {
+			// The specified nodeid is not a child of the outer node.
+			return false;
+		} 
+		auto distnodep = filtered_outernodes[0];
+		auto remainingchildren = drop_child(outnodechildren, distnodep);
+		assert(remainingchildren.size() == 2);
+		for (const auto& ch : remainingchildren) {
+			// We cannot allow the child to be complemented or to be a PI.
+			auto chnode = nodes[ch.first];
+			if (ch.second || is_pi(chnode)) {
+				return false;
+			}
+		}
+		vector<input> shared_children;
+		auto remainingchild1p = remainingchildren[0];
+		auto remainingchild1 = nodes[remainingchild1p.first];
+		auto remainingchild2p = remainingchildren[1];
+		auto remainingchild2 = nodes[remainingchild2p.first];
+		auto remainingchild1children = get_children(remainingchild1);
+		for (const auto& ch : remainingchild1children) {
+			if ((remainingchild2.in1 == ch.first && is_c1(remainingchild2) == ch.second) ||
+				(remainingchild2.in2 == ch.first && is_c2(remainingchild2) == ch.second) ||
+				(remainingchild2.in3 == ch.first && is_c3(remainingchild2) == ch.second)) {
+				shared_children.push_back(ch);
+			}
+		}
+		if (shared_children.size() < 2) {
+			// The two inner nodes don't actually share 2 children to distribute.
+			return false;
+		}
+		return true;
+	}
+
+	xmg* dist_right_left(const xmg& mig, nodeid outnodeid, nodeid distnodeid) {
+		const auto& nodes = mig.nodes();
+		const auto nnodes = mig.nnodes();
+		const auto& outnode = nodes[outnodeid];
+		if (is_pi(outnode)) { // Grandparent obviously may not be a PI
+			return NULL;
+		}
+		auto outnodechildren = get_children(outnode);
+
+		// Note that this call is potentially ambiguous: distR->L applies iff the two inner children of the outer node
+		// share two nodes. However there are (3 choose 2) = 3 ways for the inner nodes to share 2 children. We always
+		// pick the first pair in this case.
+		// Futhermore: distnodeid does not unambiguously identify the node over which to distribute: the outer node
+		// may have both a complemented and a non-complemented node with the same id. We again pick the first one.
+
+		auto filtered_outernodes = filter_nodes(outnodechildren, [&nodes, &outnode, distnodeid](pair<nodeid,bool> np) {
+			auto innernode = nodes[np.first];
+			if (np.first == distnodeid) {
+				return true;
+			}
+			return false;
+		});
+		if (filtered_outernodes.size() == 0) {
+			// The specified nodeid is not a child of the outer node.
+			return NULL;
+		} 
+		auto distnodep = filtered_outernodes[0];
+		auto remainingchildren = drop_child(outnodechildren, distnodep);
+		assert(remainingchildren.size() == 2);
+		for (const auto& ch : remainingchildren) {
+			// We cannot allow the child to be complemented or to be a PI.
+			auto chnode = nodes[ch.first];
+			if (ch.second || is_pi(chnode)) {
+				return NULL;
+			}
+		}
+		vector<input> shared_children;
+		auto remainingchild1p = remainingchildren[0];
+		auto remainingchild1 = nodes[remainingchild1p.first];
+		auto remainingchild2p = remainingchildren[1];
+		auto remainingchild2 = nodes[remainingchild2p.first];
+		auto remainingchild1children = get_children(remainingchild1);
+		auto remainingchild2children = get_children(remainingchild2);
+		for (const auto& ch : remainingchild1children) {
+			if ((remainingchild2.in1 == ch.first && is_c1(remainingchild2) == ch.second) ||
+				(remainingchild2.in2 == ch.first && is_c2(remainingchild2) == ch.second) ||
+				(remainingchild2.in3 == ch.first && is_c3(remainingchild2) == ch.second)) {
+				shared_children.push_back(ch);
+			}
+		}
+		if (shared_children.size() < 2) {
+			// The two inner nodes don't actually share 2 children to distribute.
+			return NULL;
+		}
+		auto non_distchild1p = drop_child(drop_child(remainingchild1children, shared_children[0]), shared_children[1])[0];
+		auto non_distchild2p = drop_child(drop_child(remainingchild2children, shared_children[0]), shared_children[1])[0];
+		
+		// Count the fanouts of the two remaining children. If they're > 1 or PO, we need to duplicate them.
+		auto fanout1 = 0u, fanout2 = 0u;
+		for (const auto& node : nodes) {
+			if (is_pi(node)) {
+				continue;
+			}
+			if (node.in1 == remainingchild1p.first|| node.in2 == remainingchild1p.first || node.in3 == remainingchild1p.first) {
+				++fanout1;
+			}
+			if (node.in1 == remainingchild2p.first || node.in2 == remainingchild2p.first || node.in3 == remainingchild2p.first) {
+				++fanout1;
+			}
+		}
+		assert(fanout1 >= 1 && fanout2 >= 2);
+		auto duplicate1 = (fanout1 > 1 || is_po(remainingchild1));
+		auto duplicate2 = (fanout2 > 1 || is_po(remainingchild2));
+
+		auto res = new xmg();
+		nodemap nodemap;
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res->create_input(is_c), false);
+			} else if (i == remainingchild1p.first) {
+				if (duplicate1) {
+					const auto& in1 = nodemap[node.in1];
+					const auto& in2 = nodemap[node.in2];
+					const auto& in3 = nodemap[node.in3];
+					nodemap[i] = res->create(
+						in1.first, in1.second != is_c1(node),
+						in2.first, in2.second != is_c2(node),
+						in3.first, in3.second != is_c3(node)
+					);
+				}
+			} else if (i == remainingchild2p.first) {
+				if (duplicate2) {
+					const auto& in1 = nodemap[node.in1];
+					const auto& in2 = nodemap[node.in2];
+					const auto& in3 = nodemap[node.in3];
+					nodemap[i] = res->create(
+						in1.first, in1.second != is_c1(node),
+						in2.first, in2.second != is_c2(node),
+						in3.first, in3.second != is_c3(node)
+					);
+				}
+			} else if (i == outnodeid) {
+				auto newnondistchild1p = nodemap[non_distchild1p.first];
+				auto newnondistchild2p = nodemap[non_distchild2p.first];
+				auto newdistchildp = nodemap[distnodep.first];
+				auto newdistchildp = res->create(
+					newnondistchild1p.first, newnondistchild1p.second != non_distchild1p.second,
+					newnondistchild2p.first, newnondistchild2p.second != non_distchild2p.second,
+					newdistchildp.first, newdistchildp.second != distnodep.second
+				);
+
+				auto newremainingchild1p = nodemap[remainingchild1p.first];
+				auto newremainingchild2p = nodemap[remainingchild2p.first];
+				nodemap[i] = res->create(
+					newremainingchild1p.first, newremainingchild1p.second != remainingchild1p.second, 
+					newremainingchild2p.first, newremainingchild2p.second != remainingchild2p.second, 
+					newdistchildp.first, newdistchildp.second 
+				);
+			} else {
+				const auto& in1 = nodemap[node.in1];
+				const auto& in2 = nodemap[node.in2];
+				const auto& in3 = nodemap[node.in3];
+				nodemap[i] = res->create(
+					in1.first, in1.second != is_c1(node),
+					in2.first, in2.second != is_c2(node),
+					in3.first, in3.second != is_c3(node));
+			}
+		}
+
+		const auto& outputs = mig.outputs();
+		const auto& outcompl = mig.outcompl();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto nodeid = outputs[i];
+			const auto np = nodemap[nodeid];
+			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+		}
+
+		return res;
+	}
+
 	xmg* dist_left_right(const xmg& mig, nodeid outnodeid, nodeid innodeid, nodeid distnodeid) {
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
@@ -865,6 +1061,13 @@ namespace majesty {
 					move.nodeid2 = j;
 					moves.push_back(move);
 				}
+				if (dist_right_left_applies(nodes, i, j)) {
+					move move;
+					move.type = DIST_RIGHT_LEFT;
+					move.nodeid1 = i;
+					move.nodeid2 = j;
+					moves.push_back(move);
+				}
 				for (auto k = 0u; k < nnodes; k++) {
 					if (swap_ternary_applies(nodes, i, j, k)) {
 						move move = {};
@@ -917,6 +1120,9 @@ namespace majesty {
 			break;
 		case DIST_LEFT_RIGHT:
 			return dist_left_right(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			break;
+		case DIST_RIGHT_LEFT:
+			return dist_right_left(mig, move.nodeid1, move.nodeid2);
 			break;
 		case MAJ3_XXY:
 		case MAJ3_XYY:
