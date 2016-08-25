@@ -17,5 +17,6 @@ make
 
 # Compile pymig
 cd ${SCRIPT_DIR}
+rm ${ORIGINAL_DIR}/majespy.cpython-*
 python setup.py build_ext --build-lib ${ORIGINAL_DIR}
 cd ${ORIGINAL_DIR}
