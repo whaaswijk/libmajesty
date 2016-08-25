@@ -835,10 +835,10 @@ namespace majesty {
 				++fanout1;
 			}
 			if (node.in1 == remainingchild2p.first || node.in2 == remainingchild2p.first || node.in3 == remainingchild2p.first) {
-				++fanout1;
+				++fanout2;
 			}
 		}
-		assert(fanout1 >= 1 && fanout2 >= 2);
+		assert(fanout1 >= 1 && fanout2 >= 1);
 		auto duplicate1 = (fanout1 > 1 || is_po(remainingchild1));
 		auto duplicate2 = (fanout2 > 1 || is_po(remainingchild2));
 
@@ -874,11 +874,11 @@ namespace majesty {
 			} else if (i == outnodeid) {
 				auto newnondistchild1p = nodemap[non_distchild1p.first];
 				auto newnondistchild2p = nodemap[non_distchild2p.first];
-				auto newdistchildp = nodemap[distnodep.first];
+				auto newdistnodep = nodemap[distnodep.first];
 				auto newdistchildp = res->create(
 					newnondistchild1p.first, newnondistchild1p.second != non_distchild1p.second,
 					newnondistchild2p.first, newnondistchild2p.second != non_distchild2p.second,
-					newdistchildp.first, newdistchildp.second != distnodep.second
+					newdistnodep.first, newdistnodep.second != distnodep.second
 				);
 
 				auto newremainingchild1p = nodemap[remainingchild1p.first];

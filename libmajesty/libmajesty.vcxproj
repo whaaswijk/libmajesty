@@ -166,6 +166,12 @@
     <Text Include="src\minisat\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="majespy\build.sh" />
+    <None Include="majespy\majespy.pyx" />
+    <None Include="majespy\mig_interface.pxd" />
+    <None Include="majespy\node_utils.pxd" />
+    <None Include="majespy\pymig.pyx" />
+    <None Include="majespy\setup.py" />
     <None Include="pymajesty\build.sh" />
     <None Include="pymajesty\mig_interface.pxd" />
     <None Include="pymajesty\node_utils.pxd" />
