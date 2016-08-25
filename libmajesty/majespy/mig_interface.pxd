@@ -27,7 +27,9 @@ cdef extern from "mig_interface.h" namespace "majesty":
         MAJ3_XXY,
         MAJ3_XYY,
         SWAP,
-        SWAP_TERNARY
+        SWAP_TERNARY,
+        DIST_LEFT_RIGHT,
+        DIST_RIGHT_LEFT
 
     cdef struct move:
         MoveType type
