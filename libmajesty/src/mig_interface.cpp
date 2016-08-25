@@ -810,6 +810,7 @@ namespace majesty {
 				);
 
 				auto new_distnodep = nodemap[distnodep.first];
+				new_distnodep.second = (new_distnodep.second != distnodep.second);
 				nodemap[i] = res->create( new_inner1, new_inner2, new_distnodep );
 			} else {
 				const auto& in1 = nodemap[node.in1];
