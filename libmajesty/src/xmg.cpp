@@ -1428,7 +1428,7 @@ namespace majesty {
 		outfile.close();
 	}
 
-	bool simulate_node(const node& n, unordered_map<nodeid, bool> simval) {
+	bool simulate_node(const node& n, unordered_map<nodeid, bool>& simval) {
 		if (is_xor(n)) {
 			auto in1val = simval[n.in1];
 			auto truein1 = (is_c1(n) ? !in1val : in1val);
@@ -1465,9 +1465,9 @@ namespace majesty {
 				if (is_pi(node)) {
 					auto is_complemented = is_pi_c(node);
 					if (i == 0u) { // Const 1
-						simval[i] = is_complemented != true;
+						simval[i] = (is_complemented != true);
 					} else {
-						simval[i] = is_complemented != invec.test(i - 1);
+						simval[i] = (is_complemented != invec.test(i - 1));
 					}
 				} else {
 					simval[i] = simulate_node(node, simval);

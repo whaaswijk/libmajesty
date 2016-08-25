@@ -106,15 +106,14 @@ namespace majesty {
 		const auto xorbrackets = find_bracket_pairs(str, '[', ']');
 
 		bool complout = false;
+		pair<nodeid, bool> outp;
 		if (str[0] == '!') {
 			complout = true;
-			xmg_parse_string(str, 1, majbrackets, xorbrackets, nodemap, res);
+			outp = xmg_parse_string(str, 1, majbrackets, xorbrackets, nodemap, res);
 		} else {
-			xmg_parse_string(str, 0, majbrackets, xorbrackets, nodemap, res);
+			outp = xmg_parse_string(str, 0, majbrackets, xorbrackets, nodemap, res);
 		}
-		// The output is always the outer node of the expression. This corresponds to the last node in the xmg.
-		auto last_idx = res.nnodes() - 1;
-		res.create_output(last_idx, complout, "F");
+		res.create_output(outp.first, outp.second != complout, "F");
 
 		return res;
 	}
@@ -144,15 +143,14 @@ namespace majesty {
 		const auto xorbrackets = find_bracket_pairs(str, '[', ']');
 
 		bool complout = phase.test(ninputs);
+		pair<nodeid, bool> outp;
 		if (str[0] == '!') {
 			complout = !complout;
-			xmg_parse_string(str, 1, majbrackets, xorbrackets, nodemap, res);
+			outp = xmg_parse_string(str, 1, majbrackets, xorbrackets, nodemap, res);
 		} else {
-			xmg_parse_string(str, 0, majbrackets, xorbrackets, nodemap, res);
+			outp = xmg_parse_string(str, 0, majbrackets, xorbrackets, nodemap, res);
 		}
-		// The output is always the outer node of the expression. This corresponds to the last node in the xmg.
-		auto last_idx = res.nnodes() - 1;
-		res.create_output(last_idx, complout, "F");
+		res.create_output(outp.first, outp.second != complout, "F");
 
 		return res;
 	}
