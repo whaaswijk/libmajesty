@@ -706,17 +706,19 @@ namespace majesty {
 		if (filtered_innernodes.size() == 0) {
 			// The specified inner node is not both a child of the outer node and a parent of the grandchild.
 			return false;
-		} else if (filtered_innernodes.size() > 1) {
-			// The call is ambiguous: there are multiple parents for which the axiom applies. This means that there
-			// are multiple options to swap. We do not allow for ambiguity.
+		} 
+		// The call may be ambiguous: there may be multiple inner nodes for which the axiom applies. We do not 
+		// 	allow for ambiguity. The axiom only applies if there is  a non-complemented inner nodes.
+		bool have_non_complemented = false;
+		for (const auto& np : filtered_innernodes) {
+			if (!np.second) {
+				have_non_complemented = true;
+			}
+		}
+		if (!have_non_complemented) {
 			return false;
 		}
-
-		const auto innernodep = filtered_innernodes[0];
-		// If the parent is complemented, we need to apply inverter propagation first.
-		if (innernodep.second) {
-			return false;
-		}
+		const auto innernodep = make_pair(innodeid, false);
 
 		const auto& innernode = nodes[innernodep.first];
 		auto oldinnerchildren = get_children(innernode);
@@ -733,6 +735,136 @@ namespace majesty {
 			return true;
 		}
 		return true;
+	}
+
+	xmg* apply_dist_left_right(const xmg& mig, nodeid outnodeid, nodeid innodeid, nodeid distnodeid) {
+		const auto& nodes = mig.nodes();
+		const auto nnodes = mig.nnodes();
+		const auto& outnode = nodes[outnodeid];
+		if (is_pi(outnode)) { // Grandparent obviously may not be a PI
+			return NULL;
+		}
+		auto outnodechildren = get_children(outnode);
+		auto filtered_innernodes = filter_nodes(outnodechildren, [&nodes, &outnode, innodeid, distnodeid](pair<nodeid,bool> np) {
+			auto parent = nodes[np.first];
+			if (np.first == innodeid && !is_pi(parent)) {
+				if (parent.in1 == distnodeid || parent.in2 == distnodeid || parent.in3 == distnodeid) {
+					return true;
+				}
+			}
+			return false;
+		});
+		if (filtered_innernodes.size() == 0) {
+			// The specified inner node is not both a child of the outer node and a parent of the grandchild.
+			return NULL;
+		}
+		// The call may be ambiguous: there may be multiple inner nodes for which the axiom applies. We do not 
+		// 	allow for ambiguity. The axiom only applies if there is  a non-complemented inner nodes.
+		bool have_non_complemented = false;
+		for (const auto& np : filtered_innernodes) {
+			if (!np.second) {
+				have_non_complemented = true;
+			}
+		}
+		if (!have_non_complemented) {
+			return NULL;
+		}
+		const auto innernodep = make_pair(innodeid, false);
+		const auto& innode = nodes[innodeid];
+		const auto outer_remainder_nodes = drop_child(outnodechildren, innernodep);
+		assert(outer_remainder_nodes.size() == 2);
+
+		auto oldinnerchildren = get_children(innode);
+		auto filtinnerchildren = filter_nodes(oldinnerchildren, [distnodeid](pair<nodeid, bool> child) {
+			if (child.first == distnodeid) {
+				return true;
+			}
+			return false;
+		});
+		pair<nodeid, bool> distnodep;
+		if (filtinnerchildren.size() > 1) {
+			// NOTE: This may be ambiguous: the distchild occurs multiple times in the inner node. In this case
+			// we need to decide which one to select. For now we just pick the first one.
+			distnodep = filtinnerchildren[0];
+		} else {
+			distnodep = filtinnerchildren[0];
+		}
+		const auto inner_remainder_nodes = drop_child(oldinnerchildren, distnodep);
+		assert(inner_remainder_nodes.size() == 2);
+
+		// Count the fanout of the parent node. If it's > 1, we need to duplicate it.
+		auto fanout = 0u;
+		for (const auto& node : nodes) {
+			if (is_pi(node)) {
+				continue;
+			}
+			if (node.in1 == innodeid|| node.in2 == innodeid || node.in3 == innodeid) {
+				++fanout;
+			}
+		}
+		assert(fanout >= 1);
+		auto duplicate = (fanout > 1 || is_po(innode));
+
+		auto res = new xmg();
+		nodemap nodemap;
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res->create_input(is_c), false);
+			} else if (i == innodeid) {
+				if (duplicate) {
+					const auto& in1 = nodemap[node.in1];
+					const auto& in2 = nodemap[node.in2];
+					const auto& in3 = nodemap[node.in3];
+					nodemap[i] = res->create(
+						in1.first, in1.second != is_c1(node),
+						in2.first, in2.second != is_c2(node),
+						in3.first, in3.second != is_c3(node)
+					);
+				} 
+			} else if (i == outnodeid) {
+				// Create the two new inner children first.
+				auto new_outer_remainderp1 = nodemap[outer_remainder_nodes[0].first];
+				auto new_outer_remainderp2 = nodemap[outer_remainder_nodes[1].first];
+
+				auto new_inner_remainderp1 = nodemap[inner_remainder_nodes[0].first];
+				auto new_inner_remainderp2 = nodemap[inner_remainder_nodes[1].first];
+
+				auto new_inner1 = res->create(
+					new_outer_remainderp1.first, outer_remainder_nodes[0].second != new_outer_remainderp1.second,
+					new_outer_remainderp2.first, outer_remainder_nodes[1].second != new_outer_remainderp2.second,
+					new_inner_remainderp1.first, new_inner_remainderp1.second != inner_remainder_nodes[0].second
+				);
+
+				auto new_inner2 = res->create(
+					new_outer_remainderp1.first, outer_remainder_nodes[0].second != new_outer_remainderp1.second,
+					new_outer_remainderp2.first, outer_remainder_nodes[1].second != new_outer_remainderp2.second,
+					new_inner_remainderp2.first, new_inner_remainderp2.second != inner_remainder_nodes[1].second
+				);
+
+				auto new_distnodep = nodemap[distnodep.first];
+				nodemap[i] = res->create( new_inner1, new_inner2, new_distnodep );
+			} else {
+				const auto& in1 = nodemap[node.in1];
+				const auto& in2 = nodemap[node.in2];
+				const auto& in3 = nodemap[node.in3];
+				nodemap[i] = res->create(
+					in1.first, in1.second != is_c1(node),
+					in2.first, in2.second != is_c2(node),
+					in3.first, in3.second != is_c3(node));
+			}
+		}
+
+		const auto& outputs = mig.outputs();
+		const auto& outcompl = mig.outcompl();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto nodeid = outputs[i];
+			const auto np = nodemap[nodeid];
+			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+		}
+
+		return res;
 	}
 
 	vector<move> compute_moves(const xmg& mig) {
@@ -770,6 +902,14 @@ namespace majesty {
 					if (swap_ternary_applies(nodes, i, j, k)) {
 						move move = {};
 						move.type = SWAP_TERNARY;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+					}
+					if (dist_left_right_applies(nodes, i, j, k)) {
+						move move = {};
+						move.type = DIST_LEFT_RIGHT;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
 						move.nodeid3 = k;
