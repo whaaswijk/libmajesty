@@ -12,8 +12,8 @@ EXTRA_COMPILE_ARGS = ["-std=c++11"]
 EXTRA_LINK_ARGS = ["-std=c++11"]
 
 setup(ext_modules=cythonize(Extension(
-    'pymig',
-    sources=['pymig.pyx'],
+    'majespy',
+    sources=['majespy.pyx'],
     include_dirs=INCLUDE_DIRS,
     library_dirs=LIBRARY_DIRS,
     libraries=LIBRARIES,
