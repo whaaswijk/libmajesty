@@ -616,10 +616,11 @@ namespace majesty {
 		} else if (filtgrandchildren.size() > 1) {
 			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
 			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
+			// For now we just return the non-complemented one.
 			auto filtgp1 = filtgrandchildren[0];
 			auto filtgp2 = filtgrandchildren[1];
 			if (filtgp1.second != filtgp2.second) {
-				return false;
+				return true;
 			}
 		}
 
@@ -676,13 +677,61 @@ namespace majesty {
 		} else if (filtgrandchildren.size() > 1) {
 			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
 			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
+			// For now we just return the non-complemented one.
 			auto filtgp1 = filtgrandchildren[0];
 			auto filtgp2 = filtgrandchildren[1];
 			if (filtgp1.second != filtgp2.second) {
-				return false;
+				return true;
 			}
 		}
 
+		return true;
+	}
+
+	bool dist_left_right_applies(const vector<node>& nodes, nodeid outnodeid, nodeid innodeid, nodeid distnodeid) {
+		const auto& outnode = nodes[outnodeid];
+		if (is_pi(outnode)) { // Grandparent obviously may not be a PI
+			return false;
+		}
+		auto outnodechildren = get_children(outnode);
+		auto filtered_innernodes = filter_nodes(outnodechildren, [&nodes, &outnode, innodeid, distnodeid](pair<nodeid,bool> np) {
+			auto parent = nodes[np.first];
+			if (np.first == innodeid && !is_pi(parent)) {
+				if (parent.in1 == distnodeid || parent.in2 == distnodeid || parent.in3 == distnodeid) {
+					return true;
+				}
+			}
+			return false;
+		});
+		if (filtered_innernodes.size() == 0) {
+			// The specified inner node is not both a child of the outer node and a parent of the grandchild.
+			return false;
+		} else if (filtered_innernodes.size() > 1) {
+			// The call is ambiguous: there are multiple parents for which the axiom applies. This means that there
+			// are multiple options to swap. We do not allow for ambiguity.
+			return false;
+		}
+
+		const auto innernodep = filtered_innernodes[0];
+		// If the parent is complemented, we need to apply inverter propagation first.
+		if (innernodep.second) {
+			return false;
+		}
+
+		const auto& innernode = nodes[innernodep.first];
+		auto oldinnerchildren = get_children(innernode);
+		auto filtinnerchildren = filter_nodes(oldinnerchildren, [distnodeid](pair<nodeid, bool> child) {
+			if (child.first == distnodeid) {
+				return true;
+			}
+			return false;
+		});
+		if (filtinnerchildren.size() > 1) {
+			// NOTE: This may be ambiguous: the distchild occurs multiple times in the inner node. In this case
+			// there is ambiguity if the child occurs in different polarities. We select the non-complemented version
+			// of the child. It should be possible to select the other one with inverter propgation.
+			return true;
+		}
 		return true;
 	}
 

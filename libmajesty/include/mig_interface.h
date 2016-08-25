@@ -11,6 +11,8 @@ namespace majesty {
 		MAJ3_XXY,
 		MAJ3_XYY,
 		SWAP,
+		DIST_LEFT_RIGHT,
+		DIST_RIGHT_LEFT,
 		SWAP_TERNARY
 	};
 
@@ -22,8 +24,8 @@ namespace majesty {
 	};
 
 	const unsigned NR_UNARY_MOVES = 2;
-	const unsigned NR_BINARY_MOVES = 3;
-	const unsigned NR_TERNARY_MOVES = 3;
+	const unsigned NR_BINARY_MOVES = 5;
+	const unsigned NR_TERNARY_MOVES = 1;
 	const unsigned NR_EDGE_TYPES = 2;
 	const unsigned DEFAULT_SEED = 100;
 
