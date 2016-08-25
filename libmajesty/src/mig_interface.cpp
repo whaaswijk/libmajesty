@@ -543,30 +543,7 @@ namespace majesty {
 		return res;
 	}
 
-	xmg* apply_move(const xmg& mig, move& move) {
-		switch (move.type) {
-		case MAJ3_PROP:
-			if (maj3_applies(mig.nodes()[move.nodeid1])) {
-				return apply_maj3(mig, move.nodeid1);
-			} else {
-				return NULL;
-			}
-		case INVERTER_PROP:
-			return apply_inv_prop(mig, move.nodeid1);
-			break;
-		case SWAP:
-			return swap(mig, move.nodeid1, move.nodeid2);
-			break;
-		case SWAP_TERNARY:
-			return swap_ternary(mig, move.nodeid1, move.nodeid2, move.nodeid3);
-			break;
-		case MAJ3_XXY:
-		case MAJ3_XYY:
-		default:
-			return NULL;
-			break;
-		}
-	}
+
 
 	bool swap_applies(const vector<node>& nodes, nodeid gpid, nodeid z) {
 		const auto& gp = nodes[gpid];
@@ -737,7 +714,7 @@ namespace majesty {
 		return true;
 	}
 
-	xmg* apply_dist_left_right(const xmg& mig, nodeid outnodeid, nodeid innodeid, nodeid distnodeid) {
+	xmg* dist_left_right(const xmg& mig, nodeid outnodeid, nodeid innodeid, nodeid distnodeid) {
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
 		const auto& outnode = nodes[outnodeid];
@@ -747,7 +724,7 @@ namespace majesty {
 		auto outnodechildren = get_children(outnode);
 		auto filtered_innernodes = filter_nodes(outnodechildren, [&nodes, &outnode, innodeid, distnodeid](pair<nodeid,bool> np) {
 			auto parent = nodes[np.first];
-			if (np.first == innodeid && !is_pi(parent)) {
+			if (np.first == innodeid && !np.second && !is_pi(parent)) {
 				if (parent.in1 == distnodeid || parent.in2 == distnodeid || parent.in3 == distnodeid) {
 					return true;
 				}
@@ -758,18 +735,7 @@ namespace majesty {
 			// The specified inner node is not both a child of the outer node and a parent of the grandchild.
 			return NULL;
 		}
-		// The call may be ambiguous: there may be multiple inner nodes for which the axiom applies. We do not 
-		// 	allow for ambiguity. The axiom only applies if there is  a non-complemented inner nodes.
-		bool have_non_complemented = false;
-		for (const auto& np : filtered_innernodes) {
-			if (!np.second) {
-				have_non_complemented = true;
-			}
-		}
-		if (!have_non_complemented) {
-			return NULL;
-		}
-		const auto innernodep = make_pair(innodeid, false);
+		const auto innernodep = filtered_innernodes[0];
 		const auto& innode = nodes[innodeid];
 		const auto outer_remainder_nodes = drop_child(outnodechildren, innernodep);
 		assert(outer_remainder_nodes.size() == 2);
@@ -929,5 +895,33 @@ namespace majesty {
 
 	xmg* strash_xmg(const xmg& mig) {
 		return new xmg(strash(mig));
+	}
+
+	xmg* apply_move(const xmg& mig, move& move) {
+		switch (move.type) {
+		case MAJ3_PROP:
+			if (maj3_applies(mig.nodes()[move.nodeid1])) {
+				return apply_maj3(mig, move.nodeid1);
+			} else {
+				return NULL;
+			}
+		case INVERTER_PROP:
+			return apply_inv_prop(mig, move.nodeid1);
+			break;
+		case SWAP:
+			return swap(mig, move.nodeid1, move.nodeid2);
+			break;
+		case SWAP_TERNARY:
+			return swap_ternary(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			break;
+		case DIST_LEFT_RIGHT:
+			return dist_left_right(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			break;
+		case MAJ3_XXY:
+		case MAJ3_XYY:
+		default:
+			return NULL;
+			break;
+		}
 	}
 }
