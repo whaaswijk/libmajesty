@@ -23,14 +23,12 @@ _move_type_str = {mig_interface.MAJ3_PROP: 'Majority',
                   mig_interface.INVERTER_PROP: 'Inverted Propagation',
                   mig_interface.MAJ3_XXY: 'Majority XXY',
                   mig_interface.MAJ3_XYY: 'Majority XYY',
-                  mig_interface.SWAP : 'Swap',
                   mig_interface.SWAP_TERNARY : 'Swap3'}
 
 _move_type_color = {mig_interface.MAJ3_PROP : 'brown1',
                     mig_interface.INVERTER_PROP : 'cadetblue1',
                     mig_interface.MAJ3_XXY : 'red',
                     mig_interface.MAJ3_XYY : 'blue',
-                    mig_interface.SWAP : 'aquamarine2',
                     mig_interface.SWAP_TERNARY : 'orange'}
 
 

@@ -24,7 +24,6 @@ cdef extern from "mig_interface.h" namespace "majesty":
     cdef enum MoveType:
         MAJ3_PROP = 0,
         INVERTER_PROP,
-        SWAP,
         DIST_RIGHT_LEFT,
         SWAP_TERNARY,
         DIST_LEFT_RIGHT,
