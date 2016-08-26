@@ -737,7 +737,6 @@ namespace majesty {
 
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
-		auto swap_childnp = drop_child(drop_child(gpchildren, parentnp), common_childnp)[0];
 		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
 		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
 		auto oldgrandchildren = get_children(parent);
@@ -798,7 +797,6 @@ namespace majesty {
 
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
-		auto swap_childnp = drop_child(drop_child(gpchildren, parentnp), common_childnp)[0];
 		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
 		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
 		auto oldgrandchildren = get_children(parent);
@@ -889,7 +887,6 @@ namespace majesty {
 		// may have both a complemented and a non-complemented node with the same id. We again pick the first one.
 
 		auto filtered_outernodes = filter_nodes(outnodechildren, [&nodes, &outnode, distnodeid](pair<nodeid,bool> np) {
-			auto innernode = nodes[np.first];
 			if (np.first == distnodeid) {
 				return true;
 			}
@@ -950,7 +947,6 @@ namespace majesty {
 		// may have both a complemented and a non-complemented node with the same id. We again pick the first one.
 
 		auto filtered_outernodes = filter_nodes(outnodechildren, [&nodes, &outnode, distnodeid](pair<nodeid,bool> np) {
-			auto innernode = nodes[np.first];
 			if (np.first == distnodeid) {
 				return true;
 			}
