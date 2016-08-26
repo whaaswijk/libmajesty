@@ -1228,15 +1228,15 @@ namespace majesty {
 		const auto nnodes = mig.nnodes();
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				continue;
+			}
 			{
 				// Note that inverter propagation always applies.
 				move move;
 				move.type = INVERTER_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
-			}
-			if (is_pi(node)) {
-				continue;
 			}
 			if (maj3_applies(node)) {
 				move move;
