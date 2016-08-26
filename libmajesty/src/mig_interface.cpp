@@ -494,6 +494,74 @@ namespace majesty {
 		return res;
 	}
 
+	// NOTE: We assume that the move has already been validated and do not check it again.
+	// (Specifically we do not check for cycles.
+	xmg* maj_xyy(const xmg& mig, nodeid parentnodeid, nodeid childnodeid, nodeid cnodeid) {
+		const auto& nodes = mig.nodes();
+		const auto nnodes = mig.nnodes();
+
+		// A small point of ambiguity: the parent node may have multiple incoming edges from the child node.
+		// At this moment we simply select the first one although better strategies may exist.
+		auto parent_node = nodes[parentnodeid];
+		auto child_nodes = get_children(parent_node);
+		auto filt_child_nodes = filter_nodes(child_nodes, [&child_nodes, childnodeid](pair<nodeid, bool> ch) {
+			if (ch.first == childnodeid) {
+				return true;
+			} 
+			return false;
+		});
+		auto child_nodep = child_nodes[0];
+		auto remaining_child_nodes = drop_child(child_nodes, child_nodep);
+		assert(remaining_child_nodes.size() == 2);
+		auto remaininc_child1p = remaining_child_nodes[0];
+		auto remaininc_child2p = remaining_child_nodes[1];
+
+		auto res = new xmg();
+		nodemap nodemap;
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res->create_input(is_c), false);
+			} else if (i == parentnodeid) {
+				// Note that if cnodeid > parentnodeid we need to be careful to maintain topological order.
+				// Create the new inner node first.
+				auto new_child_nodep = nodemap[child_nodep.first];
+				auto new_cnodep = nodemap[cnodeid];
+				auto newinner = res->create(
+					new_child_nodep.first, new_child_nodep.second != child_nodep.second,
+					new_cnodep.first, new_cnodep.second,
+					new_cnodep.first, new_cnodep.second != true
+				);
+				auto new_remaining_child1p = nodemap[remaininc_child1p.first];
+				auto new_remaining_child2p = nodemap[remaininc_child2p.first];
+				nodemap[i] = res->create(
+					newinner.first, newinner.second,
+					new_remaining_child1p.first, new_remaining_child1p.second != remaininc_child1p.second,
+					new_remaining_child2p.first, new_remaining_child2p.second != remaininc_child2p.second
+				);
+			} else {
+				const auto& in1 = nodemap[node.in1];
+				const auto& in2 = nodemap[node.in2];
+				const auto& in3 = nodemap[node.in3];
+				nodemap[i] = res->create(
+					in1.first, in1.second != is_c1(node),
+					in2.first, in2.second != is_c2(node),
+					in3.first, in3.second != is_c3(node));
+			}
+		}
+
+		const auto& outputs = mig.outputs();
+		const auto& outcompl = mig.outcompl();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto nodeid = outputs[i];
+			const auto np = nodemap[nodeid];
+			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+		}
+
+		return res;
+	}
+
 	xmg* swap_ternary(const xmg& mig, nodeid gpid, nodeid pid, nodeid gcid) {
 		auto res = new xmg();
 		const auto& nodes = mig.nodes();
@@ -1177,6 +1245,8 @@ namespace majesty {
 				moves.push_back(move);
 			}
 			for (auto j = 0u; j < nnodes; j++) {
+				/** 
+				 * NOTE: Disabling binary swap for now.
 				if (swap_applies(nodes, i, j)) {
 					move move;
 					move.type = SWAP;
@@ -1184,6 +1254,7 @@ namespace majesty {
 					move.nodeid2 = j;
 					moves.push_back(move);
 				}
+				 */
 				if (dist_right_left_applies(nodes, i, j)) {
 					move move;
 					move.type = DIST_RIGHT_LEFT;
@@ -1214,6 +1285,8 @@ namespace majesty {
 						move.nodeid1 = i;
 						move.nodeid2 = j;
 						move.nodeid3 = k;
+						moves.push_back(move);
+						move.type = MAJ3_XYY;
 						moves.push_back(move);
 					}
 				}
@@ -1259,6 +1332,8 @@ namespace majesty {
 			return maj_xxy(mig, move.nodeid1, move.nodeid2, move.nodeid3);
 			break;
 		case MAJ3_XYY:
+			return maj_xyy(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			break;
 		default:
 			return NULL;
 			break;
