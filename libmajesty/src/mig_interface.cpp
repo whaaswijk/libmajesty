@@ -336,7 +336,14 @@ namespace majesty {
 			if (is_pi(node)) {
 				continue;
 			}
-			if (node.in1 == parentnp.first || node.in2 == parentnp.first || node.in3 == parentnp.first) {
+			// Note that we can have multiple fanouts to the same node!
+			if (node.in1 == parentnp.first) {
+				++fanout;
+			}
+			if (node.in2 == parentnp.first) {
+				++fanout;
+			}
+			if (node.in3 == parentnp.first) {
 				++fanout;
 			}
 		}
@@ -841,10 +848,23 @@ namespace majesty {
 			if (is_pi(node)) {
 				continue;
 			}
-			if (node.in1 == remainingchild1p.first|| node.in2 == remainingchild1p.first || node.in3 == remainingchild1p.first) {
+			// Note that we can have multiple fanouts to the same node!
+			if (node.in1 == remainingchild1p.first) {
 				++fanout1;
 			}
-			if (node.in1 == remainingchild2p.first || node.in2 == remainingchild2p.first || node.in3 == remainingchild2p.first) {
+			if (node.in2 == remainingchild1p.first) {
+				++fanout1;
+			}
+			if (node.in3 == remainingchild1p.first) {
+				++fanout1;
+			}
+			if (node.in1 == remainingchild2p.first) {
+				++fanout2;
+			}
+			if (node.in2 == remainingchild2p.first) {
+				++fanout2;
+			}
+			if (node.in3 == remainingchild2p.first) {
 				++fanout2;
 			}
 		}
@@ -970,7 +990,14 @@ namespace majesty {
 			if (is_pi(node)) {
 				continue;
 			}
-			if (node.in1 == innodeid|| node.in2 == innodeid || node.in3 == innodeid) {
+			// Note that we can have multiple fanouts to the same node!
+			if (node.in1 == innodeid) {
+				++fanout;
+			}
+			if (node.in2 == innodeid) {
+				++fanout;
+			}
+			if (node.in3 == innodeid) {
 				++fanout;
 			}
 		}
