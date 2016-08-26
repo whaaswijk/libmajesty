@@ -8,12 +8,12 @@ namespace majesty {
 	enum MoveType {
 		MAJ3_PROP = 0,
 		INVERTER_PROP,
-		MAJ3_XXY,
-		MAJ3_XYY,
 		SWAP,
 		DIST_RIGHT_LEFT,
 		SWAP_TERNARY,
-		DIST_LEFT_RIGHT
+		DIST_LEFT_RIGHT,
+		MAJ3_XXY,
+		MAJ3_XYY
 	};
 
 	struct move {
@@ -24,8 +24,8 @@ namespace majesty {
 	};
 
 	const unsigned NR_UNARY_MOVES = 2;
-	const unsigned NR_BINARY_MOVES = 4;
-	const unsigned NR_TERNARY_MOVES = 2;
+	const unsigned NR_BINARY_MOVES = 2;
+	const unsigned NR_TERNARY_MOVES = 4;
 	const unsigned NR_EDGE_TYPES = 2;
 	const unsigned DEFAULT_SEED = 100;
 
