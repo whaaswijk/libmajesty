@@ -24,12 +24,12 @@ cdef extern from "mig_interface.h" namespace "majesty":
     cdef enum MoveType:
         MAJ3_PROP = 0,
         INVERTER_PROP,
-        MAJ3_XXY,
-        MAJ3_XYY,
         SWAP,
         DIST_RIGHT_LEFT,
         SWAP_TERNARY,
-        DIST_LEFT_RIGHT
+        DIST_LEFT_RIGHT,
+        MAJ3_XXY,
+        MAJ3_XYY
 
     cdef struct move:
         MoveType type
