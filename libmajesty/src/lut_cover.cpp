@@ -472,7 +472,7 @@ namespace majesty {
 		return "n" + to_string(n.ecrep);
 	}
 
-	string internal_name(const xmg& m, int32_t nodeid) {
+	string internal_name(const xmg& m, nodeid nodeid) {
 		const auto& nodes = m.nodes();
 		const auto& n = nodes[nodeid];
 		assert(n.ecrep != 0);
@@ -506,7 +506,7 @@ namespace majesty {
 
 	// Generates a LUT for the PO and it's complement. 
 	void po_lut(ofstream& f, const bestmap& best, const xmg& m,
-			const cover& cover, int32_t nodeid , bool c, string lutname,
+			const cover& cover, nodeid nodeid , bool c, string lutname,
 			const funcmap& funcmap) {
 		const auto& mnode = m.nodes().at(nodeid);
 		assert(is_po(mnode));

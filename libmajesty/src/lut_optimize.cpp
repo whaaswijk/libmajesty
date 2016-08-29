@@ -12,7 +12,7 @@ extern "C" {
 using namespace std;
 using namespace cirkit;
 using bracket_map_t = map<unsigned,unsigned>;
-using input_map_t = map<char,pair<int32_t,bool>>;
+using input_map_t = map<char,pair<nodeid,bool>>;
 namespace majesty {
 
 
@@ -94,13 +94,13 @@ namespace majesty {
 		for ( auto i = 0u; i < 16; ++i ) { invperm[(int)perm[i]] = i; }
 	}
 
-	pair<int32_t,bool> frmaj3_from_string(const string& expr, 
+	pair<nodeid,bool> frmaj3_from_string(const string& expr, 
 			unsigned offset, const bracket_map_t& majbrackets, 
 			const bracket_map_t& xorbrackets,
 			const input_map_t& imap, xmg& xmg, strashmap& shmap) {
 		assert(expr[offset] != '!');
 		if (expr[offset] == '<') {
-			pair<int32_t,bool> children[3];
+			pair<nodeid,bool> children[3];
 
 			auto child_pos = offset + 1u;
 			auto to = 0u;
@@ -124,7 +124,7 @@ namespace majesty {
 					children[1].first, children[1].second, children[2].first,
 					children[2].second, shmap);
 		} else if (expr[offset] == '[') {
-			pair<int32_t,bool> children[2];
+			pair<nodeid,bool> children[2];
 
 			auto child_pos = offset + 1u;
 			auto to = 0u;
@@ -156,7 +156,7 @@ namespace majesty {
 		}
 	}
 
-	pair<int32_t,bool> decompose_cut(
+	pair<nodeid,bool> decompose_cut(
 			xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap, 
 			nodemap& nodemap, NODE_TYPE type) {
 		const auto& cutnodes = cut->nodes();
