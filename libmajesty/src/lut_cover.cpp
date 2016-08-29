@@ -116,7 +116,7 @@ namespace majesty {
 				best[i] = cut_map.at(i)[0].get();
 				atimes[i] = 0;
 				area_flows[i] = 0;
-			} else if (node.ecrep == static_cast<int32_t>(i)) {
+			} else if (node.ecrep == static_cast<nodeid>(i)) {
 				// Eq. class representative
 				const auto& cuts = cut_map.at(i);
 				auto depth_eval = best_cut_depth(cuts, atimes, area_flows);
@@ -138,7 +138,7 @@ namespace majesty {
 			if (is_pi(node)) {
 				best[i] = cut_map.at(i)[0].get();
 				area_flows[i] = 0;
-			} else if (node.ecrep == static_cast<int32_t>(i)) {
+			} else if (node.ecrep == static_cast<nodeid>(i)) {
 				// Eq. class representative
 				const auto& cuts = cut_map.at(i);
 				auto area_eval = best_cut_area(cuts, area_flows);
@@ -163,7 +163,7 @@ namespace majesty {
 				best[i] = cut_map.at(i)[0].get();
 				arrival_times[i] = 0;
 				area_flows[i] = 0;
-			} else if (node.ecrep == static_cast<int32_t>(i)) {
+			} else if (node.ecrep == static_cast<nodeid>(i)) {
 				const auto& cuts = cut_map.at(i);
 				const auto eval_area_rec = best_cut_area_recover(cuts,
 						area_flows, arrival_times, req.at(i)); 
@@ -194,7 +194,7 @@ namespace majesty {
 		int i = nodes.size();
 		while (i-- > 0) {
 			const auto& node = nodes[i];
-			if (node.ecrep != static_cast<int32_t>(i)) {
+			if (node.ecrep != static_cast<nodeid>(i)) {
 				// Not an eq. class representative
 				continue;
 			}
@@ -286,7 +286,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				continue;
-			} else if (node.ecrep != static_cast<int32_t>(i)) {
+			} else if (node.ecrep != static_cast<nodeid>(i)) {
 				// Not an eq. class representative
 				continue;
 			}
@@ -325,7 +325,7 @@ namespace majesty {
 				const auto& node = nodes[i];
 				if (is_pi(node)) {
 					continue;
-				} else if (node.ecrep != static_cast<int32_t>(i)) {
+				} else if (node.ecrep != static_cast<nodeid>(i)) {
 					// Not an eq. class representative
 					continue;
 				}

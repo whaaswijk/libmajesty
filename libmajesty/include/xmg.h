@@ -14,7 +14,7 @@
 
 using nodeid = uint32_t;
 using input = std::pair<nodeid,bool>;
-#define EC_NULL numeric_limits<uint32_t>::max()
+#define EC_NULL std::numeric_limits<uint32_t>::max()
 using bv = std::vector<unsigned int>;
 using hashmap = std::unordered_map<unsigned int,MAJ3*>;
 using xhashmap = std::unordered_map<unsigned int,nodeid>;

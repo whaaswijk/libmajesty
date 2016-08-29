@@ -31,7 +31,7 @@ namespace majesty {
 				safeinsert(res, move(cut));
 			}
 			nextidx = node.ecnext;
-		} while (nextidx != -1);
+		} while (nextidx != EC_NULL);
 
 		// The trivial cut of the functional representative
 		unique_ptr<cut> c(new cut(N.ecrep));
@@ -275,7 +275,7 @@ namespace majesty {
 			} else if (is_pi(n)) {
 				unique_ptr<cut> c(new cut(n.ecrep));
 				res.push_back(move(c));
-			} else if (n.ecrep != static_cast<int32_t>(i)) { 
+			} else if (n.ecrep != static_cast<nodeid>(i)) { 
 				// Consider only equivalence class representatives
 				++processed_nodes;
 				continue;

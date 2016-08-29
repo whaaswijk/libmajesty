@@ -19,6 +19,7 @@ find_package(Threads)
 # Add the ./src and ./include dirs to the include path 
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/include")
+include_directories("$ENV{ABC_HOME}")
 
 # Add the binary dir to the include path so we can find the config header
 include_directories("${PROJECT_BINARY_DIR}")
