@@ -57,6 +57,15 @@
     <ClCompile Include="src\convert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\lut_cover.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lut_optimize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cut.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mlp.h">
@@ -137,6 +146,15 @@
     <ClInclude Include="include\convert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\lut_cover.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lut_optimize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\minisat\CMakeLists.txt" />
@@ -154,6 +172,5 @@
     <None Include="majespy\majespy.pyx" />
     <None Include="majespy\mig_interface.pxd" />
     <None Include="majespy\node_utils.pxd" />
-    <None Include="majespy\pymig.pyx" />
   </ItemGroup>
 </Project>
