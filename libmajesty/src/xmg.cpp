@@ -1188,11 +1188,16 @@ namespace majesty {
 		};
 
 		strashmap shmap(nnodes / 2, stats);
+		const auto& innames = sxmg.innames();
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				auto is_c = is_pi_c(node);
-				nodemap[i] = make_pair(res.create_input(), is_c);
+				if (i == 0u) {
+					nodemap[i] = make_pair(res.create_input(), is_c);
+				} else {
+					nodemap[i] = make_pair(res.create_input(innames[i]), is_c);
+				}
 			} else {
 				auto in1 = nodemap[node.in1];
 				in1.second = (in1.second != is_c1(node));

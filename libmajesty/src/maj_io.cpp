@@ -244,4 +244,13 @@ namespace majesty {
 		file << "endmodule" << endl;
 	}
 
+	xmg read_verilog(ifstream& instream) {
+		xmg res;
+
+		res.create_input();
+
+
+		return res;
+	}
+
 }
