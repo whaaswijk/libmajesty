@@ -63,3 +63,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
     xmg* get_optimum_mig(const xmg&)
     
     xmg* strash_xmg(const xmg&)
+
+cdef extern from "maj_io.h" namespace "majesty":
+    xmg* ptr_read_bench(const string & filename)
+    void write_verilog(const string & filename, const xmg &)

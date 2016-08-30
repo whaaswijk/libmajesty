@@ -462,3 +462,18 @@ def strash_xmg(PyXmg py_xmg) -> PyXmg:
 
 def compute_reward(PyXmg xmg_initial, PyXmg xmg_final) -> float:
     return mig_interface.compute_reward(xmg_initial.c_xmg[0], xmg_final.c_xmg[0])
+
+def read_bench(py_filename) -> PyXmg:
+    cdef:
+        string filename
+        xmg* result
+    filename = py_filename.encode('UTF-8')
+    result = mig_interface.ptr_read_bench(filename)
+    return PyXmg().set_pt_to(result)
+
+def write_verilog(py_filename, PyXmg py_xmg) -> None:
+    cdef:
+        string filename
+    filename = py_filename.encode('UTF-8')
+    mig_interface.write_verilog(filename, py_xmg.c_xmg[0])
+
