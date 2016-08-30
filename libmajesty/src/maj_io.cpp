@@ -23,6 +23,19 @@ namespace majesty {
 		return new xmg(read_bench(filename));
 	}
 
+	/*
+	xmg read_verilog(const std::string filename) {
+		ifstream f(filename);
+		xmg res = read_verilog(f);
+		f.close();
+		return res;
+	}
+
+	xmg* ptr_read_verilog(const std::string filename) {
+		return new xmg(read_verilog(filename));
+	}
+	*/
+
 	void parse_bench_file(xmg& xmg, ifstream& instream) {
 		string line;
 		vector<string> outputnames;
@@ -30,16 +43,22 @@ namespace majesty {
 		nodemap nodemap;
 		while (!instream.eof()) {
 			getline(instream, line);
-			if (line.substr(0, 6) == "INPUT") {
-				auto inputname = line.substr(5, line.size() - 7);
+			if (line.size() == 0) {
+				continue;
+			}
+			boost::trim(line);
+			if (line[0] == '#') { // Comment line
+				continue;
+			} else if (line.substr(0, 5) == "INPUT") {
+				auto inputname = line.substr(6, line.size() - 7);
 				varnames[inputname] = make_pair(xmg.create_input(inputname), false);
-			} else if (line.substr(0, 7) == "OUTPUT") {
-				auto outputname = line.substr(5, line.size() - 8);
+			} else if (line.substr(0, 6) == "OUTPUT") {
+				auto outputname = line.substr(7, line.size() - 8);
 				outputnames.push_back(outputname);
 			} else {
 				vector<string> split_strs;
 				vector<string> param_names;
-				boost::split(split_strs, line, boost::is_any_of("\t "));
+				boost::split(split_strs, line, boost::is_any_of("\t "), boost::token_compress_on);
 				// First entry is the name
 				auto name = split_strs[0];
 				auto funcstr = split_strs[3];
@@ -72,6 +91,7 @@ namespace majesty {
 	}
 
 	xmg read_bench(ifstream& instream) {
+		assert(instream.good());
 		xmg res;
 		res.create_input();
 
@@ -223,4 +243,5 @@ namespace majesty {
 
 		file << "endmodule" << endl;
 	}
+
 }
