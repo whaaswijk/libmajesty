@@ -15,7 +15,7 @@ using boost::property_tree::ptree;
 using bracket_map_t = unordered_map<unsigned,unsigned>;
 
 namespace majesty {
-	
+
 	pair<nodeid, bool> xmg_parse_string(const string& expr, unsigned offset, const bracket_map_t& majbrackets,
 		const bracket_map_t& xorbrackets, nodemap& nodemap, xmg& xmg) {
 		assert(expr[offset] != '!');
@@ -73,7 +73,7 @@ namespace majesty {
 			return nodemap.at((expr[offset] - 'a') + 1);
 		}
 	}
-
+	
 	bracket_map_t find_bracket_pairs(const string& s, char open_bracket, char closed_bracket) {
 		stack<unsigned> open;
 		bracket_map_t pairs;
@@ -118,13 +118,27 @@ namespace majesty {
 		return res;
 	}
 
+	pair<nodeid,bool> xmg_parse_string(xmg& xmg, nodemap& nodemap, const string& str) {
+		const auto majbrackets = find_bracket_pairs(str, '<', '>');
+		const auto xorbrackets = find_bracket_pairs(str, '[', ']');
+
+		bool complout = false;
+		pair<nodeid, bool> outp;
+		if (str[0] == '!') {
+			complout = true;
+			outp = xmg_parse_string(str, 1, majbrackets, xorbrackets, nodemap, xmg);
+		} else {
+			outp = xmg_parse_string(str, 0, majbrackets, xorbrackets, nodemap, xmg);
+		}
+		outp.second = (outp.second != complout);
+		return outp;
+	}
+
 	inline vector<unsigned> inv(const vector<unsigned>& perm) {
 		vector<unsigned> invperm(perm.size());
 		for ( auto i = 0u; i < perm.size(); ++i ) { invperm[perm[i]] = i; }
 		return invperm;
 	}
-
-
 	
 	xmg xmg_from_string(unsigned ninputs, const string& str, const tt& phase, const vector<unsigned>& perm) {
 		xmg res;
@@ -242,6 +256,11 @@ namespace majesty {
 		return res;
 	}
 
+	tt tt_from_long(unsigned ninputs, unsigned function) {
+		tt func(1u << ninputs, function);
+		return func;
+	}
+
 	xmg mig_decompose(unsigned ninputs, unsigned function) {
 		tt func(1u << ninputs, function);
 		return mig_shannon_decompose(ninputs, func);
@@ -252,11 +271,8 @@ namespace majesty {
 		return mig_shannon_decompose(ninputs, func);
 	}
 
-	xmg exact_mig(const tt& func) {
-		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
-		auto success = system(cmdstr.c_str());
-		assert(success == 0);
-		ifstream infile("cirkit.log");
+	string xmg_expression_from_file(const string& filename) {
+		ifstream infile(filename);
 		//stringstream infile("[{ \"command\": \"tt 1000\", \"time\" : \"2016-08-23 15:00:20\", \"tt\" : \"1000\" }, { \"command\": \"exact_mig\", \"time\" : \"2016-08-23 15:00:20\", \"min_depth\" : false, \"all_solutions\" : false, \"start\" : 1, \"runtime\" : 0.02 }, { \"command\": \"convert --mig_to_expr\", \"time\" : \"2016-08-23 15:00:20\" }, { \"command\": \"ps -e\", \"time\" : \"2016-08-23 15:00:29\", \"expression\" : \"<0ab>\" }]");
 
 		boost::property_tree::ptree pt;
@@ -271,6 +287,23 @@ namespace majesty {
 				}
 			}
 		}
+		return expression;
+	}
+
+	string exact_xmg_expression(const tt& func) {
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
+		auto success = system(cmdstr.c_str());
+		assert(success == 0);
+		
+		return xmg_expression_from_file("cirkit.log");
+	}
+
+	xmg exact_mig(const tt& func) {
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
+		auto success = system(cmdstr.c_str());
+		assert(success == 0);
+		
+		auto expression = xmg_expression_from_file("cirkit.log");
 		auto ninputs = tt_num_vars(func);
 		auto exact_parsed = xmg_from_string(ninputs, expression);
 		return strash(exact_parsed);

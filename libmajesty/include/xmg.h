@@ -329,9 +329,7 @@ namespace majesty {
 
 	xmg strash(const xmg&);
 
-	void write_verilog(const std::string&, const majesty::xmg&);
-	void write_verilog(const char*, const majesty::xmg&);
-	void write_verilog(std::ofstream&, const majesty::xmg&);
+	
 
 	// Simulates every possible input vector on an xmg and returns the function it computes
 	boost::dynamic_bitset<> simulate_xmg(const xmg&);

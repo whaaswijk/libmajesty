@@ -40,13 +40,13 @@ namespace majesty {
 	unsigned int cover_depth(const xmg& m, const nintmap& atimes);
 	
 	funcmap compute_functions(const xmg&, const bestmap&, const cutmap&);
-	funcmap compute_functions(const xmg&, const cover&, 
-			const bestmap&, const cutmap&);
+	funcmap compute_functions(const xmg&, const cover&, const bestmap&, const cutmap&);
 
-	void write_blif(const std::string&, const xmg&, const cover&, 
-			const bestmap&, const funcmap&);
+	void write_blif(const std::string&, const xmg&, const cover&, const bestmap&, const funcmap&);
 
 	void lut_map(const xmg&, const cut_params*, const std::string&);
+
+	void abc_lut_map(const xmg&, const cut_params*, const std::string&);
 }
 
 #endif

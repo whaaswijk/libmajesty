@@ -1418,15 +1418,7 @@ namespace majesty {
 		}
 	}
 
-	void write_verilog(const string& filename, const majesty::xmg& xmg) {
-		write_verilog(filename.c_str(), xmg);
-	}
 	
-	void write_verilog(const char* filename, const majesty::xmg& xmg) {
-		ofstream outfile(filename);
-		write_verilog(outfile, xmg);
-		outfile.close();
-	}
 
 	bool simulate_node(const node& n, unordered_map<nodeid, bool>& simval) {
 		if (is_xor(n)) {
