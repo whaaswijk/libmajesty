@@ -684,7 +684,6 @@ namespace majesty {
 		auto best_area = eval_matches_area(xmg, cut_map);
 		auto area_cover = build_cover(xmg, best_area);
 		it_exact_cover(xmg, area_cover, cut_map, best_area);
-		auto csize = cover_size(xmg, area_cover);
 		auto functionmap = compute_functions(xmg, area_cover, best_area, cut_map);
 		write_blif(filename, xmg, area_cover, best_area, functionmap);
 	}
