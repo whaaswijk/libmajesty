@@ -1,0 +1,3 @@
+[submodule "libmajesty/hiredis"]
+	path = libmajesty/hiredis
+	url = https://github.com/redis/hiredis.git

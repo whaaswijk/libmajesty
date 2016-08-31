@@ -121,6 +121,7 @@
     <ClCompile Include="src\conversion_utils.cpp" />
     <ClCompile Include="src\convert.cpp" />
     <ClCompile Include="src\cut.cpp" />
+    <ClCompile Include="src\function_store.cpp" />
     <ClCompile Include="src\lut_cover.cpp" />
     <ClCompile Include="src\lut_optimize.cpp" />
     <ClCompile Include="src\maj_io.cpp" />
@@ -144,9 +145,10 @@
     <ClInclude Include="include\bitset_utils.hpp" />
     <ClInclude Include="src\conversion_utils.hpp" />
     <ClInclude Include="include\mig_functional_hashing_constants.hpp" />
-    <ClInclude Include="src\cut.h" />
-    <ClInclude Include="src\lut_cover.h" />
-    <ClInclude Include="src\lut_optimize.h" />
+    <ClInclude Include="include\cut.h" />
+    <ClInclude Include="include\lut_cover.h" />
+    <ClInclude Include="include\lut_optimize.h" />
+    <ClInclude Include="src\function_store.h" />
     <ClInclude Include="src\minisat\Alg.h" />
     <ClInclude Include="src\minisat\Alloc.h" />
     <ClInclude Include="src\minisat\Heap.h" />

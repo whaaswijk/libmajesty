@@ -69,6 +69,9 @@
     <ClCompile Include="src\maj_io.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\function_store.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mlp.h">
@@ -149,16 +152,19 @@
     <ClInclude Include="include\convert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\lut_cover.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lut_optimize.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\cut.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\maj_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lut_cover.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lut_optimize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\function_store.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

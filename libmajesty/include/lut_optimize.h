@@ -9,7 +9,7 @@ namespace majesty {
 
 	enum NODE_TYPE { ALL, MAJ };
 	
-
+	xmg* ptr_lut_area_strategy(const xmg&, const xmg_params*, unsigned);
    	xmg lut_area_strategy(const xmg&, const xmg_params*, unsigned);
    	xmg mig_lut_area_strategy(const xmg&, const xmg_params*, unsigned);
    	xmg gen_lut_area_strategy(const xmg&, const xmg_params*, unsigned, NODE_TYPE);

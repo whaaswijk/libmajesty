@@ -15,6 +15,10 @@ using bracket_map_t = map<unsigned,unsigned>;
 using input_map_t = map<char,pair<nodeid,bool>>;
 namespace majesty {
 
+	xmg* ptr_lut_area_strategy(const xmg& m,
+		const xmg_params* frparams, unsigned lut_size) {
+		return new xmg(gen_lut_area_strategy(m, frparams, lut_size, ALL));
+	}
 
 	xmg lut_area_strategy(const xmg& m, 
 			const xmg_params* frparams, unsigned lut_size ) {
