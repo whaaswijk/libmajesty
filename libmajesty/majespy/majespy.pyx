@@ -491,3 +491,9 @@ def lut_map_area(PyXmg py_xmg, py_filename) -> None:
         string filename
     filename = py_filename.encode('UTF-8')
     mig_interface.lut_map_area(py_xmg.c_xmg[0], filename)
+
+def lut_area_strategy(PyXmg py_xmg, lut_size, nr_backtracks=4096) -> PyXmg:
+    cdef:
+        xmg* result
+    result = mig_interface.ptr_lut_area_strategy(py_xmg.c_xmg[0], lut_size, nr_backtracks)
+    return PyXmg().set_pt_to(result)

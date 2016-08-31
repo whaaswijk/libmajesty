@@ -70,3 +70,5 @@ cdef extern from "maj_io.h" namespace "majesty":
     void write_verilog(const string & filename, const xmg &)
     void lut_map_area(const xmg &, const string &)
 
+cdef extern from "lut_optimize.h" namespace "majesty":
+    xmg* ptr_lut_area_strategy(const xmg &, unsigned, unsigned)
