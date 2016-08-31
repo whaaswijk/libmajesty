@@ -471,6 +471,14 @@ def read_bench(py_filename) -> PyXmg:
     result = mig_interface.ptr_read_bench(filename)
     return PyXmg().set_pt_to(result)
 
+def read_verilog(py_filename) -> PyXmg:
+    cdef:
+        string filename
+        xmg* result
+    filename = py_filename.encode('UTF-8')
+    result = mig_interface.ptr_read_verilog(filename)
+    return PyXmg().set_pt_to(result)
+
 def write_verilog(py_filename, PyXmg py_xmg) -> None:
     cdef:
         string filename
