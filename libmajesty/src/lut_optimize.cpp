@@ -3,6 +3,7 @@
 #include "lut_optimize.h"
 #include "strashmap.h"
 #include "npn_canonization.hpp"
+#include <convert.h>
 
 extern "C" {
 #include <bool/lucky/luckyInt.h>
@@ -11,8 +12,6 @@ extern "C" {
 
 using namespace std;
 using namespace cirkit;
-using bracket_map_t = map<unsigned,unsigned>;
-using input_map_t = map<char,pair<nodeid,bool>>;
 namespace majesty {
 
 	xmg* ptr_lut_area_strategy(const xmg& m, unsigned lut_size, unsigned nr_backtracks) {
@@ -75,26 +74,6 @@ namespace majesty {
 	}
 	*/
 
-	bracket_map_t find_bracket_pairs(const string& s, 
-			char open_bracket, char closed_bracket) {
-		stack<unsigned> open;
-		bracket_map_t pairs;
-
-		for (auto i = 0u; i < s.size(); i++) {
-			auto c = s[i];
-			if ( c == open_bracket ) {
-				open.push(i);
-			} else if (c == closed_bracket ) {
-				pairs.insert( {open.top(), i} );
-				open.pop();
-			}
-		}
-
-		assert( open.empty() );
-
-		return pairs;
-	}
-	
 	inline void inv(const char* perm, char* invperm) {
 		for ( auto i = 0u; i < 16; ++i ) { invperm[(int)perm[i]] = i; }
 	}

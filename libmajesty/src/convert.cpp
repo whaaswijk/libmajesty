@@ -1,7 +1,5 @@
 #include <convert.h>
 #include <stack>
-#include <map>
-#include <unordered_map>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -12,7 +10,6 @@ using namespace std;
 using namespace cirkit;
 using boost::property_tree::ptree;
 
-using bracket_map_t = unordered_map<unsigned,unsigned>;
 
 namespace majesty {
 

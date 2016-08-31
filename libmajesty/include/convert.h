@@ -3,6 +3,8 @@
 #include <xmg.h>
 #include <vector>
 #include <truth_table_utils.hpp>
+#include <map>
+#include <unordered_map>
 
 namespace majesty {
 	xmg xmg_from_string(unsigned, const std::string&);
@@ -21,4 +23,8 @@ namespace majesty {
 	xmg exact_mig(const cirkit::tt& func);
 	
 	std::string xmg_expression_from_file(const std::string& filename);
+	
+	using bracket_map_t = std::unordered_map<unsigned, unsigned>;
+	using input_map_t = std::unordered_map<char, std::pair<nodeid, bool>>;
+	bracket_map_t find_bracket_pairs(const std::string&, char, char);
 }
