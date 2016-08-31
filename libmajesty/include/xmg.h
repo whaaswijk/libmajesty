@@ -282,6 +282,7 @@ namespace majesty {
 			// Counts the nr. of PO nodes
 			unsigned nout() const { return _outputs.size(); }
 			const std::vector<node>& nodes() const { return _nodes; }
+			node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
 			const std::vector<std::string>& innames() const { 
 				return _innames;
