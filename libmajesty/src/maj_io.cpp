@@ -9,6 +9,7 @@
 #include <truth_table_utils.hpp>
 #include <cut.h>
 #include <lut_cover.h>
+#include <truth_table_utils.hpp>
 
 using namespace std;
 
@@ -452,6 +453,229 @@ namespace majesty {
 
 
 		return xmg;
+	}
+
+	static bool is_one(const cirkit::tt& function) {
+		for (auto i = 0u; i < function.size(); i++) {
+			if (!function.test(i))
+				return false;
+		}
+		return true;
+	}
+
+	static bool is_zero(const cirkit::tt& function) {
+		for (auto i = 0u; i < function.size(); i++) {
+			if (function.test(i))
+				return false;
+		}
+		return true;
+	}
+	
+	inline string lut_name(const node& n) {
+		assert(!is_pi(n) && !is_po(n));
+		return "n" + to_string(n.ecrep);
+	}
+
+	// For BLIF mapping we don't require the escape slash that we use in Verilog
+	inline string blif_name(const string& name) {
+		if (name[0] == '\\') {
+			return name.substr(1, name.size() - 1);
+		}
+		return name;
+	}
+
+	string internal_name(const xmg& m, nodeid nodeid) {
+		const auto& nodes = m.nodes();
+		const auto& n = nodes[nodeid];
+		assert(n.ecrep != 0);
+		assert(n.ecrep == nodeid);
+		if (is_pi(n)) {
+			auto innames = m.innames();
+			blif_name(innames[n.ecrep-1]);
+		} else if (is_po(n)) {
+			const auto& outputs = m.outputs();
+			const auto& outcompl = m.outcompl();
+			const auto& outnames = m.outnames();
+			bool c = false;
+			auto idx = -1;
+			for (auto i = 0u; i < outputs.size(); i++) {
+				if (outputs[i] == n.ecrep) {
+					idx = i;
+					if (outcompl[i]) {
+						c = true;
+					}
+				}
+			}
+			if (c) {
+				return blif_name(outnames[idx] + "_bar");
+			} else {
+				return blif_name(outnames[idx]);
+			}
+		} else {
+			return "n" + to_string(nodeid);
+		}
+	}
+
+	// Generates a LUT for the PO and it's complement. 
+	void po_lut(ofstream& f, const bestmap& best, const xmg& m,
+			const cover& cover, nodeid nodeid , bool c, string lutname,
+			const funcmap& funcmap) {
+		const auto& mnode = m.nodes().at(nodeid);
+		assert(is_po(mnode));
+
+		auto cut = best.at(mnode.ecrep);
+		const auto& inputs = cut->nodes();
+		const auto& function = *funcmap.at(cut);
+		if (is_zero(function)) {
+			// This node never evaluates to true,
+			// so we set it to constant 0
+			if (c) {
+				f << ".names " << lutname << endl;
+				f << "1" << endl;
+				if (cover.at(mnode.ecrep) > 1) {
+					f << ".names " << lutname << "_bar" << endl;
+				}
+			} else {
+				f << ".names " << lutname << endl;
+				f << ".names " << lutname << "_bar" << endl;
+				f << "1" << endl;
+			}
+			return;
+		} else if (is_one(function)) {
+			if (c) {
+				f << ".names " << lutname << endl;
+				if (cover.at(mnode.ecrep) > 1) {
+					f << ".names " << lutname << "_bar" << endl;
+					f << "1" << endl;
+				}
+			} else {
+				f << ".names " << lutname << endl;
+				f << "1" << endl;
+				f << ".names " << lutname << "_bar" << endl;
+			}
+			return;
+		}
+
+		//  First print the function header
+		f << ".names ";
+		for (auto j = 0u; j < inputs.size(); j++) {
+			f << internal_name(m, inputs[j]) << " ";
+		}
+		f << lutname << endl;
+
+		// Simply generate all input vectors
+		for (auto i = 0u; i < function.size(); i++) {
+			auto eval = function.test(i) ^ c;
+			if (eval) {
+				for (auto j = 0u; j < inputs.size(); j++) {
+					f << ((i >> j) & 1);
+				}
+				f << " " << 1 << endl;
+			}
+		}
+
+		if (cover.at(mnode.ecrep) > 1 && c) {
+			// Generate the complement
+			f << ".names ";
+			for (auto j = 0u; j < inputs.size(); j++) {
+				f << internal_name(m, inputs[j]) << " ";
+			}
+			f << lutname << "_bar" << endl;
+
+			for (auto i = 0u; i < function.size(); i++) {
+				auto eval = function.test(i) ^ c;
+				if (!eval) {
+					for (auto j = 0u; j < inputs.size(); j++) {
+						f << ((i >> j) & 1);
+					}
+					f << " " << 1 << endl;
+				}
+			}
+		}
+	}
+
+	void in_lut(ofstream& f, const xmg& m, const node& mnode, 
+			const bestmap& best, const funcmap& funcmap) {
+		assert(!is_po(mnode));
+
+		auto cut = best.at(mnode.ecrep);
+		const auto& inputs = cut->nodes();
+		const auto& function = *funcmap.at(cut);
+
+		if (is_zero(function)) {
+			// This node never evaluates to true,
+			// so we set it to constant 0
+			f << ".names " << lut_name(mnode) << endl;
+			return;
+		} else if (is_one(function)) {
+			f << ".names " << lut_name(mnode) << endl;
+			f << "1" << endl;
+			return;
+		}
+
+		// Print the function header
+		f << ".names ";
+		for (auto j = 0u; j < inputs.size(); j++) {
+			f << internal_name(m, inputs[j]) << " ";
+		}
+		f << lut_name(mnode) << endl;
+
+		// Generate K-LUT
+
+		// Simply generate all input vectors
+		for (auto i = 0u; i < function.size(); i++) {
+			auto eval = function.test(i);
+			if (eval) {
+				for (auto j = 0u; j < inputs.size(); j++) {
+					f << ((i >> j) & 1);
+				}
+				f << " " << 1 << endl;
+			}
+		}
+	}
+
+	void write_blif(const string& fname, const xmg& m, const cover& cover,
+			const bestmap& best, const funcmap& fm) {
+		ofstream f;
+		time_t now;
+		time(&now);
+		f.open(fname, ios::out | ios::trunc);
+
+		f << "# Written by Majesty " << ctime(&now);
+
+		f << ".model mapping" << endl;
+		f << ".inputs ";
+		const auto& innames = m.innames();
+		for (auto i = 0u; i < m.nin(); i++) {
+			f << blif_name(innames[i]) << " ";
+		}
+		f << endl;
+		f << ".outputs ";
+		const auto& outnames = m.outnames();
+		for (auto i = 0u; i < m.nout(); i++) {
+			f << blif_name(outnames[i]) << " ";
+		}
+		f << endl;
+
+		const auto& outputs = m.outputs();
+		const auto& outcompl = m.outcompl();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			po_lut(f, best, m, cover, outputs[i], outcompl[i], blif_name(outnames[i]), fm);
+		}	
+	
+		const auto& nodes = m.nodes();
+		for (auto i = 0u; i < nodes.size(); i++) {
+			if (!contains(cover, i)) {
+				continue;
+			}
+			const auto& node = nodes[i];
+			if (!is_pi(node) && !is_po(node)) {
+				in_lut(f, m, node, best, fm);
+			}
+		}
+
+		f << ".end" << endl;
+		f.close();
 	}
 	
 	void lut_map_area(const majesty::xmg& xmg, const std::string& filename) {
