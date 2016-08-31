@@ -485,3 +485,9 @@ def write_verilog(py_filename, PyXmg py_xmg) -> None:
     filename = py_filename.encode('UTF-8')
     mig_interface.write_verilog(filename, py_xmg.c_xmg[0])
 
+
+def lut_map_area(PyXmg py_xmg, py_filename) -> None:
+    cdef:
+        string filename
+    filename = py_filename.encode('UTF-8')
+    mig_interface.lut_map_area(py_xmg.c_xmg[0], filename)

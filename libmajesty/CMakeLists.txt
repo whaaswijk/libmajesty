@@ -17,6 +17,7 @@ find_package(Threads)
 #ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
 
 # Add the ./src and ./include dirs to the include path 
+include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories("$ENV{ABC_HOME}")

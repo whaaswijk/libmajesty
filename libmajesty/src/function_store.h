@@ -13,14 +13,14 @@ namespace majesty {
 	
 	enum NODE_TYPE { ALL, MAJ };
 
-	struct redisContext;
-	
 	class function_store {
 		private:
 			std::string compute_min_size_depth_xmg(const cirkit::tt&);
 			std::string compute_min_size_depth_xmg(const cirkit::tt&, NODE_TYPE);
 			boost::filesystem::path::string_type _logfile;
+#ifndef _WIN32
 			redisContext* _rcontext = NULL;
+#endif
 			bool _remove_log = false;
 
 		public:
