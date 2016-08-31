@@ -451,7 +451,7 @@ namespace majesty {
 		return fm;
 	}
 
-	extern void write_blif(const string& f, const xmg& m, cover area_cover, bestmap best_area, funcmap functionmap);
+	extern void write_blif(const string&, const xmg&, const cover&, const bestmap&, const funcmap&);
 	
 	void lut_map(const xmg& m, const cut_params* params, const string& f) {
 		const auto cut_map = enumerate_cuts(m, params);

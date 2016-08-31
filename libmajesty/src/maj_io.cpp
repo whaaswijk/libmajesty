@@ -477,14 +477,12 @@ namespace majesty {
 	}
 
 	// For BLIF mapping we don't require the escape slash that we use in Verilog
-	inline string blif_name(const string& name) {
-		string res;
+	string blif_name(const string& name) {
 		if (name[0] == '\\') {
-			res = name.substr(1, name.size() - 1);
+			return name.substr(1, name.size() - 1);
 		} else {
-			res = name;
+			return string(name);
 		}
-		return res;
 	}
 
 	string internal_name(const xmg& m, nodeid nodeid) {
@@ -494,7 +492,7 @@ namespace majesty {
 		assert(n.ecrep == nodeid);
 		if (is_pi(n)) {
 			auto innames = m.innames();
-			blif_name(innames[n.ecrep-1]);
+			return blif_name(innames[n.ecrep-1]);
 		} else if (is_po(n)) {
 			const auto& outputs = m.outputs();
 			const auto& outcompl = m.outcompl();
