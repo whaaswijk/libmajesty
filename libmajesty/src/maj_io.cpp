@@ -141,7 +141,7 @@ namespace majesty {
 		for(auto i = 0u; i < (xmg.nout()-1); i++) {
 			file << outnames[i] << " , ";
 		}
-		file << outnames[xmg.nout()-1] << ");" << endl;
+		file << outnames[xmg.nout()-1] << " ) ;" << endl;
 
 		if (nin > 0) {
 			file << "input ";
