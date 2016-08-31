@@ -1196,7 +1196,7 @@ namespace majesty {
 				if (i == 0u) {
 					nodemap[i] = make_pair(res.create_input(), is_c);
 				} else {
-					nodemap[i] = make_pair(res.create_input(innames[i]), is_c);
+					nodemap[i] = make_pair(res.create_input(innames[i - 1]), is_c);
 				}
 			} else {
 				auto in1 = nodemap[node.in1];

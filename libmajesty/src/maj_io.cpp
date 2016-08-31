@@ -263,7 +263,7 @@ namespace majesty {
 		}
 	}
 
-	static inline void parse_verilog_outputs(xmg& xmg, const string& line, vector<string>& outputnames) {
+	static inline void parse_verilog_outputs(const string& line, vector<string>& outputnames) {
 		vector<string> split_strs;
 		boost::split(split_strs, line, boost::is_any_of("\t ,;"), boost::token_compress_on);
 		for (auto& str : split_strs) {
@@ -307,7 +307,7 @@ namespace majesty {
 			} else if (line.substr(0, 6) == "output") {
 				parse_module = parse_inputs = false;
 				parse_outputs = true;
-				parse_verilog_outputs(xmg, line, outputnames);
+				parse_verilog_outputs(line, outputnames);
 			} else if (line.substr(0, 4) == "wire") {
 				parse_module = parse_inputs = parse_outputs = false;
 				parse_wires = true;
@@ -436,7 +436,7 @@ namespace majesty {
 			} else if (parse_inputs) {
 				parse_verilog_inputs(xmg, line, varnames);
 			} else if (parse_outputs) {
-				parse_verilog_outputs(xmg, line, outputnames);
+				parse_verilog_outputs(line, outputnames);
 			} else if (parse_wires) { // We ignore the wire definitions
 				parse_verilog_wires(xmg, line, varnames);
 			} else { // Some unknown state was reached
