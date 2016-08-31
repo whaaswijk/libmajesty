@@ -14,4 +14,6 @@ namespace majesty {
 
 	void write_verilog(const std::string&, const majesty::xmg&);
 	void write_verilog(std::ofstream&, const majesty::xmg&);
+
+	void lut_map_area(const majesty::xmg&, const std::string&);
 }

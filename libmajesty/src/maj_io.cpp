@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <convert.h>
 #include <truth_table_utils.hpp>
+#include <cut.h>
+#include <lut_cover.h>
 
 using namespace std;
 
@@ -450,6 +452,17 @@ namespace majesty {
 
 
 		return xmg;
+	}
+	
+	void lut_map_area(const majesty::xmg& xmg, const std::string& filename) {
+		auto cparams = default_cut_params();
+		const auto cut_map = enumerate_cuts(xmg, cparams.get());
+		auto best_area = eval_matches_area(xmg, cut_map);
+		auto area_cover = build_cover(xmg, best_area);
+		it_exact_cover(xmg, area_cover, cut_map, best_area);
+		auto csize = cover_size(xmg, area_cover);
+		auto functionmap = compute_functions(xmg, area_cover, best_area, cut_map);
+		write_blif(filename, xmg, area_cover, best_area, functionmap);
 	}
 
 }
