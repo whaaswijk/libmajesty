@@ -148,7 +148,7 @@
     <ClInclude Include="include\cut.h" />
     <ClInclude Include="include\lut_cover.h" />
     <ClInclude Include="include\lut_optimize.h" />
-    <ClInclude Include="src\function_store.h" />
+    <ClInclude Include="include\function_store.h" />
     <ClInclude Include="src\minisat\Alg.h" />
     <ClInclude Include="src\minisat\Alloc.h" />
     <ClInclude Include="src\minisat\Heap.h" />

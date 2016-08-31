@@ -164,7 +164,7 @@
     <ClInclude Include="include\lut_optimize.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\function_store.h">
+    <ClInclude Include="include\function_store.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

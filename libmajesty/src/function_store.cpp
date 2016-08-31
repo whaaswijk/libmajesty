@@ -76,7 +76,6 @@ namespace majesty {
 #endif
 	}
 
-
 	std::string function_store::min_size_depth_xmg(const cirkit::tt& f) {
 		return min_size_depth_xmg(f, ALL);
 	}

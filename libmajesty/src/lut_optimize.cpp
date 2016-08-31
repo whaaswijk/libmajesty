@@ -142,7 +142,7 @@ namespace majesty {
 
 	pair<nodeid,bool> decompose_cut(
 			xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap, 
-			nodemap& nodemap, NODE_TYPE type) {
+			nodemap& nodemap, function_store& fstore, NODE_TYPE type) {
 		const auto& cutnodes = cut->nodes();
 		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
@@ -151,7 +151,7 @@ namespace majesty {
 		auto npn = jake_canon(cutfunction, &uCanonPhase, pCanonPerm);
 		auto num_npn_vars = tt_num_vars(npn);
 		cout  << num_npn_vars << endl;
-		const auto min_xmg = min_size_depth_xmg(npn, type);
+		const auto min_xmg = fstore.min_size_depth_xmg(npn, type);
 		input_map_t imap;
 		inv(pCanonPerm, invperm);
 		for (auto i = 0u; i < cutnodes.size(); i++) {
@@ -177,6 +177,7 @@ namespace majesty {
 	xmg xmg_from_luts(const xmg& m, const cover& cover, 
 			const bestmap& best, const funcmap& funcmap, NODE_TYPE type) {
 		xmg n;
+		function_store fstore;
 
 		xmg_stats stats {
 			0u, // Nr. strash hits
@@ -209,7 +210,7 @@ namespace majesty {
 			}
 			const auto& cut = best.at(i);
 			auto& f = *funcmap.at(cut);
-			nodemap[i] = decompose_cut(n, cut, f, shmap, nodemap, type);
+			nodemap[i] = decompose_cut(n, cut, f, shmap, nodemap, fstore, type);
 			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
 		cout << endl;
