@@ -20,18 +20,15 @@ namespace majesty {
 		return new xmg(gen_lut_area_strategy(m, frparams.get(), lut_size, ALL));
 	}
 
-	xmg lut_area_strategy(const xmg& m, 
-			const xmg_params* frparams, unsigned lut_size ) {
+	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size ) {
 		return gen_lut_area_strategy(m, frparams, lut_size, ALL);
 	}
 	
-	xmg mig_lut_area_strategy(const xmg& m, 
-			const xmg_params* frparams, unsigned lut_size) {
+	xmg mig_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
 		return gen_lut_area_strategy(m, frparams, lut_size, MAJ);
 	}
 
-	xmg gen_lut_area_strategy(const xmg& m, 
-			const xmg_params* frparams, unsigned lut_size, NODE_TYPE type) {
+	xmg gen_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, NODE_TYPE type) {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;

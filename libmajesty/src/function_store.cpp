@@ -4,6 +4,7 @@
 #include <boost/algorithm/string.hpp>
 #include <chrono>
 #include "npn_canonization.hpp"
+#include <boost/format.hpp>
 
 
 using namespace std;
@@ -26,7 +27,9 @@ namespace majesty {
 		command += " > " + _logfile;
 #endif
 		auto retval = system(command.c_str());
-		assert(retval == 0);
+		if (retval != 0) {
+			throw "Exact synthesis through Cirkit failed";
+		}
 		_remove_log = true;
 
 		string line, lastline;
@@ -66,10 +69,9 @@ namespace majesty {
 		_rcontext = redisConnect(server_url.c_str(), port);
 		if (_rcontext == NULL || _rcontext->err) {
 			if (_rcontext) {
-				printf("Error initializing Redis context: %s\n", 
-						_rcontext->errstr);
+				throw "Error initializing Redis context";
 			} else {
-				printf("Error allocating Redis context\n");
+				throw "Error allocating Redis context";
 			}
 			exit(1);
 		}
@@ -99,8 +101,9 @@ namespace majesty {
 				expr = string(reply->str, reply->len);
 				break;
 			default:
-				cout << "Unable to handle reply type: " << reply->type << endl;
-				assert(false);
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				throw errorstring;
 				break;
 		}
 		freeReplyObject(reply);
@@ -165,8 +168,9 @@ namespace majesty {
 				assert(perm.size() == tt_num_vars(f));
 				break;
 			default:
-				cout << "Unable to handle reply type: " << reply->type << endl;
-				assert(false);
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				throw errorstring;
 				break;
 		}
 		freeReplyObject(reply);

@@ -290,17 +290,15 @@ namespace majesty {
 	string exact_xmg_expression(const tt& func) {
 		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
 		auto success = system(cmdstr.c_str());
-		assert(success == 0);
+		if (success != 0) {
+			throw "Exact synthesis through Cirkit failed";
+		}
 		
 		return xmg_expression_from_file("cirkit.log");
 	}
 
 	xmg exact_mig(const tt& func) {
-		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
-		auto success = system(cmdstr.c_str());
-		assert(success == 0);
-		
-		auto expression = xmg_expression_from_file("cirkit.log");
+		auto expression = exact_xmg_expression(func);
 		auto ninputs = tt_num_vars(func);
 		auto exact_parsed = xmg_from_string(ninputs, expression);
 		return strash(exact_parsed);
