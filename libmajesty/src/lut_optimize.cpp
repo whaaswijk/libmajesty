@@ -239,6 +239,7 @@ namespace majesty {
 		}
 		Abc_TtImplementNpnConfig(&pTruth[0], num_vars, pCanonPerm, *uCanonPhase);
 		tt ttf_new( pTruth.begin(), pTruth.end() );
+		ttf_new.resize(ttf.size());
 		if (ttf != ttf_new) {
 			cout << to_string(ttf) << " != " << to_string(ttf_new) << endl;
 			assert(ttf == ttf_new);
