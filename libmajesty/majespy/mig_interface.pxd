@@ -60,7 +60,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
     xmg* mig_string_decompose(const string &)
     xmg* mig_expression_decompose(unsigned ninputs, const string &)
     xmg* mig_int_decompose(unsigned ninputs, unsigned truth_table)
-    xmg* get_optimum_mig(const xmg&)
+    xmg* get_optimum_mig(const xmg&) except + # Can throw is Cirkit is not found
     
     xmg* strash_xmg(const xmg&)
 
@@ -71,4 +71,4 @@ cdef extern from "maj_io.h" namespace "majesty":
     void lut_map_area(const xmg &, const string &)
 
 cdef extern from "lut_optimize.h" namespace "majesty":
-    xmg* ptr_lut_area_strategy(const xmg &, unsigned, unsigned)
+    xmg* ptr_lut_area_strategy(const xmg &, unsigned, unsigned) except + # Can throw is Cirkit or Redis server are not found
