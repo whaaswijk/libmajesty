@@ -5,6 +5,7 @@
 #include <chrono>
 #include "npn_canonization.hpp"
 #include <boost/format.hpp>
+#include <convert.h>
 
 
 using namespace std;
@@ -17,31 +18,11 @@ namespace majesty {
 	}
 
 	string function_store::compute_min_size_depth_xmg(const tt& function, NODE_TYPE type) {
-		auto command = "cirkit -ec \"tt -l " + to_string(function) + ";"; 
-		if (type == MAJ) {
-			command += "exact_mig -v; ps -x; convert --mig_to_expr; print -e\"";
+		if (type == ALL) {
+			return exact_xmg_expression(function);
 		} else {
-			command += "exact_xmg -v; ps -x; convert --xmg_to_expr; print -e\"";
+			return exact_mig_expression(function);
 		}
-#ifndef _WIN32
-		command += " > " + _logfile;
-#endif
-		auto retval = system(command.c_str());
-		if (retval != 0) {
-			throw runtime_error("Exact synthesis through Cirkit failed");
-		}
-		_remove_log = true;
-
-		string line, lastline;
-		ifstream filein;
-		filein.open(_logfile);
-		while (getline(filein, line)) {
-			lastline = line;
-		}
-		filein.close();
-		boost::algorithm::trim_right(lastline);
-
-		return lastline;
 	}
 	
 	function_store::~function_store() {

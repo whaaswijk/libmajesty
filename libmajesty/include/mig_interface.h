@@ -78,5 +78,6 @@ namespace majesty {
 	xmg* mig_expression_decompose(unsigned ninputs, const std::string& expr);
 	xmg* mig_int_decompose(unsigned ninputs, unsigned truth_table);
 	xmg* get_optimum_mig(const xmg&);
+	xmg* get_optimum_xmg(const xmg&);
 	xmg* strash_xmg(const xmg&);
 };

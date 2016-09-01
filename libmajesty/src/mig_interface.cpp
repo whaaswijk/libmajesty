@@ -1299,6 +1299,11 @@ namespace majesty {
 		return new xmg(exact_mig(func));
 	}
 
+	xmg* get_optimum_xmg(const xmg& mig) {
+		auto func = simulate_xmg(mig);
+		return new xmg(exact_xmg(func));
+	}
+
 	xmg* strash_xmg(const xmg& mig) {
 		return new xmg(strash(mig));
 	}

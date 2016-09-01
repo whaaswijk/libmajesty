@@ -288,6 +288,16 @@ namespace majesty {
 	}
 
 	string exact_xmg_expression(const tt& func) {
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_xmg; convert --xmg_to_expr; ps -e; quit\" > /dev/null";
+		auto success = system(cmdstr.c_str());
+		if (success != 0) {
+			throw runtime_error("Exact synthesis through Cirkit failed");
+		}
+		
+		return xmg_expression_from_file("cirkit.log");
+	}
+
+	string exact_mig_expression(const tt& func) {
 		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
 		auto success = system(cmdstr.c_str());
 		if (success != 0) {
@@ -298,6 +308,13 @@ namespace majesty {
 	}
 
 	xmg exact_mig(const tt& func) {
+		auto expression = exact_mig_expression(func);
+		auto ninputs = tt_num_vars(func);
+		auto exact_parsed = xmg_from_string(ninputs, expression);
+		return strash(exact_parsed);
+	}
+
+	xmg exact_xmg(const tt& func) {
 		auto expression = exact_xmg_expression(func);
 		auto ninputs = tt_num_vars(func);
 		auto exact_parsed = xmg_from_string(ninputs, expression);

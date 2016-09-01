@@ -454,6 +454,12 @@ def get_optimum_mig(PyXmg py_xmg) -> PyXmg:
     result = mig_interface.get_optimum_mig(py_xmg.c_xmg[0])
     return PyXmg().set_pt_to(result)
 
+def get_optimum_xmg(PyXmg py_xmg) -> PyXmg:
+    cdef:
+        xmg* result
+    result = mig_interface.get_optimum_xmg(py_xmg.c_xmg[0])
+    return PyXmg().set_pt_to(result)
+
 def strash_xmg(PyXmg py_xmg) -> PyXmg:
     cdef:
         xmg* result

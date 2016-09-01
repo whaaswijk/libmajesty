@@ -18,6 +18,7 @@ namespace majesty {
 
 	xmg mig_decompose(unsigned ninputs, const std::string& function);
 	
+	std::string exact_mig_expression(const cirkit::tt&);
 	std::string exact_xmg_expression(const cirkit::tt&);
 
 	xmg exact_mig(const cirkit::tt& func);
