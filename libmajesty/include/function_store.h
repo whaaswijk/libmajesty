@@ -3,7 +3,7 @@
 
 #ifndef _WIN32
 extern "C" {
-	#include <hiredis/hiredis.h>
+	#include <hiredis.h>
 }
 #endif
 #include "truth_table_utils.hpp"

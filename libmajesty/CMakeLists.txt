@@ -9,7 +9,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 #find_package(BISON)
 #find_package(FLEX)
-find_package(Boost COMPONENTS serialization filesystem system)
 find_package(Threads)
 
 #BISON_TARGET(Parser parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
@@ -17,7 +16,7 @@ find_package(Threads)
 #ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
 
 # Add the ./src and ./include dirs to the include path 
-include_directories("${PROJECT_SOURCE_DIR}")
+include_directories("$ENV{HIREDIS_HOME}")
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories("$ENV{ABC_HOME}")
