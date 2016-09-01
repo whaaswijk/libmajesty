@@ -28,7 +28,7 @@ namespace majesty {
 #endif
 		auto retval = system(command.c_str());
 		if (retval != 0) {
-			throw "Exact synthesis through Cirkit failed";
+			throw runtime_error("Exact synthesis through Cirkit failed");
 		}
 		_remove_log = true;
 
@@ -69,9 +69,9 @@ namespace majesty {
 		_rcontext = redisConnect(server_url.c_str(), port);
 		if (_rcontext == NULL || _rcontext->err) {
 			if (_rcontext) {
-				throw "Error initializing Redis context";
+				throw runtime_error("Error initializing Redis context");
 			} else {
-				throw "Error allocating Redis context";
+				throw runtime_error("Error allocating Redis context");
 			}
 			exit(1);
 		}
@@ -103,7 +103,7 @@ namespace majesty {
 			default:
 				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
 				auto errorstring = errorformat.str();
-				throw errorstring;
+				throw runtime_error(errorstring);
 				break;
 		}
 		freeReplyObject(reply);
@@ -170,7 +170,7 @@ namespace majesty {
 			default:
 				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
 				auto errorstring = errorformat.str();
-				throw errorstring;
+				throw runtime_error(errorstring);
 				break;
 		}
 		freeReplyObject(reply);

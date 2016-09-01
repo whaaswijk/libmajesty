@@ -291,7 +291,7 @@ namespace majesty {
 		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
 		auto success = system(cmdstr.c_str());
 		if (success != 0) {
-			throw "Exact synthesis through Cirkit failed";
+			throw runtime_error("Exact synthesis through Cirkit failed");
 		}
 		
 		return xmg_expression_from_file("cirkit.log");
