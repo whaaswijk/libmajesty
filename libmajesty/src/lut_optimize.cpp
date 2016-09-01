@@ -20,15 +20,51 @@ namespace majesty {
 		return new xmg(gen_lut_area_strategy(m, frparams.get(), lut_size, ALL));
 	}
 
-	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size ) {
+	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
 		return gen_lut_area_strategy(m, frparams, lut_size, ALL);
 	}
-	
+
 	xmg mig_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
 		return gen_lut_area_strategy(m, frparams, lut_size, MAJ);
 	}
 
 	xmg gen_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, NODE_TYPE type) {
+		xmg cmig(m, frparams);
+		auto cut_params = default_cut_params();
+		cut_params->klut_size = lut_size;
+
+		while (true) {
+			auto oldsize = cmig.nnodes();
+			const auto cut_map =
+				enumerate_cuts(cmig, cut_params.get());
+			auto best_area = eval_matches_area(cmig, cut_map);
+			auto area_cover = build_cover(cmig, best_area);
+			it_exact_cover(cmig, area_cover,
+				cut_map, best_area);
+			auto fm = compute_functions(cmig,
+				area_cover, best_area, cut_map);
+			auto lutxmg = xmg_from_luts(cmig, area_cover,
+				best_area, fm, type);
+			//auto frlutxmg = xmg(lutxmg, frparams);
+			auto newsize = lutxmg.nnodes();
+			if (newsize < oldsize) {
+				cmig = std::move(lutxmg);
+			} else {
+				break;
+			}
+		}
+
+		return cmig;
+	}
+
+
+	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned nr_backtracks) {
+		auto frparams = default_xmg_params();
+		frparams->nr_backtracks = nr_backtracks;
+		return new xmg(lut_area_timeout_strategy(m, frparams.get(), lut_size));
+	}
+
+	xmg lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
@@ -43,8 +79,7 @@ namespace majesty {
 					cut_map, best_area);
 			auto fm = compute_functions(cmig, 
 					area_cover, best_area, cut_map);
-			auto lutxmg = xmg_from_luts(cmig, area_cover, 
-					best_area, fm, type);
+			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, ALL);
 			//auto frlutxmg = xmg(lutxmg, frparams);
 			auto newsize = lutxmg.nnodes();
 			if (newsize < oldsize) {

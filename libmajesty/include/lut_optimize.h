@@ -12,6 +12,11 @@ namespace majesty {
    	xmg lut_area_strategy(const xmg&, const xmg_params*, unsigned);
    	xmg mig_lut_area_strategy(const xmg&, const xmg_params*, unsigned);
    	xmg gen_lut_area_strategy(const xmg&, const xmg_params*, unsigned, NODE_TYPE);
+
+
+	xmg* ptr_lut_area_timeout_strategy(const xmg&, unsigned, unsigned);
+	xmg lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size);
+
 	xmg xmg_from_luts(const xmg&, const cover&, 
 			const bestmap&, const funcmap&, NODE_TYPE);
 	void mine_functions(const xmg&, const xmg_params*, unsigned);
