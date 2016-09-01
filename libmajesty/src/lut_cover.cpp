@@ -414,8 +414,7 @@ namespace majesty {
 		return maxdepth;
 	}
 
-	funcmap compute_functions(const xmg& xmg, const cover& cover, 
-			const bestmap& best, const cutmap& cutmap) {
+	funcmap compute_functions(const xmg& xmg, const cover& cover, const bestmap& best, const cutmap& cutmap) {
 		funcmap fm;
 
 		const auto& nodes = xmg.nodes();

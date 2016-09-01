@@ -8,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 #include <limits>
+#include <unordered_set>
 
 #define DEFAULT_KLUT_SIZE 6
 #define DEFAULT_CUT_LIMIT 8
@@ -57,8 +58,9 @@ namespace majesty {
 	using reqmap = std::vector<unsigned int>;
 	using funcmap = std::unordered_map<const cut*,std::unique_ptr<cirkit::tt>>;
 
-	cutvec eqclass_cuts(const std::vector<node>&, 
-			const node&, const cutmap&, const cut_params*);
+	cutvec eqclass_cuts(const std::vector<node>&, const node&, const cutmap&, const cut_params*);
+	cutvec filtered_eqclass_cuts(const std::vector<node>&, const node&, const cutmap&, 
+		const cut_params*, funcmap&, const std::unordered_set<unsigned long>&);
 
 	cutvec node_cuts(const node&, const cutmap&, const cut_params*);
 	
@@ -70,6 +72,7 @@ namespace majesty {
 	void safeinsert(cutvec& v, std::unique_ptr<cut> c);
 
 	cutmap enumerate_cuts(const xmg&, const cut_params*);
+	cutmap filtered_enumerate_cuts(const xmg&, const cut_params*, const std::unordered_set<unsigned long>&);
 }
 
 

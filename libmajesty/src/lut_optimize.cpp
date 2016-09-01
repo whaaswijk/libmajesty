@@ -68,11 +68,11 @@ namespace majesty {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
+		unordered_set<unsigned long> timeoutfuncs;
 
 		while (true) {
 			auto oldsize = cmig.nnodes();
-			const auto cut_map = 
-				enumerate_cuts(cmig, cut_params.get());
+			const auto cut_map = filtered_enumerate_cuts(cmig, cut_params.get(), timeoutfuncs);
 			auto best_area = eval_matches_area(cmig, cut_map);
 			auto area_cover = build_cover(cmig, best_area);
 			it_exact_cover(cmig, area_cover, 

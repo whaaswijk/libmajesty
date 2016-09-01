@@ -54,7 +54,6 @@ namespace majesty {
 			} else {
 				throw runtime_error("Error allocating Redis context");
 			}
-			exit(1);
 		}
 #endif
 	}

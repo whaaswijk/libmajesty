@@ -40,6 +40,29 @@ namespace majesty {
 		return res;
 	}
 
+	cutvec filtered_eqclass_cuts(const vector<node>& nodes, const node& N,
+			const cutmap& cut_map, const cut_params* p, funcmap& fm, const unordered_set<unsigned long>& timeoutfuncs) {
+		// Compute the union of the k-feasible cuts of this equivalence class,
+		// while filtering out duplicates and dominated cuts.
+		cutvec res;
+		auto nextidx = N.ecrep;
+		do {
+			const auto& node = nodes[nextidx];
+			auto cuts = node_cuts(node, cut_map, p);
+			for (auto& cut : cuts) {
+				// Check equivalence and redundancy
+				safeinsert(res, move(cut));
+			}
+			nextidx = node.ecnext;
+		} while (nextidx != EC_NULL);
+
+		// The trivial cut of the functional representative
+		unique_ptr<cut> c(new cut(N.ecrep));
+		res.push_back(move(c));
+
+		return res;
+	}
+
 	cutvec node_cuts(const node& n, 
 			const cutmap& cut_map, const cut_params *p) {
 		const auto& cuts1 = cut_map.at(n.in1);
@@ -281,6 +304,44 @@ namespace majesty {
 				continue;
 			} else {
 				res = eqclass_cuts(nodes, n, cut_map, p);
+			}
+			cut_map[n.ecrep] = move(res);
+			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
+			cout << ")\r";
+		}
+		cout << endl;
+
+		return cut_map;
+	}
+
+	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, const unordered_set<unsigned long>& timeoutfuncs) {
+		cout << "Enumerating cuts..." << endl;
+		funcmap fm;
+		cutmap cut_map(m.nnodes());
+
+		// We assume that the nodes are stored in topological order
+		auto nodes = m.nodes();
+		auto total_nodes = nodes.size();
+		auto processed_nodes = 0u;
+		for (auto i = 0u; i < total_nodes; i++) {
+			cutvec res;
+			const auto& n = nodes[i];
+			if (i == 0) { // One node
+				unique_ptr<cut> oc(new cut());
+				res.push_back(move(oc));
+				unique_ptr<tt> f(new tt(tt_const1()));
+				fm[oc.get()] = std::move(f);
+			} else if (is_pi(n)) {
+				unique_ptr<cut> c(new cut(n.ecrep));
+				res.push_back(move(c));
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				fm[c.get()] = std::move(f);
+			} else if (n.ecrep != static_cast<nodeid>(i)) { 
+				// Consider only equivalence class representatives
+				++processed_nodes;
+				continue;
+			} else {
+				res = filtered_eqclass_cuts(nodes, n, cut_map, p, fm, timeoutfuncs);
 			}
 			cut_map[n.ecrep] = move(res);
 			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
