@@ -175,9 +175,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="pymajesty\build.sh" />
-    <None Include="pymajesty\mig_interface.pxd" />
     <None Include="pymajesty\node_utils.pxd" />
-    <None Include="pymajesty\pymig.pyx" />
     <None Include="pymajesty\setup.py" />
     <None Include="majespy\setup.py" />
     <None Include="majespy\build.sh" />

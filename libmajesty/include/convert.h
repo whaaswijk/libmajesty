@@ -21,7 +21,8 @@ namespace majesty {
 	std::string exact_mig_expression(const cirkit::tt&);
 	std::string exact_xmg_expression(const cirkit::tt&);
 
-	xmg exact_mig(const cirkit::tt& func);
+	xmg exact_mig(const cirkit::tt&);
+	xmg exact_xmg(const cirkit::tt&);
 	
 	std::string xmg_expression_from_file(const std::string& filename);
 	
