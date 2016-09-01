@@ -179,14 +179,16 @@ namespace majesty {
 		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
 		auto num_vars = tt_num_vars(cutfunction);
+        cout << "decomposing" << endl;
 		unsigned uCanonPhase; char pCanonPerm[16]; char invperm[16];
 		auto npn = jake_canon(cutfunction, &uCanonPhase, pCanonPerm);
-		auto num_npn_vars = tt_num_vars(npn);
-		cout  << num_npn_vars << endl;
+        npn.resize(cutfunction.size());
+		cout  << "got npn: " << to_string(npn) << endl;
 		const auto min_xmg = fstore.min_size_depth_xmg(npn, type);
+		cout  << "got min: " << min_xmg << endl;
 		input_map_t imap;
 		inv(pCanonPerm, invperm);
-		for (auto i = 0u; i < cutnodes.size(); i++) {
+		for (auto i = 0u; i < 16u; i++) {
 			auto inode = nodemap[cutnodes[i]];
 			imap['a' + invperm[i]] = make_pair(
 					inode.first, (uCanonPhase & (1u << i)) ^ inode.second);
@@ -199,10 +201,10 @@ namespace majesty {
 			inv = true;
 			offset = 1u;
 		}
-		auto res = frmaj3_from_string(min_xmg, offset, 
-				majbrackets, xorbrackets, imap, xmg, shmap);
+		auto res = frmaj3_from_string(min_xmg, offset, majbrackets, xorbrackets, imap, xmg, shmap);
 		res.second = (res.second != inv);
 		res.second = (res.second != (uCanonPhase & (1 << num_vars)));
+        cout << "nurpie!" << endl;
 		return res;
 	}
 
@@ -210,6 +212,7 @@ namespace majesty {
 			const bestmap& best, const funcmap& funcmap, NODE_TYPE type) {
 		xmg n;
 		function_store fstore;
+        cout << "dur" << endl;
 
 		xmg_stats stats {
 			0u, // Nr. strash hits
@@ -235,8 +238,7 @@ namespace majesty {
 			}
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				nodemap[i] = make_pair(
-						n.create_input(innames[i-1]), false);
+				nodemap[i] = make_pair(n.create_input(innames[i-1]), false);
 				++progress;
 				continue;
 			}

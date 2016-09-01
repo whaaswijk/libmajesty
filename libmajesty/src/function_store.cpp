@@ -48,6 +48,8 @@ namespace majesty {
 		cout << "connecting to " << server_url << ":" << port << endl;
 #ifndef _WIN32
 		_rcontext = redisConnect(server_url.c_str(), port);
+		cout << "context: " << _rcontext << endl;
+		cout << "context->err: " << _rcontext->err << endl;
 		if (_rcontext == NULL || _rcontext->err) {
 			if (_rcontext) {
 				throw runtime_error("Error initializing Redis context");
@@ -68,14 +70,18 @@ namespace majesty {
 #ifndef _WIN32
 		redisReply* reply = (redisReply*)
 			redisCommand(_rcontext, "GET %s:expr", to_string(f).c_str());
-		assert(reply != NULL); // NOTE: handle errors!
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
 		switch (reply->type) {
 			case REDIS_REPLY_NIL:
 				freeReplyObject(reply);
 				expr = compute_min_size_depth_xmg(f, type);
 				reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s", 
 						to_string(f).c_str(), expr.c_str());
-				assert(reply != NULL); // NOTE: handle errors!
+                if (reply == NULL) {
+                    throw runtime_error("Error connecting to server");
+                }
 				break;
 			case REDIS_REPLY_STRING:
 				expr = string(reply->str, reply->len);
@@ -97,55 +103,77 @@ namespace majesty {
 #ifndef _WIN32
 		redisReply* reply = (redisReply*)
 			redisCommand(_rcontext, "GET %s:npn", to_string(f).c_str());
-		assert(reply != NULL); // NOTE: handle errors!
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
 		switch (reply->type) {
 			case REDIS_REPLY_NIL:
 				freeReplyObject(reply);
 				npn = exact_npn_canonization(f, phase, perm);
-				assert(perm.size() == tt_num_vars(f));
+                if (perm.size() != tt_num_vars(f)) {
+                    throw runtime_error("Error: perm.size() != tt_num_vars(f)");
+                }
 				reply = (redisReply*)redisCommand(_rcontext, "MULTI");
-				assert(reply != NULL && reply->type == REDIS_REPLY_STATUS);
+                if (reply == NULL || reply->type != REDIS_REPLY_STATUS) {
+                    throw runtime_error("Error connecting to server");
+                }
 				freeReplyObject(reply);
 				reply = (redisReply*)redisCommand(_rcontext, 
 						"SET %s:npn %s", to_string(f).c_str(), 
 						to_string(npn).c_str());
-				assert(reply != NULL);
+                if (reply == NULL) {
+                    throw runtime_error("Error connecting to server");
+                }
 				freeReplyObject(reply);
 				reply = (redisReply*)redisCommand(_rcontext, 
 						"SET %s:phase %s", to_string(f).c_str(), 
 						to_string(phase).c_str());
-				assert(reply != NULL);
+                if (reply == NULL) {
+                    throw runtime_error("Error connecting to server");
+                }
 				freeReplyObject(reply);
 				reply = (redisReply*)redisCommand(_rcontext, "DEL %s:perm",
 						to_string(f).c_str());
-				assert(reply != NULL);
+                if (reply == NULL) {
+                    throw runtime_error("Error connecting to server");
+                }
 				freeReplyObject(reply);
 				for (auto i = 0u; i < perm.size(); i++) {
 					reply = (redisReply*)redisCommand(_rcontext, 
 							"RPUSH %s:perm %u", to_string(f).c_str(), perm[i]);
-					assert(reply != NULL);
+                    if (reply == NULL) {
+                        throw runtime_error("Error connecting to server");
+                    }
 					freeReplyObject(reply);
 				}
 				reply = (redisReply*)redisCommand(_rcontext, "EXEC");
-				assert(reply != NULL);
+                if (reply == NULL) {
+                    throw runtime_error("Error connecting to server");
+                }
 				break;
 			case REDIS_REPLY_STRING:
 				npn = tt(string(reply->str, reply->len));
 				freeReplyObject(reply);
 				reply = (redisReply*)redisCommand(_rcontext, 
 						"GET %s:phase", to_string(f).c_str());
-				assert(reply != NULL);
+                if (reply == NULL) {
+                    throw runtime_error("Error connecting to server");
+                }
 				phase = tt(string(reply->str, reply->len));
 				freeReplyObject(reply);
 				reply = (redisReply*)redisCommand(_rcontext, 
 						"LRANGE %s:perm 0 -1", to_string(f).c_str());
-				assert(reply != NULL && reply->type == REDIS_REPLY_ARRAY);
+                if (reply == NULL || reply->type != REDIS_REPLY_ARRAY) {
+                    throw runtime_error("Error connecting to server");
+                }
 				for (auto i = 0u; i < reply->elements; i++) {
 					auto preply = reply->element[i];
 					auto permstring = string(preply->str, preply->len);
 					perm.push_back(stoi(permstring));
 				}
-				assert(perm.size() == tt_num_vars(f));
+                if (perm.size() != tt_num_vars(f)) {
+                    throw runtime_error("Error: perm.size() != tt_num_vars(f)");
+                }
 				break;
 			default:
 				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
