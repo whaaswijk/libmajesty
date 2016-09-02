@@ -19,14 +19,10 @@ namespace majesty {
 	xmg* ptr_lut_area_strategy(const xmg& m, unsigned lut_size, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
 		frparams->nr_backtracks = nr_backtracks;
-		return new xmg(gen_lut_area_strategy(m, frparams.get(), lut_size));
+		return new xmg(lut_area_strategy(m, frparams.get(), lut_size));
 	}
 
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
-		return gen_lut_area_strategy(m, frparams, lut_size);
-	}
-
-	xmg gen_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
@@ -68,7 +64,9 @@ namespace majesty {
 		cut_params->klut_size = lut_size;
 		unordered_set<unsigned long> timeoutfuncs;
 
-		while (true) {
+	
+		bool timeout_occurred = false;
+		do {
 			auto oldsize = cmig.nnodes();
 			funcmap fm;
 			const auto cut_map = filtered_enumerate_cuts(cmig, cut_params.get(), fm, timeoutfuncs);
@@ -76,14 +74,17 @@ namespace majesty {
 			auto area_cover = build_cover(cmig, best_area);
 			it_exact_cover(cmig, area_cover, cut_map, best_area);
 			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, timeoutfuncs, timeout);
-			//auto frlutxmg = xmg(lutxmg, frparams);
-			auto newsize = lutxmg.nnodes();
-			if (newsize < oldsize) {
-				cmig = std::move(lutxmg);
+			if (lutxmg) {
+				auto newsize = lutxmg.get_ptr()->nnodes();
+				if (newsize < oldsize) {
+					cmig = std::move(lutxmg.value());
+				} else {
+					break;
+				}
 			} else {
-				break;
+				timeout_occurred = true;
 			}
-		}
+		} while (timeout_occurred);
 
 		return cmig;
 	}
@@ -230,21 +231,22 @@ namespace majesty {
 		return decompose_cut(xmg, cut, cutfunction, shmap, nodemap, fstore, emptyset, 0).get();
 	}
 
-	xmg xmg_from_luts(const xmg& m, const cover& cover,
+	optional<xmg> xmg_from_luts(const xmg& m, const cover& cover,
 			const bestmap& best, const funcmap& funcmap, unordered_set<unsigned long>& timeoutfuncs, unsigned timeout) {
-		xmg n;
-		function_store fstore;
+		bool timeout_occurred = false;
 
-		xmg_stats stats {
+		xmg n;
+		xmg_stats stats{
 			0u, // Nr. strash hits
 			0u, // nr_potentials
 			0u, // nr_matches
 			0u, // nr_misses
 			0u, // nr_undefined
 		};
-		
+
 		nodemap nodemap;
-		strashmap shmap(m.nnodes()/2, stats);
+		strashmap shmap(m.nnodes() / 2, stats);
+		function_store fstore;
 
 		const auto& nodes = m.nodes();
 		const auto& innames = m.innames();
@@ -259,7 +261,7 @@ namespace majesty {
 			}
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				nodemap[i] = make_pair(n.create_input(innames[i-1]), false);
+				nodemap[i] = make_pair(n.create_input(innames[i - 1]), false);
 				++progress;
 				continue;
 			}
@@ -268,10 +270,17 @@ namespace majesty {
 			auto decomp_cut = decompose_cut(n, cut, f, shmap, nodemap, fstore, timeoutfuncs, timeout);
 			if (decomp_cut) {
 				nodemap[i] = decomp_cut.get();
+			} else {
+				//nodemap[i] = make_pair(0, false);
+				timeout_occurred = true;
 			}
 			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
 		cout << endl;
+		if (timeout_occurred) {
+			cout << "Timeout occurred" << endl;
+			return boost::none;
+		}
 		const auto& outputs = m.outputs();
 		const auto& outcompls = m.outcompl();
 		const auto& outnames = m.outnames();
@@ -279,14 +288,13 @@ namespace majesty {
 			const auto np = nodemap[outputs[i]];
 			n.create_output(np.first, outcompls[i] != np.second, outnames[i]);
 		}
-
 		return n;
 	}
 
 	xmg xmg_from_luts(const xmg& m, const cover& cover, 
 			const bestmap& best, const funcmap& funcmap) {
 		unordered_set<unsigned long> emptyset;
-		return xmg_from_luts(m, cover, best, funcmap, emptyset, 0);
+		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
 
 	// NPN canonization functions from ABC
