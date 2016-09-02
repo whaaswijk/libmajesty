@@ -1054,7 +1054,7 @@ namespace majesty {
 				if (i == 0u) {
 					nodemap[node.ecrep] = make_pair(create_input(var_map, solver), false);
 				} else {
-					nodemap[node.ecrep] = make_pair(create_input(innames[i], var_map, solver), false);
+					nodemap[node.ecrep] = make_pair(create_input(innames[i - 1], var_map, solver), false);
 				}
 				continue;
 			}
