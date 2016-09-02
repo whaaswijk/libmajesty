@@ -647,8 +647,8 @@ namespace majesty {
 		f << ".model mapping" << endl;
 		f << ".inputs ";
 		const auto& innames = m.innames();
-		for (auto i = 0u; i < m.nin(); i++) {
-			f << blif_name(innames[i]) << " ";
+		for (auto i = 1u; i <= m.nin(); i++) {
+			f << blif_name(innames[i - 1]) << " ";
 		}
 		f << endl;
 		f << ".outputs ";
