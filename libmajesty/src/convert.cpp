@@ -289,8 +289,11 @@ namespace majesty {
 	}
 
 	optional<string> min_size_expression(const tt& func, unsigned timeout, const string& synth_type) {
-		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_" + synth_type + 
-			" --timeout " + to_string(timeout) + "; convert --" + synth_type + "_to_expr; ps -e; quit\" > /dev/null";
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_" + synth_type;
+		if (timeout > 0) {
+			cmdstr += " --timeout " + to_string(timeout);
+		}
+		cmdstr += "; convert --" + synth_type + "_to_expr; ps -e; quit\" > /dev/null";
 		auto success = system(cmdstr.c_str());
 		if (success != 0) {
 			throw runtime_error("Exact synthesis through Cirkit failed");
