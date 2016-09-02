@@ -8,6 +8,7 @@
 
 using namespace std;
 using namespace cirkit;
+using boost::optional;
 using boost::property_tree::ptree;
 
 
@@ -268,13 +269,13 @@ namespace majesty {
 		return mig_shannon_decompose(ninputs, func);
 	}
 
-	string xmg_expression_from_file(const string& filename) {
+	optional<string> xmg_expression_from_file(const string& filename) {
 		ifstream infile(filename);
 		//stringstream infile("[{ \"command\": \"tt 1000\", \"time\" : \"2016-08-23 15:00:20\", \"tt\" : \"1000\" }, { \"command\": \"exact_mig\", \"time\" : \"2016-08-23 15:00:20\", \"min_depth\" : false, \"all_solutions\" : false, \"start\" : 1, \"runtime\" : 0.02 }, { \"command\": \"convert --mig_to_expr\", \"time\" : \"2016-08-23 15:00:20\" }, { \"command\": \"ps -e\", \"time\" : \"2016-08-23 15:00:29\", \"expression\" : \"<0ab>\" }]");
 
 		boost::property_tree::ptree pt;
 		boost::property_tree::read_json(infile, pt);
-		string expression;
+		optional<string> expression;
 		for (ptree::const_iterator it = pt.begin(); it != pt.end(); ++it) {
 			auto obj = it->second;
 			for (auto it2 = obj.begin(); it2 != obj.end(); it2++) {
@@ -287,24 +288,30 @@ namespace majesty {
 		return expression;
 	}
 
-	string exact_xmg_expression(const tt& func) {
-		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_xmg; convert --xmg_to_expr; ps -e; quit\" > /dev/null";
+	optional<string> min_size_expression(const tt& func, unsigned timeout, const string& synth_type) {
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_" + synth_type + 
+			" --timeout " + to_string(timeout) + "; convert --" + synth_type + "_to_expr; ps -e; quit\" > /dev/null";
 		auto success = system(cmdstr.c_str());
 		if (success != 0) {
 			throw runtime_error("Exact synthesis through Cirkit failed");
 		}
-		
 		return xmg_expression_from_file("cirkit.log");
+	}
+	
+	optional<string> exact_xmg_expression(const tt& func, unsigned timeout) {
+		return min_size_expression(func, timeout, "xmg");
+	}
+
+	string exact_xmg_expression(const tt& func) {
+		return exact_xmg_expression(func, 0).value();
+	}
+
+	optional<string> exact_mig_expression(const tt& func, unsigned timeout) {
+		return min_size_expression(func, timeout, "mig");
 	}
 
 	string exact_mig_expression(const tt& func) {
-		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_mig; convert --mig_to_expr; ps -e; quit\" > /dev/null";
-		auto success = system(cmdstr.c_str());
-		if (success != 0) {
-			throw runtime_error("Exact synthesis through Cirkit failed");
-		}
-		
-		return xmg_expression_from_file("cirkit.log");
+		return exact_mig_expression(func, 0).value();
 	}
 
 	xmg exact_mig(const tt& func) {

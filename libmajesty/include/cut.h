@@ -72,7 +72,7 @@ namespace majesty {
 	void safeinsert(cutvec& v, std::unique_ptr<cut> c);
 
 	cutmap enumerate_cuts(const xmg&, const cut_params*);
-	cutmap filtered_enumerate_cuts(const xmg&, const cut_params*, const std::unordered_set<unsigned long>&);
+	cutmap filtered_enumerate_cuts(const xmg&, const cut_params*, funcmap&, const std::unordered_set<unsigned long>&);
 }
 
 

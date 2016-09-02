@@ -17,18 +17,14 @@ namespace majesty {
 	xmg* ptr_lut_area_strategy(const xmg& m, unsigned lut_size, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
 		frparams->nr_backtracks = nr_backtracks;
-		return new xmg(gen_lut_area_strategy(m, frparams.get(), lut_size, ALL));
+		return new xmg(gen_lut_area_strategy(m, frparams.get(), lut_size));
 	}
 
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
-		return gen_lut_area_strategy(m, frparams, lut_size, ALL);
+		return gen_lut_area_strategy(m, frparams, lut_size);
 	}
 
-	xmg mig_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
-		return gen_lut_area_strategy(m, frparams, lut_size, MAJ);
-	}
-
-	xmg gen_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, NODE_TYPE type) {
+	xmg gen_lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
@@ -44,7 +40,7 @@ namespace majesty {
 			auto fm = compute_functions(cmig,
 				area_cover, best_area, cut_map);
 			auto lutxmg = xmg_from_luts(cmig, area_cover,
-				best_area, fm, type);
+				best_area, fm);
 			//auto frlutxmg = xmg(lutxmg, frparams);
 			auto newsize = lutxmg.nnodes();
 			if (newsize < oldsize) {
@@ -72,14 +68,13 @@ namespace majesty {
 
 		while (true) {
 			auto oldsize = cmig.nnodes();
-			const auto cut_map = filtered_enumerate_cuts(cmig, cut_params.get(), timeoutfuncs);
+			funcmap fm;
+			const auto cut_map = filtered_enumerate_cuts(cmig, cut_params.get(), fm, timeoutfuncs);
 			auto best_area = eval_matches_area(cmig, cut_map);
 			auto area_cover = build_cover(cmig, best_area);
 			it_exact_cover(cmig, area_cover, 
 					cut_map, best_area);
-			auto fm = compute_functions(cmig, 
-					area_cover, best_area, cut_map);
-			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, ALL);
+			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, timeoutfuncs);
 			//auto frlutxmg = xmg(lutxmg, frparams);
 			auto newsize = lutxmg.nnodes();
 			if (newsize < oldsize) {
@@ -180,10 +175,10 @@ namespace majesty {
 			return imap.at(expr[offset]);
 		}
 	}
-
+	
 	pair<nodeid,bool> decompose_cut(
 			xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap, 
-			nodemap& nodemap, function_store& fstore, NODE_TYPE type) {
+			nodemap& nodemap, function_store& fstore, unordered_set<unsigned long>* timeoutfuncs) {
 		const auto& cutnodes = cut->nodes();
 		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
@@ -196,7 +191,7 @@ namespace majesty {
         vector<unsigned> perm; tt phase;
 		const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//cout  << "got npn: " << to_string(npn) << endl;
-		const auto min_xmg = fstore.min_size_depth_xmg(npn, type);
+		const auto min_xmg = fstore.min_size_xmg(npn);
 		//cout  << "got min: " << min_xmg << endl;
 		input_map_t imap;
 		//inv(pCanonPerm, invperm);
@@ -224,8 +219,13 @@ namespace majesty {
 		return res;
 	}
 
-	xmg xmg_from_luts(const xmg& m, const cover& cover, 
-			const bestmap& best, const funcmap& funcmap, NODE_TYPE type) {
+	pair<nodeid, bool> decompose_cut(xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap,
+		nodemap& nodemap, function_store& fstore) {
+		return decompose_cut(xmg, cut, cutfunction, shmap, nodemap, fstore, nullptr);
+	}
+
+	xmg xmg_from_luts(const xmg& m, const cover& cover,
+			const bestmap& best, const funcmap& funcmap, unordered_set<unsigned long>* timeoutfuncs) {
 		xmg n;
 		function_store fstore;
 
@@ -259,7 +259,7 @@ namespace majesty {
 			}
 			const auto& cut = best.at(i);
 			auto& f = *funcmap.at(cut);
-			nodemap[i] = decompose_cut(n, cut, f, shmap, nodemap, fstore, type);
+			nodemap[i] = decompose_cut(n, cut, f, shmap, nodemap, fstore, timeoutfuncs);
 			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
 		cout << endl;
@@ -272,6 +272,11 @@ namespace majesty {
 		}
 
 		return n;
+	}
+
+	xmg xmg_from_luts(const xmg& m, const cover& cover, 
+			const bestmap& best, const funcmap& funcmap) {
+		return xmg_from_luts(m, cover, best, funcmap, nullptr);
 	}
 
 	// NPN canonization functions from ABC

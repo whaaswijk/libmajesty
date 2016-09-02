@@ -10,21 +10,10 @@
 
 using namespace std;
 using namespace cirkit;
+using boost::optional;
 
 namespace majesty {
 
-	string function_store::compute_min_size_depth_xmg(const tt& function) {
-		return compute_min_size_depth_xmg(function, ALL);
-	}
-
-	string function_store::compute_min_size_depth_xmg(const tt& function, NODE_TYPE type) {
-		if (type == ALL) {
-			return exact_xmg_expression(function);
-		} else {
-			return exact_mig_expression(function);
-		}
-	}
-	
 	function_store::~function_store() {
 #ifndef _WIN32
 		if (_rcontext != NULL) {
@@ -60,13 +49,13 @@ namespace majesty {
 #endif
 	}
 
-	std::string function_store::min_size_depth_xmg(const cirkit::tt& f) {
-		return min_size_depth_xmg(f, ALL);
+	string function_store::min_size_xmg(const cirkit::tt& f) {
+		return min_size_xmg(f, 0).value();
 	}
 
-	std::string function_store::min_size_depth_xmg(const cirkit::tt& f, NODE_TYPE type) {
+	optional<string> function_store::min_size_xmg(const cirkit::tt& f, unsigned timeout) {
 		// First see if the optimum xmg has already been computed
-		string expr;
+		optional<string> expr;
 #ifndef _WIN32
 		redisReply* reply = (redisReply*)
 			redisCommand(_rcontext, "GET %s:expr", to_string(f).c_str());
@@ -76,12 +65,14 @@ namespace majesty {
 		switch (reply->type) {
 			case REDIS_REPLY_NIL:
 				freeReplyObject(reply);
-				expr = compute_min_size_depth_xmg(f, type);
-				reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s", 
+				expr = exact_xmg_expression(f, timeout);
+				if (expr) { // A timeout may have occurred on synthesis
+					reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s",
 						to_string(f).c_str(), expr.c_str());
-                if (reply == NULL) {
-                    throw runtime_error("Error connecting to server");
-                }
+					if (reply == NULL) {
+						throw runtime_error("Error connecting to server");
+					}
+				}
 				break;
 			case REDIS_REPLY_STRING:
 				expr = string(reply->str, reply->len);

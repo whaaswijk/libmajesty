@@ -5,8 +5,11 @@
 #include <truth_table_utils.hpp>
 #include <map>
 #include <unordered_map>
+#include <boost/optional.hpp>
 
 namespace majesty {
+
+
 	xmg xmg_from_string(unsigned, const std::string&);
 	xmg xmg_from_string(unsigned, const std::string&, const cirkit::tt&,  const std::vector<unsigned>&);
 	std::pair<nodeid,bool> xmg_parse_string(xmg&, nodemap&, const std::string&);
@@ -19,12 +22,14 @@ namespace majesty {
 	xmg mig_decompose(unsigned ninputs, const std::string& function);
 	
 	std::string exact_mig_expression(const cirkit::tt&);
+	boost::optional<std::string> exact_mig_expression(const cirkit::tt&, unsigned);
 	std::string exact_xmg_expression(const cirkit::tt&);
+	boost::optional<std::string> exact_xmg_expression(const cirkit::tt&, unsigned);
 
 	xmg exact_mig(const cirkit::tt&);
 	xmg exact_xmg(const cirkit::tt&);
 	
-	std::string xmg_expression_from_file(const std::string& filename);
+	boost::optional<std::string> xmg_expression_from_file(const std::string& filename);
 	
 	using bracket_map_t = std::unordered_map<unsigned, unsigned>;
 	using input_map_t = std::unordered_map<char, std::pair<nodeid, bool>>;

@@ -314,10 +314,10 @@ namespace majesty {
 		return cut_map;
 	}
 
-	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, const unordered_set<unsigned long>& timeoutfuncs) {
+	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, funcmap fm, const unordered_set<unsigned long>& timeoutfuncs) {
 		cout << "Enumerating cuts..." << endl;
-		funcmap fm;
 		cutmap cut_map(m.nnodes());
+		fm.clear();
 
 		// We assume that the nodes are stored in topological order
 		auto nodes = m.nodes();
