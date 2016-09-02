@@ -298,6 +298,7 @@ namespace majesty {
 			nodeid create_input(bool c);
 			nodeid create_input(const std::string&);
 			nodeid create_input(varmap&, Minisat::Solver&);
+			nodeid create_input(const std::string&, varmap&, Minisat::Solver&);
 			void create_output(nodeid, bool, const std::string&);
 			// Creates a raw node, without strashing or propagation
 			std::pair<nodeid,bool> create(maj3signature);

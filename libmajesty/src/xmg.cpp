@@ -406,6 +406,20 @@ namespace majesty {
 		return idx;
 	}
 
+	nodeid xmg::create_input(const string& name, varmap& var_map, Solver& solver) {
+		node in;
+		in.flag = in.in1 = in.in2 = in.in3 = 0;
+		in.ecnext = EC_NULL;
+		set_pi(in);
+		auto idx = _nodes.size();
+		in.ecrep = idx;
+		_nodes.push_back(in);
+		_innames.push_back(name);
+		// Make a SAT variable for this input
+		var_map[idx] = solver.newVar();
+		return idx;
+	}
+
 	nodeid xmg::create_node(maj3inputs) {
 		node n;
 		n.flag = 0;
@@ -1032,10 +1046,16 @@ namespace majesty {
 		initsim(bv_map, hashnode_map, inputs);
 		simulate(bv_map, hashnode_map, simrep, xmg);
 
+		const auto& innames = xmg.innames();
+
 		for (auto i = 0u; i < xmg.nnodes(); i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				nodemap[node.ecrep] = make_pair(create_input(var_map, solver), false);
+				if (i == 0u) {
+					nodemap[node.ecrep] = make_pair(create_input(var_map, solver), false);
+				} else {
+					nodemap[node.ecrep] = make_pair(create_input(innames[i], var_map, solver), false);
+				}
 				continue;
 			}
 			const auto& p1 = nodemap[node.in1];

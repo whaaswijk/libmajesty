@@ -57,6 +57,7 @@ namespace majesty {
 					break;
 				}
 			} else {
+				cout << "timeout occurred" << endl;
 				timeout_occurred = true;
 			}
 		} while (timeout_occurred);
