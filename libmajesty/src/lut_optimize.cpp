@@ -194,6 +194,7 @@ namespace majesty {
 		//cout  << "got npn: " << to_string(npn) << endl;
 		const auto min_xmg = fstore.min_size_xmg(npn, timeout);
 		if (!min_xmg) { // Exact synthesis may have timed out
+			timeoutfuncs.insert(cutfunction.to_ulong());
 			return boost::none;
 		}
 		//cout  << "got min: " << min_xmg << endl;
@@ -225,7 +226,8 @@ namespace majesty {
 
 	pair<nodeid, bool> decompose_cut(xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap,
 		nodemap& nodemap, function_store& fstore) {
-		return decompose_cut(xmg, cut, cutfunction, shmap, nodemap, fstore, unordered_set<unsigned long>(), 0).get();
+		unordered_set<unsigned long> emptyset;
+		return decompose_cut(xmg, cut, cutfunction, shmap, nodemap, fstore, emptyset, 0).get();
 	}
 
 	xmg xmg_from_luts(const xmg& m, const cover& cover,
@@ -283,7 +285,8 @@ namespace majesty {
 
 	xmg xmg_from_luts(const xmg& m, const cover& cover, 
 			const bestmap& best, const funcmap& funcmap) {
-		return xmg_from_luts(m, cover, best, funcmap, unordered_set<unsigned long>(), 0);
+		unordered_set<unsigned long> emptyset;
+		return xmg_from_luts(m, cover, best, funcmap, emptyset, 0);
 	}
 
 	// NPN canonization functions from ABC
