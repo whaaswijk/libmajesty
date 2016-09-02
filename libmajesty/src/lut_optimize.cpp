@@ -107,13 +107,21 @@ namespace majesty {
 	*/
 
 	inline void inv(const char* perm, char* invperm) {
-		for ( auto i = 0u; i < 16; ++i ) { invperm[(int)perm[i]] = i; }
+		for ( auto i = 0u; i < 16u; ++i ) { invperm[(int)perm[i]] = i; }
+	}
+
+    inline vector<unsigned> inv(const vector<unsigned>& perm) {
+        vector<unsigned> invperm(perm.size());
+		for ( auto i = 0u; i < perm.size(); ++i ) { invperm[perm[i]] = i; }
+        return invperm;
 	}
 
 	pair<nodeid,bool> frmaj3_from_string(const string& expr, 
 			unsigned offset, const bracket_map_t& majbrackets, 
 			const bracket_map_t& xorbrackets,
 			const input_map_t& imap, xmg& xmg, strashmap& shmap) {
+        //cout << "expr: " << expr << endl;
+        //cout << "offset: " << offset << endl;
 		assert(expr[offset] != '!');
 		if (expr[offset] == '<') {
 			pair<nodeid,bool> children[3];
@@ -168,6 +176,7 @@ namespace majesty {
 		} else if (expr[offset] == '1') {
 			return make_pair(0, false);
 		} else {
+            assert(imap.find(expr[offset]) != imap.end());
 			return imap.at(expr[offset]);
 		}
 	}
@@ -179,19 +188,25 @@ namespace majesty {
 		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
 		auto num_vars = tt_num_vars(cutfunction);
-        cout << "decomposing" << endl;
+        /*
 		unsigned uCanonPhase; char pCanonPerm[16]; char invperm[16];
 		auto npn = jake_canon(cutfunction, &uCanonPhase, pCanonPerm);
         npn.resize(cutfunction.size());
-		cout  << "got npn: " << to_string(npn) << endl;
+        */
+        vector<unsigned> perm; tt phase;
+		const auto npn = exact_npn_canonization(cutfunction, phase, perm);
+		//cout  << "got npn: " << to_string(npn) << endl;
 		const auto min_xmg = fstore.min_size_depth_xmg(npn, type);
-		cout  << "got min: " << min_xmg << endl;
+		//cout  << "got min: " << min_xmg << endl;
 		input_map_t imap;
-		inv(pCanonPerm, invperm);
-		for (auto i = 0u; i < 16u; i++) {
+		//inv(pCanonPerm, invperm);
+        auto invperm = inv(perm);
+		//for (auto i = 0u; i < 16u; i++) {
+		for (auto i = 0u; i < perm.size(); i++) {
 			auto inode = nodemap[cutnodes[i]];
 			imap['a' + invperm[i]] = make_pair(
-					inode.first, (uCanonPhase & (1u << i)) ^ inode.second);
+					//inode.first, (uCanonPhase & (1u << i)) ^ inode.second);
+                    inode.first, phase.test(i) ^ inode.second);
 		}
 		const auto majbrackets = find_bracket_pairs(min_xmg, '<', '>');
 		const auto xorbrackets = find_bracket_pairs(min_xmg, '[', ']');
@@ -203,8 +218,9 @@ namespace majesty {
 		}
 		auto res = frmaj3_from_string(min_xmg, offset, majbrackets, xorbrackets, imap, xmg, shmap);
 		res.second = (res.second != inv);
-		res.second = (res.second != (uCanonPhase & (1 << num_vars)));
-        cout << "nurpie!" << endl;
+		//res.second = (res.second != (uCanonPhase & (1u << num_vars)));
+        res.second = (res.second != (phase.test(num_vars)));
+        //cout << "nurpie!" << endl;
 		return res;
 	}
 
@@ -212,7 +228,6 @@ namespace majesty {
 			const bestmap& best, const funcmap& funcmap, NODE_TYPE type) {
 		xmg n;
 		function_store fstore;
-        cout << "dur" << endl;
 
 		xmg_stats stats {
 			0u, // Nr. strash hits
@@ -262,6 +277,7 @@ namespace majesty {
 	// NPN canonization functions from ABC
 	tt jake_canon(const tt& ttf, unsigned* uCanonPhase, char* pCanonPerm) {
 		auto num_vars = tt_num_vars(ttf);
+        cout << "num vars: " << num_vars << endl;
 
 		vector<word> pTruth( ttf.num_blocks() );
 		boost::to_block_range( ttf, &pTruth[0] );

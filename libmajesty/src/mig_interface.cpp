@@ -255,8 +255,7 @@ namespace majesty {
 		} else if (n1.in3 == n2.in3 && is_c3(n1) == is_c3(n2)) {
 			return make_pair(n1.in3, is_c3(n1));
 		} else {
-			cerr << "Error: shared input not found";
-			exit(1);
+			throw runtime_error("Error: shared input not found");
 		}
 	}
 
