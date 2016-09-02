@@ -33,11 +33,11 @@ namespace majesty {
 	function_store::function_store(const std::string& server_url, const unsigned port) {
 		auto path = boost::filesystem::unique_path();
 		_logfile = path.native();
-		cout << "connecting to " << server_url << ":" << port << endl;
+		//cout << "connecting to " << server_url << ":" << port << endl;
 #ifndef _WIN32
 		_rcontext = redisConnect(server_url.c_str(), port);
-		cout << "context: " << _rcontext << endl;
-		cout << "context->err: " << _rcontext->err << endl;
+		//cout << "context: " << _rcontext << endl;
+		//cout << "context->err: " << _rcontext->err << endl;
 		if (_rcontext == NULL || _rcontext->err) {
 			if (_rcontext) {
 				throw runtime_error("Error initializing Redis context");
