@@ -16,7 +16,7 @@ namespace majesty {
 	xmg lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, unsigned timemout);
 
 	xmg xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&);
-	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::unordered_set<unsigned long>&, unsigned);
+	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned);
 	void mine_functions(const xmg&, const xmg_params*, unsigned);
 	cirkit::tt jake_canon(const cirkit::tt&, 
 			unsigned* uCanonPhase, char* pCanonPerm);

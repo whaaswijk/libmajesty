@@ -83,6 +83,8 @@ namespace majesty {
 				break;
 		}
 		freeReplyObject(reply);
+#else
+		expr = "<ab0>";
 #endif
 		return expr;
 	}

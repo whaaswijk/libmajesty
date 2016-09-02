@@ -41,7 +41,7 @@ namespace majesty {
 	}
 
 	cutvec filtered_eqclass_cuts(const vector<node>& nodes, const node& N,
-			const cutmap& cut_map, const cut_params* p, funcmap& fm, const unordered_set<unsigned long>& timeoutfuncs) {
+			const cutmap& cut_map, const cut_params* p, funcmap& fm, const vector<tt>& timeoutfuncs) {
 		// Compute the union of the k-feasible cuts of this equivalence class,
 		// while filtering out duplicates and dominated cuts.
 		cutvec res;
@@ -52,7 +52,8 @@ namespace majesty {
 			for (auto& cut : cuts) {
 				cut->computefunction(node, fm);
 				auto& cutfunc = fm[cut.get()];
-				if (timeoutfuncs.find(cutfunc->to_ulong()) == timeoutfuncs.end()) { // Make sure it's not a function we've timed out on
+				// Make sure it's not a function we've timed out on
+				if (find(timeoutfuncs.begin(), timeoutfuncs.end(), *(cutfunc.get())) == timeoutfuncs.end()) { 
 					// Check equivalence and redundancy
 					safeinsert(res, move(cut));
 				}
@@ -62,8 +63,9 @@ namespace majesty {
 
 		// The trivial cut of the functional representative
 		unique_ptr<cut> c(new cut(N.ecrep));
+		unique_ptr<tt> f(new tt(tt_nth_var(0)));
+		fm[c.get()] = std::move(f);
 		res.push_back(move(c));
-		c->computefunction(N, fm);
 
 		return res;
 	}
@@ -319,7 +321,7 @@ namespace majesty {
 		return cut_map;
 	}
 
-	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, funcmap& fm, const unordered_set<unsigned long>& timeoutfuncs) {
+	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, funcmap& fm, const vector<tt>& timeoutfuncs) {
 		cout << "Enumerating cuts..." << endl;
 		cutmap cut_map(m.nnodes());
 		fm.clear();
@@ -333,14 +335,14 @@ namespace majesty {
 			const auto& n = nodes[i];
 			if (i == 0) { // One node
 				unique_ptr<cut> oc(new cut());
-				res.push_back(move(oc));
 				unique_ptr<tt> f(new tt(tt_const1()));
 				fm[oc.get()] = std::move(f);
+				res.push_back(move(oc));
 			} else if (is_pi(n)) {
 				unique_ptr<cut> c(new cut(n.ecrep));
-				res.push_back(move(c));
 				unique_ptr<tt> f(new tt(tt_nth_var(0)));
 				fm[c.get()] = std::move(f);
+				res.push_back(move(c));
 			} else if (n.ecrep != static_cast<nodeid>(i)) { 
 				// Consider only equivalence class representatives
 				++processed_nodes;

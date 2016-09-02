@@ -36,7 +36,7 @@ namespace majesty {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
-		unordered_set<unsigned long> timeoutfuncs;
+		vector<tt> timeoutfuncs;
 
 	
 		bool timeout_occurred = false;
@@ -45,7 +45,6 @@ namespace majesty {
 			funcmap fm;
 			const auto cut_map = filtered_enumerate_cuts(cmig, cut_params.get(), fm, timeoutfuncs);
 			auto best_area = eval_matches_area(cmig, cut_map);
-            cout << "hur" << endl;
 			auto area_cover = build_cover(cmig, best_area);
 			it_exact_cover(cmig, area_cover, cut_map, best_area);
 			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, timeoutfuncs, timeout);
@@ -156,7 +155,7 @@ namespace majesty {
 	
 	optional<pair<nodeid,bool>> decompose_cut(
 			xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap, 
-			nodemap& nodemap, function_store& fstore, unordered_set<unsigned long>& timeoutfuncs, unsigned timeout) {
+			nodemap& nodemap, function_store& fstore, vector<tt>& timeoutfuncs, unsigned timeout) {
 		const auto& cutnodes = cut->nodes();
 		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
@@ -171,7 +170,7 @@ namespace majesty {
 		//cout  << "got npn: " << to_string(npn) << endl;
 		const auto min_xmg = fstore.min_size_xmg(npn, timeout);
 		if (!min_xmg) { // Exact synthesis may have timed out
-			timeoutfuncs.insert(cutfunction.to_ulong());
+			timeoutfuncs.push_back(cutfunction);
 			return boost::none;
 		}
 		//cout  << "got min: " << min_xmg << endl;
@@ -203,12 +202,12 @@ namespace majesty {
 
 	pair<nodeid, bool> decompose_cut(xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap,
 		nodemap& nodemap, function_store& fstore) {
-		unordered_set<unsigned long> emptyset;
+		vector<tt> emptyset;
 		return decompose_cut(xmg, cut, cutfunction, shmap, nodemap, fstore, emptyset, 0).get();
 	}
 
 	optional<xmg> xmg_from_luts(const xmg& m, const cover& cover,
-			const bestmap& best, const funcmap& funcmap, unordered_set<unsigned long>& timeoutfuncs, unsigned timeout) {
+			const bestmap& best, const funcmap& funcmap, vector<tt>& timeoutfuncs, unsigned timeout) {
 		bool timeout_occurred = false;
 
 		xmg n;
@@ -269,7 +268,7 @@ namespace majesty {
 
 	xmg xmg_from_luts(const xmg& m, const cover& cover, 
 			const bestmap& best, const funcmap& funcmap) {
-		unordered_set<unsigned long> emptyset;
+		vector<tt> emptyset;
 		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
 
