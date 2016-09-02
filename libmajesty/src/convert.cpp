@@ -303,7 +303,7 @@ namespace majesty {
 	}
 
 	string exact_xmg_expression(const tt& func) {
-		return exact_xmg_expression(func, 0).value();
+		return exact_xmg_expression(func, 0).get();
 	}
 
 	optional<string> exact_mig_expression(const tt& func, unsigned timeout) {
@@ -311,7 +311,7 @@ namespace majesty {
 	}
 
 	string exact_mig_expression(const tt& func) {
-		return exact_mig_expression(func, 0).value();
+		return exact_mig_expression(func, 0).get();
 	}
 
 	xmg exact_mig(const tt& func) {
