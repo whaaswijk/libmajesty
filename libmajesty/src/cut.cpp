@@ -50,8 +50,12 @@ namespace majesty {
 			const auto& node = nodes[nextidx];
 			auto cuts = node_cuts(node, cut_map, p);
 			for (auto& cut : cuts) {
-				// Check equivalence and redundancy
-				safeinsert(res, move(cut));
+				cut->computefunction(node, fm);
+				auto& cutfunc = fm[cut.get()];
+				if (timeoutfuncs.find(cutfunc->to_ulong()) == timeoutfuncs.end()) { // Make sure it's not a function we've timed out on
+					// Check equivalence and redundancy
+					safeinsert(res, move(cut));
+				}
 			}
 			nextidx = node.ecnext;
 		} while (nextidx != EC_NULL);
@@ -59,6 +63,7 @@ namespace majesty {
 		// The trivial cut of the functional representative
 		unique_ptr<cut> c(new cut(N.ecrep));
 		res.push_back(move(c));
+		c->computefunction(N, fm);
 
 		return res;
 	}
@@ -314,7 +319,7 @@ namespace majesty {
 		return cut_map;
 	}
 
-	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, funcmap fm, const unordered_set<unsigned long>& timeoutfuncs) {
+	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, funcmap& fm, const unordered_set<unsigned long>& timeoutfuncs) {
 		cout << "Enumerating cuts..." << endl;
 		cutmap cut_map(m.nnodes());
 		fm.clear();

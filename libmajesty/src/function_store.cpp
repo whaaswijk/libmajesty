@@ -30,8 +30,7 @@ namespace majesty {
 	function_store::function_store() : function_store("127.0.0.1", 6379) {
 	}
 
-	function_store::function_store(const std::string& server_url, 
-			const unsigned port) {
+	function_store::function_store(const std::string& server_url, const unsigned port) {
 		auto path = boost::filesystem::unique_path();
 		_logfile = path.native();
 		cout << "connecting to " << server_url << ":" << port << endl;
@@ -88,8 +87,7 @@ namespace majesty {
 		return expr;
 	}
 	
-	tt function_store::npn_canon(const tt& f, tt& phase, 
-			vector<unsigned>& perm) {
+	tt function_store::npn_canon(const tt& f, tt& phase, vector<unsigned>& perm) {
 		tt npn;
 #ifndef _WIN32
 		redisReply* reply = (redisReply*)
