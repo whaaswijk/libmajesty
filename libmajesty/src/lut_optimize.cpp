@@ -23,34 +23,8 @@ namespace majesty {
 	}
 
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
-		xmg cmig(m, frparams);
-		auto cut_params = default_cut_params();
-		cut_params->klut_size = lut_size;
-
-		while (true) {
-			auto oldsize = cmig.nnodes();
-			const auto cut_map =
-				enumerate_cuts(cmig, cut_params.get());
-			auto best_area = eval_matches_area(cmig, cut_map);
-			auto area_cover = build_cover(cmig, best_area);
-			it_exact_cover(cmig, area_cover,
-				cut_map, best_area);
-			auto fm = compute_functions(cmig,
-				area_cover, best_area, cut_map);
-			auto lutxmg = xmg_from_luts(cmig, area_cover,
-				best_area, fm);
-			//auto frlutxmg = xmg(lutxmg, frparams);
-			auto newsize = lutxmg.nnodes();
-			if (newsize < oldsize) {
-				cmig = std::move(lutxmg);
-			} else {
-				break;
-			}
-		}
-
-		return cmig;
+        return lut_area_timeout_strategy(m, frparams, lut_size, 0);
 	}
-
 
 	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
@@ -71,6 +45,7 @@ namespace majesty {
 			funcmap fm;
 			const auto cut_map = filtered_enumerate_cuts(cmig, cut_params.get(), fm, timeoutfuncs);
 			auto best_area = eval_matches_area(cmig, cut_map);
+            cout << "hur" << endl;
 			auto area_cover = build_cover(cmig, best_area);
 			it_exact_cover(cmig, area_cover, cut_map, best_area);
 			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, timeoutfuncs, timeout);
@@ -78,6 +53,7 @@ namespace majesty {
 				auto newsize = lutxmg.get_ptr()->nnodes();
 				if (newsize < oldsize) {
 					cmig = std::move(lutxmg.value());
+                    continue;
 				} else {
 					break;
 				}
