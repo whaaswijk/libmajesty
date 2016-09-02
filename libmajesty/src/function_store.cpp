@@ -50,7 +50,7 @@ namespace majesty {
 	}
 
 	string function_store::min_size_xmg(const cirkit::tt& f) {
-		return min_size_xmg(f, 0).value();
+		return min_size_xmg(f, 0).get();
 	}
 
 	optional<string> function_store::min_size_xmg(const cirkit::tt& f, unsigned timeout) {
@@ -68,7 +68,7 @@ namespace majesty {
 				expr = exact_xmg_expression(f, timeout);
 				if (expr) { // A timeout may have occurred on synthesis
 					reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s",
-						to_string(f).c_str(), expr.c_str());
+						to_string(f).c_str(), expr.get().c_str());
 					if (reply == NULL) {
 						throw runtime_error("Error connecting to server");
 					}
