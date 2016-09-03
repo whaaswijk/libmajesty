@@ -264,7 +264,8 @@ namespace majesty {
 			const auto np = nodemap[outputs[i]];
 			n.create_output(np.first, outcompls[i] != np.second, outnames[i]);
 		}
-		return n;
+        optional<xmg> res(move(n));
+		return res;
 	}
 
 	xmg xmg_from_luts(const xmg& m, const cover& cover, 
