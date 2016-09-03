@@ -1154,6 +1154,7 @@ namespace majesty {
 		cout << "Nr. undefined: " << stats.nr_undefined << endl;
 	}
 
+	/*
 	xmg::xmg(const xmg& sxmg) {
 		nodemap nodemap;
 		const auto& nodes = sxmg.nodes();
@@ -1196,6 +1197,7 @@ namespace majesty {
 			create_output(outnode.first, outnode.second != outc, outnames[i]);
 		}
 	}
+	*/
 
 	xmg strash(const xmg& sxmg) {
 		xmg res;

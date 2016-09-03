@@ -270,7 +270,7 @@ namespace majesty {
 
 		public:
 			xmg() {  }
-			xmg(const xmg&);
+			xmg(const xmg&) = delete;
 			xmg(xmg&&);
 			xmg& operator=(xmg&&);
 			xmg(MIG* mig, const xmg_params*);
