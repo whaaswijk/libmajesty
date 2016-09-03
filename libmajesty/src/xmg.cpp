@@ -1154,51 +1154,6 @@ namespace majesty {
 		cout << "Nr. undefined: " << stats.nr_undefined << endl;
 	}
 
-	/*
-	xmg::xmg(const xmg& sxmg) {
-		nodemap nodemap;
-		const auto& nodes = sxmg.nodes();
-		const auto& innames = sxmg.innames();
-		const auto nnodes = sxmg.nnodes();
-
-		for (auto i = 0u; i < nnodes; i++) {
-			const auto& node = nodes[i];
-			if (is_pi(node)) {
-                if (i == 0u) {
-                    nodemap[i] = make_pair(create_input(), false);
-                } else {
-                    nodemap[i] = make_pair(create_input(innames[i - 1]), false);
-                }
-			} else if (is_xor(node)) {
-				auto in1 = nodemap[node.in1];
-				in1.second = (in1.second != is_c1(node));
-				auto in2 = nodemap[node.in2];
-				in2.second = (in2.second != is_c2(node));
-				nodemap[i] = create(in1, in2);
-			} else {
-				auto in1 = nodemap[node.in1];
-				in1.second = (in1.second != is_c1(node));
-				auto in2 = nodemap[node.in2];
-				in2.second = (in2.second != is_c2(node));
-				auto in3 = nodemap[node.in3];
-				in3.second = (in3.second != is_c3(node));
-				nodemap[i] = create(in1, in2, in3);
-			}
-		}
-
-		const auto& outputs = sxmg.outputs();
-		const auto& outcompl = sxmg.outcompl();
-		const auto& outnames = sxmg.outnames();
-		const auto nouts = outputs.size();
-		for (auto i = 0u; i < nouts; i++) {
-			auto outid = outputs[i];
-			auto outc = outcompl[i];
-			auto outnode = nodemap[outid];
-			create_output(outnode.first, outnode.second != outc, outnames[i]);
-		}
-	}
-	*/
-
 	xmg strash(const xmg& sxmg) {
 		xmg res;
 
