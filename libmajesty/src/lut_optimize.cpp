@@ -72,7 +72,7 @@ namespace majesty {
 			}
 		} while (timeout_occurred);
 
-		return cmig;
+		return std::move(cmig);
 	}
 	
 	/*
