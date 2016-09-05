@@ -62,11 +62,12 @@ namespace majesty {
 					break;
 				}
 			} else {
-				cout << "timeout occurred" << endl;
+				cerr << "timeout occurred" << endl;
 				timeout_occurred = true;
 			}
 			++count;
 			if (effort > 0 && count > effort) {
+				cerr << "Timeout budget spent" << endl;
 				return boost::none;
 			}
 		} while (timeout_occurred);
@@ -170,13 +171,13 @@ namespace majesty {
 		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
 		auto num_vars = tt_num_vars(cutfunction);
-        /*
+
 		unsigned uCanonPhase; char pCanonPerm[16]; char invperm[16];
 		auto npn = jake_canon(cutfunction, &uCanonPhase, pCanonPerm);
         npn.resize(cutfunction.size());
-        */
-        vector<unsigned> perm; tt phase;
-		const auto npn = exact_npn_canonization(cutfunction, phase, perm);
+		
+        //vector<unsigned> perm; tt phase;
+		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//cout  << "got npn: " << to_string(npn) << endl;
 		const auto min_xmg = fstore.min_size_xmg(npn, timeout);
 		if (!min_xmg) { // Exact synthesis may have timed out
@@ -185,14 +186,14 @@ namespace majesty {
 		}
 		//cout  << "got min: " << min_xmg << endl;
 		input_map_t imap;
-		//inv(pCanonPerm, invperm);
-        auto invperm = inv(perm);
-		//for (auto i = 0u; i < 16u; i++) {
-		for (auto i = 0u; i < perm.size(); i++) {
+		inv(pCanonPerm, invperm);
+        //auto invperm = inv(perm);
+		for (auto i = 0u; i < 16u; i++) {
+		//for (auto i = 0u; i < perm.size(); i++) {
 			auto inode = nodemap[cutnodes[i]];
 			imap['a' + invperm[i]] = make_pair(
-					//inode.first, (uCanonPhase & (1u << i)) ^ inode.second);
-                    inode.first, phase.test(i) ^ inode.second);
+					inode.first, (uCanonPhase & (1u << i)) ^ inode.second);
+                    //inode.first, phase.test(i) ^ inode.second);
 		}
 		const auto majbrackets = find_bracket_pairs(min_xmg.get(), '<', '>');
 		const auto xorbrackets = find_bracket_pairs(min_xmg.get(), '[', ']');
@@ -204,8 +205,8 @@ namespace majesty {
 		}
 		auto res = frmaj3_from_string(min_xmg.get(), offset, majbrackets, xorbrackets, imap, xmg, shmap);
 		res.second = (res.second != inv);
-		//res.second = (res.second != (uCanonPhase & (1u << num_vars)));
-        res.second = (res.second != (phase.test(num_vars)));
+		res.second = (res.second != (uCanonPhase & (1u << num_vars)));
+        //res.second = (res.second != (phase.test(num_vars)));
         //cout << "nurpie!" << endl;
 		return res;
 	}

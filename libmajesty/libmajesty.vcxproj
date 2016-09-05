@@ -121,6 +121,7 @@
     <ClCompile Include="src\conversion_utils.cpp" />
     <ClCompile Include="src\convert.cpp" />
     <ClCompile Include="src\cut.cpp" />
+    <ClCompile Include="src\exact.cpp" />
     <ClCompile Include="src\function_store.cpp" />
     <ClCompile Include="src\lut_cover.cpp" />
     <ClCompile Include="src\lut_optimize.cpp" />
@@ -139,6 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\convert.h" />
+    <ClInclude Include="include\exact.h" />
     <ClInclude Include="include\maj_io.h" />
     <ClInclude Include="include\mig_interface.h" />
     <ClInclude Include="include\xmg.h" />
