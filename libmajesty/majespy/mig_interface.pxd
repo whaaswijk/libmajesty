@@ -73,4 +73,4 @@ cdef extern from "maj_io.h" namespace "majesty":
 
 cdef extern from "lut_optimize.h" namespace "majesty":
     xmg* ptr_lut_area_strategy(const xmg &, unsigned, unsigned) except + # Can throw is Cirkit or Redis server are not found
-    xmg* ptr_lut_area_timeout_strategy(const xmg & , unsigned, unsigned, unsigned) except + # Can throw is Cirkit or Redis server are not found
+    xmg* ptr_lut_area_timeout_strategy(const xmg & , unsigned, unsigned, unsigned, unsigned) except + # Can throw is Cirkit or Redis server are not found

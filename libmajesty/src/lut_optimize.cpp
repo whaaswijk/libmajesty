@@ -23,22 +23,27 @@ namespace majesty {
 	}
 
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
-        return lut_area_timeout_strategy(m, frparams, lut_size, 0);
+        return lut_area_timeout_strategy(m, frparams, lut_size, 0, 0).value();
 	}
 
-	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned nr_backtracks) {
+	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned effort, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
 		frparams->nr_backtracks = nr_backtracks;
-		return new xmg(lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout));
+		auto oxmg = lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout, effort);
+		if (oxmg) {
+			return new xmg(std::move(oxmg.get()));
+		} else {
+			return NULL;
+		}
 	}
 
-	xmg lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, unsigned timeout) {
+	optional<xmg> lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, unsigned timeout, unsigned effort) {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
 		vector<tt> timeoutfuncs;
-
 	
+		unsigned count = 0;
 		bool timeout_occurred = false;
 		do {
 			auto oldsize = cmig.nnodes();
@@ -59,6 +64,10 @@ namespace majesty {
 			} else {
 				cout << "timeout occurred" << endl;
 				timeout_occurred = true;
+			}
+			++count;
+			if (effort > 0 && count > effort) {
+				return boost::none;
 			}
 		} while (timeout_occurred);
 
