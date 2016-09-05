@@ -485,7 +485,7 @@ def read_verilog(py_filename) -> PyXmg:
     result = mig_interface.ptr_read_verilog(filename)
     return PyXmg().set_pt_to(result)
 
-def write_verilog(py_filename, PyXmg py_xmg) -> None:
+def write_verilog(PyXmg py_xmg, py_filename) -> None:
     cdef:
         string filename
     filename = py_filename.encode('UTF-8')
