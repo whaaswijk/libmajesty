@@ -80,42 +80,16 @@ namespace majesty {
 	}
 	*/
 
-	inline void inv(const char* perm, char* invperm, unsigned num_vars) {
-		for ( auto i = 0u; i < num_vars; ++i ) { invperm[(int)perm[i]] = i; }
-	}
-
-    // Maps variable indices between ABC's and Cirkit's internal representations
-    static inline unsigned inv_var_idx(unsigned idx, unsigned num_vars) {
-        return num_vars - idx - 1u;
-    }
-
-    static inline unsigned inv_phase(unsigned phase, unsigned num_vars) {
-       unsigned res = 0u;
-       for (auto i = 0u; i < num_vars; i++) {
-           auto mask = (phase >> (num_vars - i - 1u)) & 1;
-           res |= mask << i;
-       }
-       res |= (((phase >> num_vars) & 1u) << num_vars);
-       return res;
-    }
-
-
-	static inline void jake_inv(const char* perm, char* invperm, unsigned num_vars) {
-		for ( auto i = 0u; i < num_vars; ++i ) { invperm[(unsigned)perm[inv_var_idx(i, num_vars)]] = i; }
-	}
-
-    inline vector<unsigned> inv(const vector<unsigned>& perm) {
-        vector<unsigned> invperm(perm.size());
+	inline vector<unsigned> inv(const vector<unsigned>& perm) {
+		vector<unsigned> invperm(perm.size());
 		for ( auto i = 0u; i < perm.size(); ++i ) { invperm[perm[i]] = i; }
-        return invperm;
+		return invperm;
 	}
 
 	pair<nodeid,bool> frmaj3_from_string(const string& expr, 
 			unsigned offset, const bracket_map_t& majbrackets, 
 			const bracket_map_t& xorbrackets,
 			const input_map_t& imap, xmg& xmg, strashmap& shmap) {
-        //cout << "expr: " << expr << endl;
-        //cout << "offset: " << offset << endl;
 		assert(expr[offset] != '!');
 		if (expr[offset] == '<') {
 			pair<nodeid,bool> children[3];
@@ -170,7 +144,7 @@ namespace majesty {
 		} else if (expr[offset] == '1') {
 			return make_pair(0, false);
 		} else {
-            assert(imap.find(expr[offset]) != imap.end());
+			assert(imap.find(expr[offset]) != imap.end());
 			return imap.at(expr[offset]);
 		}
 	}
@@ -284,8 +258,11 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto np = nodemap[outputs[i]];
 			n.create_output(np.first, outcompls[i] != np.second, outnames[i]);
+			if (i == 1) {
+				cout << "out[1] = " << np.first << ", out[1].second = " << np.second << ", outcompls[1] = " << outcompls[1] << endl;
+			}
 		}
-        optional<xmg> res(move(n));
+		optional<xmg> res(move(n));
 		return res;
 	}
 

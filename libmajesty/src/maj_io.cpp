@@ -10,6 +10,7 @@
 #include <cut.h>
 #include <lut_cover.h>
 #include <truth_table_utils.hpp>
+#include <cstdio>
 
 using namespace std;
 
@@ -25,10 +26,17 @@ namespace majesty {
 		return new xmg(read_bench(filename));
 	}
 
+	extern "C" void parse_verilog(FILE *file, MIG **m);
 	xmg read_verilog(const std::string filename) {
-		ifstream f(filename);
-		xmg res = read_verilog(f);
-		return res;
+		MIG* mig;
+		auto fp = fopen(filename.c_str(), "r");
+		if (fp == NULL) {
+			throw runtime_error("Unable to open input file");
+		}
+		parse_verilog(fp, &mig);
+		auto params = default_xmg_params();
+		params->nr_backtracks = 100;
+		return xmg(mig, params.get());
 	}
 
 	xmg* ptr_read_verilog(const std::string filename) {
@@ -276,183 +284,6 @@ namespace majesty {
 			}
 			outputnames.push_back(str);
 		}
-	}
-
-	xmg read_verilog(ifstream& instream) {
-		assert(instream.good());
-		xmg xmg;
-		unordered_map<string, pair<nodeid,bool>> varnames;
-		varnames["one"] = make_pair(xmg.create_input(), false);
-
-		string line;
-		vector<string> outputnames;
-		nodemap nodemap;
-		bool parse_module = false, parse_inputs = false, parse_outputs = false, parse_wires = false, parse_assignments = false, endmodule = false;
-		auto linenr = 0u;
-		while (getline(instream, line)) {
-			if (!instream) {
-				break;
-			}
-			++linenr;
-			if (line.size() == 0) {
-				continue;
-			}
-			boost::trim(line);
-			if (line.substr(0, 2) == "//") { // Comment line
-				continue;
-			} else if (line.substr(0, 6) == "module") { // Top declaration
-				parse_module = true;
-				continue;
-			} else if (line.substr(0, 5) == "input") {
-				parse_module = false;
-				parse_inputs = true;
-				parse_verilog_inputs(xmg, line, varnames);
-			} else if (line.substr(0, 6) == "output") {
-				parse_module = parse_inputs = false;
-				parse_outputs = true;
-				parse_verilog_outputs(line, outputnames);
-			} else if (line.substr(0, 4) == "wire") {
-				parse_module = parse_inputs = parse_outputs = false;
-				parse_wires = true;
-				parse_verilog_wires(xmg, line, varnames);
-			} else if (line.substr(0, 6) == "assign") {
-				parse_module = parse_inputs = parse_outputs = parse_wires = false;
-				parse_assignments = true;
-
-				// Remove the semicolon at the end
-				auto semidx = line.find_first_of(';');
-				line = line.substr(0, semidx);
-				vector<string> split_strs;
-				vector<string> param_names;
-				boost::split(split_strs, line, boost::is_any_of("\t "), boost::token_compress_on);
-				// Second entry is the name
-				auto name = split_strs[1];
-				if (name == "one") {
-					continue;
-				}
-
-				if (split_strs.size() == 6 || split_strs.size() == 7) { // AND/OR/XOR
-					auto param1 = split_strs[3];
-					auto compl2 = false;
-					if (param1[0] == '~') {
-						compl2 = true;
-						param1 = param1.substr(1, param1.size() - 1);
-					}
-					auto symbol = split_strs[4];
-					auto param2 = split_strs[5];
-					auto compl3 = false;
-					if (param2[0] == '~') {
-						compl3 = true;
-						param2 = param2.substr(1, param2.size() - 1);
-					}
-
-					auto np1 = varnames[param1];
-					auto np2 = varnames[param2];
-
-					auto nodepfound = varnames.find(name);
-					if (nodepfound == varnames.end()) { // An output is being assigned in a non-unary way. Create a new node for it.
-						varnames[name] = xmg.create(0, false, 0, false, 0, false);
-					}
-					const auto& nodep = varnames[name];
-					auto& node = xmg.get_node(nodep.first);
-					auto in1 = node.in1; auto c1 = false;
-					auto in2 = np1.first; 
-					auto in3 = np2.first; 
-					sort_inputs(in1, c1, in2, compl2, in3, compl3);
-
-					node.in2 = in2;
-					if (compl2) {
-						set_c2(node);
-					}
-					node.in3 = in3;
-					if (compl3) {
-						set_c3(node);
-					}
-					if (symbol == "^") {
-						set_xor(node);
-					} else if (symbol == "&") {
-						set_c1(node);
-					} else {
-						reset_c1(node);
-					}
-				} else if (split_strs.size() == 14 || split_strs.size() == 15) { // Majority
-					auto param1 = split_strs[3].substr(1, split_strs[3].size() - 1);
-					auto compl1 = false;
-					if (param1[0] == '~') {
-						compl1 = true;
-						param1 = param1.substr(1, param1.size() - 1);
-					}
-					auto param2 = split_strs[5].substr(0, split_strs[5].size() - 1);
-					auto compl2 = false;
-					if (param2[0] == '~') {
-						compl2 = true;
-						param2 = param2.substr(1, param2.size() - 1);
-					}
-					auto param3 = split_strs[9].substr(0, split_strs[9].size() - 1);
-					auto compl3 = false;
-					if (param3[0] == '~') {
-						compl3 = true;
-						param3 = param3.substr(1, param3.size() - 1);
-					}
-
-					auto np1 = varnames[param1];
-					auto np2 = varnames[param2];
-					auto np3 = varnames[param3];
-					auto in1 = np1.first; auto in2 = np2.first; auto in3 = np3.first;
-					sort_inputs(in1, compl1, in2, compl2, in3, compl3);
-
-					auto nodepfound = varnames.find(name);
-					if (nodepfound == varnames.end()) { // An output is being assigned in a non-unary way. Create a new node for it.
-						varnames[name] = xmg.create(0, false, 0, false, 0, false);
-					}
-					const auto& nodep = varnames[name];
-					auto& node = xmg.get_node(nodep.first);
-					node.in1 = in1;
-					if (compl1) {
-						set_c1(node);
-					}
-					node.in2 = in2;
-					if (compl2) {
-						set_c2(node);
-					}
-					node.in3 = in3;
-					if (compl3) {
-						set_c3(node);
-					}
-				} else { // Unary assignment
-					assert(split_strs.size() == 4 || split_strs.size() == 5);
-					auto param1 = split_strs[3];
-					auto compl1 = false;
-					if (param1[0] == '~') {
-						compl1 = true;
-						param1 = param1.substr(1, param1.size() - 1);
-					}
-					auto np1 = varnames[param1];
-					varnames[name] = make_pair(np1.first, np1.second != compl1);
-				}
-			} else if (line.substr(0, 9) == "endmodule") {
-				parse_module = parse_inputs = parse_outputs = parse_wires = parse_assignments = false;
-				endmodule = true;
-				break;
-			} else if (parse_module) {
-				continue;
-			} else if (parse_inputs) {
-				parse_verilog_inputs(xmg, line, varnames);
-			} else if (parse_outputs) {
-				parse_verilog_outputs(line, outputnames);
-			} else if (parse_wires) { // We ignore the wire definitions
-				parse_verilog_wires(xmg, line, varnames);
-			} else { // Some unknown state was reached
-				assert(false);
-			}
-		}
-		for (auto& outname : outputnames) {
-			auto outp = varnames[outname];
-			xmg.create_output(outp.first, outp.second, outname);
-		}
-
-
-		return xmg;
 	}
 
 	static bool is_one(const cirkit::tt& function) {

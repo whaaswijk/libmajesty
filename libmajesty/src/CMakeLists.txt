@@ -10,6 +10,12 @@ set(SOURCE_FILES xmg.cpp mlputil.c  mlpext.cpp strashmap.cpp
 	mig_functional_hashing_constants.cpp cut.cpp lut_cover.cpp lut_optimize.cpp maj_io.cpp function_store.cpp)
 
 find_package(Boost COMPONENTS filesystem system REQUIRED)
+find_package(BISON)
+find_package(FLEX)
+BISON_TARGET(Parser parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
+FLEX_TARGET(Lexer lexer.l ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
+ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
 
-add_library(libmajesty STATIC ${SOURCE_FILES})
+
+add_library(libmajesty STATIC ${SOURCE_FILES} ${BISON_Parser_OUTPUTS} ${FLEX_Lexer_OUTPUTS})
 target_link_libraries(libmajesty LINK_PUBLIC MiniSat hiredis ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
