@@ -258,9 +258,6 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto np = nodemap[outputs[i]];
 			n.create_output(np.first, outcompls[i] != np.second, outnames[i]);
-			if (i == 1) {
-				cout << "out[1] = " << np.first << ", out[1].second = " << np.second << ", outcompls[1] = " << outcompls[1] << endl;
-			}
 		}
 		optional<xmg> res(move(n));
 		return res;
