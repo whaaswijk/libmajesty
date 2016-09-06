@@ -19,7 +19,7 @@ find_package(Threads)
 include_directories("$ENV{HIREDIS_HOME}")
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories("${PROJECT_SOURCE_DIR}/include")
-include_directories("$ENV{ABC_HOME}")
+include_directories("$ENV{LIBABC_HOME}/src")
 
 # Add the binary dir to the include path so we can find the config header
 include_directories("${PROJECT_BINARY_DIR}")
