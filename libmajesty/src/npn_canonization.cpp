@@ -508,7 +508,7 @@ namespace cirkit
                 std::cout << "[e] pCanonPerm:";
                 for ( auto i = 0u; i < num_vars; ++i )
                 {
-                    std::cout << " " << pCanonPerm[i];
+                    std::cout << " " << (int)pCanonPerm[i];
                 }
                 std::cout << std::endl;
                 std::cout << "[e] truth table: " << t << std::endl;

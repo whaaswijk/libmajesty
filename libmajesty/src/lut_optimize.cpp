@@ -189,8 +189,12 @@ namespace majesty {
 
         //npn.resize(cutfunction.size());
 		
-        vector<unsigned> perm; tt phase;
-		auto npn = npn_canonization_lucky(cutfunction, phase, perm);
+        vector<unsigned> perm; tt phase, npn;
+        if (num_vars < 6) {
+            npn = exact_npn_canonization(cutfunction, phase, perm);
+        } else {
+            npn = npn_canonization_lucky(cutfunction, phase, perm);
+        }
         npn.resize(cutfunction.size());
         
 		//cout  << "got npn: " << to_string(npn) << endl;
