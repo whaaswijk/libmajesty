@@ -5,11 +5,6 @@
 #include "npn_canonization.hpp"
 #include <convert.h>
 
-extern "C" {
-#include <bool/lucky/luckyInt.h>
-#include <misc/util/utilTruth.h>
-}
-
 using namespace std;
 using namespace cirkit;
 using boost::optional;
@@ -183,7 +178,7 @@ namespace majesty {
 			return imap.at(expr[offset]);
 		}
 	}
-	
+
 	optional<pair<nodeid,bool>> decompose_cut(
 			xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap, 
 			nodemap& nodemap, function_store& fstore, vector<tt>& timeoutfuncs, unsigned timeout) {
@@ -192,64 +187,26 @@ namespace majesty {
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
 		auto num_vars = tt_num_vars(cutfunction);
 
-		unsigned uCanonPhase; char pCanonPerm[num_vars]; char invperm[num_vars];
-		auto npn = jake_canon(cutfunction, &uCanonPhase, pCanonPerm, num_vars);
-        auto invphase = inv_phase(uCanonPhase, num_vars);
         //npn.resize(cutfunction.size());
 		
         vector<unsigned> perm; tt phase;
-		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
-		const auto enpn = exact_npn_canonization(cutfunction, phase, perm);
-        assert(npn == enpn);
+		auto npn = npn_canonization_lucky(cutfunction, phase, perm);
+        npn.resize(cutfunction.size());
         
 		//cout  << "got npn: " << to_string(npn) << endl;
 		const auto min_xmg = fstore.min_size_xmg(npn, timeout);
-		const auto emin_xmg = fstore.min_size_xmg(enpn, timeout);
 		if (!min_xmg) { // Exact synthesis may have timed out
 			timeoutfuncs.push_back(cutfunction);
 			return boost::none;
 		}
 		//cout  << "got min: " << min_xmg << endl;
 		input_map_t imap;
-		inv(pCanonPerm, invperm, num_vars);
-		//jake_inv(pCanonPerm, invperm, num_vars);
 
-        for (auto i = 0u; i < num_vars; i++) {
-            if(perm[i] != pCanonPerm[i]) {
-                cout << endl;
-                for (auto j = 0u; j < num_vars; j++) {
-                    cout << "perm[" << j << "] = " << perm[j] << ", ";
-                    cout << "pCanonPerm[" << j << "] = " << (int)pCanonPerm[j] << endl;
-                }
-                for (auto j = 0u; j < num_vars; j++) {
-                    //cout << "invperm[" << j << "] = " << (int)invperm[j] << endl;
-                }
-                for (auto j = 0u; j <= num_vars; j++) {
-                    cout << "phase[" << j << "] = " << phase.test(j) << ", ";
-                    cout << "uCanonPhase[" << j << "] = " << ((uCanonPhase >> j) & 1u) << endl;
-                }
-                for (auto j = 0u; j <= num_vars; j++) {
-                    //cout << "invphase[" << j << "] = " << ((invphase >> j) & 1u) << endl;
-                }
-            }
-            cout << "tt:        " << cutfunction << endl;
-            cout << "npn:       " << to_string(npn) << endl;
-            cout << "enpn:      " << to_string(enpn) << endl;
-            cout << "expr:      " << min_xmg.get() << endl;
-            cout << "enpn_expr: " << emin_xmg.get() << endl;
-            assert(0);
-        }
-        if ((uCanonPhase >> num_vars) & 1) {
-            cout << "Got inverted output!" << endl;
-        }
-
-        //auto invperm = inv(perm);
+        auto invperm = inv(perm);
 		for (auto i = 0u; i < num_vars; i++) {
 			auto inode = nodemap[cutnodes[i]];
 			imap['a' + invperm[i]] = make_pair(
-					//inode.first, ((invphase >> i) & 1u) ^ inode.second);
-					inode.first, ((uCanonPhase >> i) & 1u) ^ inode.second);
-                    //inode.first, phase.test(i) ^ inode.second);
+                    inode.first, phase.test(i) ^ inode.second);
 		}
 		const auto majbrackets = find_bracket_pairs(min_xmg.get(), '<', '>');
 		const auto xorbrackets = find_bracket_pairs(min_xmg.get(), '[', ']');
@@ -261,10 +218,7 @@ namespace majesty {
 		}
 		auto res = frmaj3_from_string(min_xmg.get(), offset, majbrackets, xorbrackets, imap, xmg, shmap);
 		res.second = (res.second != inv);
-		//res.second = (res.second != ((invphase >> num_vars) & 1u ));
-		res.second = (res.second != ((uCanonPhase >> num_vars) & 1u ));
-        //res.second = (res.second != (phase.test(num_vars)));
-        //cout << "nurpie!" << endl;
+        res.second = (res.second != (phase.test(num_vars)));
 		return res;
 	}
     // p[0] = 1, p[1] = 0 --> ip[0] = 1, p[1] = 0
@@ -341,6 +295,7 @@ namespace majesty {
 		vector<tt> emptyset;
 		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
+    /*
 
 	// NPN canonization function from ABC
 	tt jake_canon(const tt& ttf, unsigned* uCanonPhase, char* pCanonPerm, unsigned num_vars) {
@@ -356,7 +311,6 @@ namespace majesty {
 		for ( auto i = 0u; i < num_vars; ++i ) {
 			pCanonPerm[i] -= 'a';
 		}
-        /*
 		Abc_TtImplementNpnConfig(&pTruth[0], num_vars, pCanonPerm, *uCanonPhase);
 		tt ttf_new( pTruth.begin(), pTruth.end() );
 		ttf_new.resize(ttf.size());
@@ -364,8 +318,8 @@ namespace majesty {
 			cout << to_string(ttf) << " != " << to_string(ttf_new) << endl;
 			assert(ttf == ttf_new);
 		}
-        */
 
 		return tt_npn;
 	}
+    */
 }
