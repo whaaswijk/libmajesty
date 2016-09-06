@@ -485,7 +485,7 @@ namespace cirkit
 
     tt npn_canonization_lucky( const tt& t, boost::dynamic_bitset<>& phase, std::vector<unsigned>& perm )
     {
-        std::vector<unsigned long> truth( t.num_blocks() );
+        std::vector<word> truth( t.num_blocks() );
         boost::to_block_range( t, &truth[0] );
 
         const auto num_vars = tt_num_vars( t );

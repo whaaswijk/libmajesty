@@ -18,13 +18,13 @@ namespace majesty {
 	}
 
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
-        return lut_area_timeout_strategy(m, frparams, lut_size, 0, 0).value();
+        return lut_area_timeout_strategy(m, frparams, lut_size, 0).value();
 	}
 
-	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned effort, unsigned nr_backtracks) {
+	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
 		frparams->nr_backtracks = nr_backtracks;
-		auto oxmg = lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout, effort);
+		auto oxmg = lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout);
 		if (oxmg) {
 			return new xmg(std::move(oxmg.get()));
 		} else {
@@ -32,7 +32,7 @@ namespace majesty {
 		}
 	}
 
-	optional<xmg> lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, unsigned timeout, unsigned effort) {
+	optional<xmg> lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, unsigned timeout) {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
@@ -61,10 +61,6 @@ namespace majesty {
 				timeout_occurred = true;
 			}
 			++count;
-			if (effort > 0 && count > effort) {
-				cerr << "Timeout budget spent" << endl;
-				return boost::none;
-			}
 		} while (timeout_occurred);
 
 		return std::move(cmig);
@@ -209,8 +205,7 @@ namespace majesty {
         auto invperm = inv(perm);
 		for (auto i = 0u; i < num_vars; i++) {
 			auto inode = nodemap[cutnodes[i]];
-			imap['a' + invperm[i]] = make_pair(
-                    inode.first, phase.test(i) ^ inode.second);
+			imap['a' + invperm[i]] = make_pair(inode.first, phase.test(i) ^ inode.second);
 		}
 		const auto majbrackets = find_bracket_pairs(min_xmg.get(), '<', '>');
 		const auto xorbrackets = find_bracket_pairs(min_xmg.get(), '[', ']');

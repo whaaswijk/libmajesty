@@ -12,8 +12,8 @@ namespace majesty {
    	xmg lut_area_strategy(const xmg&, const xmg_params*, unsigned);
 
 
-	xmg* ptr_lut_area_timeout_strategy(const xmg&, unsigned lut_size, unsigned timeout, unsigned effort, unsigned nr_backtracks);
-	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, const xmg_params*, unsigned, unsigned, unsigned);
+	xmg* ptr_lut_area_timeout_strategy(const xmg&, unsigned lut_size, unsigned timeout, unsigned nr_backtracks);
+	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, const xmg_params*, unsigned, unsigned);
 
 	xmg xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned);
