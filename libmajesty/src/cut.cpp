@@ -40,8 +40,8 @@ namespace majesty {
 		return res;
 	}
 
-	cutvec filtered_eqclass_cuts(const vector<node>& nodes, const node& N,
-			const cutmap& cut_map, const cut_params* p, funcmap& fm, const vector<tt>& timeoutfuncs) {
+	cutvec eqclass_cuts_eval_funcs(const vector<node>& nodes, const node& N,
+			const cutmap& cut_map, const cut_params* p, funcmap& fm) {
 		// Compute the union of the k-feasible cuts of this equivalence class,
 		// while filtering out duplicates and dominated cuts.
 		cutvec res;
@@ -51,12 +51,8 @@ namespace majesty {
 			auto cuts = node_cuts(node, cut_map, p);
 			for (auto& cut : cuts) {
 				cut->computefunction(node, fm);
-				auto& cutfunc = fm[cut.get()];
-				// Make sure it's not a function we've timed out on
-				if (find(timeoutfuncs.begin(), timeoutfuncs.end(), *(cutfunc.get())) == timeoutfuncs.end()) { 
-					// Check equivalence and redundancy
-					safeinsert(res, move(cut));
-				}
+				// Check equivalence and redundancy
+				safeinsert(res, move(cut));
 			}
 			nextidx = node.ecnext;
 		} while (nextidx != EC_NULL);
@@ -321,7 +317,7 @@ namespace majesty {
 		return cut_map;
 	}
 
-	cutmap filtered_enumerate_cuts(const xmg& m, const cut_params *p, funcmap& fm, const vector<tt>& timeoutfuncs) {
+	cutmap enumerate_cuts_eval_funcs(const xmg& m, const cut_params *p, funcmap& fm) {
 		cout << "Enumerating cuts..." << endl;
 		cutmap cut_map(m.nnodes());
 		fm.clear();
@@ -348,7 +344,7 @@ namespace majesty {
 				++processed_nodes;
 				continue;
 			} else {
-				res = filtered_eqclass_cuts(nodes, n, cut_map, p, fm, timeoutfuncs);
+				res = eqclass_cuts_eval_funcs(nodes, n, cut_map, p, fm);
 			}
 			cut_map[n.ecrep] = move(res);
 			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;

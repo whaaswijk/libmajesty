@@ -38,21 +38,21 @@ namespace majesty {
 		cut_params->klut_size = lut_size;
 		vector<tt> timeoutfuncs;
 	
-		unsigned count = 0;
 		bool timeout_occurred = false;
+		auto oldsize = cmig.nnodes();
+		funcmap fm;
+		const auto cut_map = enumerate_cuts_eval_funcs(cmig, cut_params.get(), fm);
 		do {
-			auto oldsize = cmig.nnodes();
-			funcmap fm;
-			const auto cut_map = filtered_enumerate_cuts(cmig, cut_params.get(), fm, timeoutfuncs);
-			auto best_area = eval_matches_area(cmig, cut_map);
+			timeout_occurred = false;
+			auto best_area = eval_matches_area_timeout(cmig, cut_map, fm, timeoutfuncs);
 			auto area_cover = build_cover(cmig, best_area);
-			it_exact_cover(cmig, area_cover, cut_map, best_area);
+			it_exact_cover_timeout(cmig, area_cover, cut_map, best_area, fm, timeoutfuncs);
 			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, timeoutfuncs, timeout);
 			if (lutxmg) {
 				auto newsize = lutxmg.get_ptr()->nnodes();
 				if (newsize < oldsize) {
 					cmig = std::move(lutxmg.value());
-                    continue;
+					continue;
 				} else {
 					break;
 				}
@@ -60,7 +60,6 @@ namespace majesty {
 				cerr << "timeout occurred" << endl;
 				timeout_occurred = true;
 			}
-			++count;
 		} while (timeout_occurred);
 
 		return std::move(cmig);

@@ -35,7 +35,7 @@ namespace majesty {
 		}
 
 	static inline const tuple<cut*,unsigned> 
-		best_cut_area(const cutvec& cuts, const nintmap& area_flows) {
+		best_cut_area(const vector<cut*>& cuts, const nintmap& area_flows) {
 			cut* best_cut = NULL;
 			auto best_aflow = numeric_limits<unsigned>::max();
 			auto best_size = numeric_limits<unsigned>::max();
@@ -43,10 +43,10 @@ namespace majesty {
 				if (cut->size() == 1) { // Trivial cut
 					continue;
 				}
-				auto aflow = cut_area_flow(cut.get(), area_flows);
+				auto aflow = cut_area_flow(cut, area_flows);
 				if ((aflow < best_aflow) ||
 						(aflow == best_aflow && cut->size() < best_size)) {
-					best_cut = cut.get();
+					best_cut = cut;
 					best_size = cut->size();
 					best_aflow = aflow;
 				}
@@ -55,7 +55,7 @@ namespace majesty {
 		}
 
 	static inline const tuple<cut*,unsigned,unsigned> 
-		best_cut_area_recover(const cutvec& cuts, const nintmap& area_flows,
+		best_cut_area_recover(const vector<cut*>& cuts, const nintmap& area_flows,
 				const nintmap& atimes, unsigned int req) {
 			cut* best_cut = NULL;
 			auto best_atime = numeric_limits<unsigned>::max();
@@ -65,11 +65,11 @@ namespace majesty {
 				if (cut->size() == 1) { // Trivial cut
 					continue;
 				}
-				auto atime = cut_arrival_time(cut.get(), atimes);
-				auto aflow = cut_area_flow(cut.get(), area_flows);
+				auto atime = cut_arrival_time(cut, atimes);
+				auto aflow = cut_area_flow(cut, area_flows);
 				if ((atime <= req && aflow < best_aflow) ||
 						(atime <= req && aflow == best_aflow && cut->size() < best_size)) {
-					best_cut = cut.get();
+					best_cut = cut;
 					best_atime = atime;
 					best_size = cut->size();
 					best_aflow = aflow;
@@ -79,7 +79,7 @@ namespace majesty {
 		}
 
 	static inline const tuple<cut*,unsigned,unsigned> 
-		best_cut_depth(const cutvec& cuts, const nintmap& arrival_times, 
+		best_cut_depth(const vector<cut*>& cuts, const nintmap& arrival_times, 
 				const nintmap& area_flows) {
 			cut* best_cut = NULL;
 			auto best_atime = numeric_limits<unsigned>::max();
@@ -89,13 +89,13 @@ namespace majesty {
 				if (cut->size() == 1) { // Trivial cut
 					continue;
 				}
-				auto atime = cut_arrival_time(cut.get(), arrival_times);
-				auto aflow = cut_area_flow(cut.get(), area_flows);
+				auto atime = cut_arrival_time(cut, arrival_times);
+				auto aflow = cut_area_flow(cut, area_flows);
 				if ((atime < best_atime) ||
 						(atime == best_atime && cut->size() < best_size) || 
 						(atime == best_atime && cut->size() == best_size &&
 						 aflow < best_aflow)) {
-					best_cut = cut.get();
+					best_cut = cut;
 					best_atime = atime;
 					best_size = cut->size();
 					best_aflow = aflow;
@@ -110,6 +110,7 @@ namespace majesty {
 		bestmap best(m.nnodes());
 		nintmap area_flows(m.nnodes());
 		auto nodes = m.nodes();
+		vector<cut*> eval_cuts;
 		for (auto i = 0u; i < nodes.size(); i++) {
 			const auto& node = nodes.at(i);
 			if (is_pi(node)) {
@@ -119,7 +120,11 @@ namespace majesty {
 			} else if (node.ecrep == static_cast<nodeid>(i)) {
 				// Eq. class representative
 				const auto& cuts = cut_map.at(i);
-				auto depth_eval = best_cut_depth(cuts, atimes, area_flows);
+				eval_cuts.clear();
+				for (const auto& cut : cuts) {
+					eval_cuts.push_back(cut.get());
+				}
+				auto depth_eval = best_cut_depth(eval_cuts, atimes, area_flows);
 				best[i] = get<0>(depth_eval);
 				atimes[i] = get<1>(depth_eval);
 				area_flows[i] = get<2>(depth_eval);
@@ -133,6 +138,7 @@ namespace majesty {
 		bestmap best(m.nnodes());
 		nintmap area_flows(m.nnodes());
 		auto nodes = m.nodes();
+		vector<cut*> eval_cuts;
 		for (auto i = 0u; i < nodes.size(); i++) {
 			const auto& node = nodes.at(i);
 			if (is_pi(node)) {
@@ -141,7 +147,41 @@ namespace majesty {
 			} else if (node.ecrep == static_cast<nodeid>(i)) {
 				// Eq. class representative
 				const auto& cuts = cut_map.at(i);
-				auto area_eval = best_cut_area(cuts, area_flows);
+				eval_cuts.clear();
+				for (const auto& cut : cuts) {
+					eval_cuts.push_back(cut.get());
+				}
+				auto area_eval = best_cut_area(eval_cuts, area_flows);
+				best[i] = get<0>(area_eval);
+				area_flows[i] = get<1>(area_eval);
+			}
+		}
+
+		return best;
+	}
+
+	bestmap eval_matches_area_timeout(const xmg& m, const cutmap& cut_map, const funcmap& fm, const vector<tt>& timeoutfuncs) {
+		cout << "Evaluating matches area..." << endl;
+		bestmap best(m.nnodes());
+		nintmap area_flows(m.nnodes());
+		auto nodes = m.nodes();
+		vector<cut*> eval_cuts;
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes.at(i);
+			if (is_pi(node)) {
+				best[i] = cut_map.at(i)[0].get();
+				area_flows[i] = 0;
+			} else if (node.ecrep == static_cast<nodeid>(i)) {
+				// Eq. class representative
+				const auto& cuts = cut_map.at(i);
+				eval_cuts.clear();
+				for (const auto& cut : cuts) {
+					auto& cutfunction = fm.at(cut.get());
+					if (find(timeoutfuncs.begin(), timeoutfuncs.end(), cutfunction) == timeoutfuncs.end()) {
+						eval_cuts.push_back(cut.get());
+					}
+				}
+				auto area_eval = best_cut_area(eval_cuts, area_flows);
 				best[i] = get<0>(area_eval);
 				area_flows[i] = get<1>(area_eval);
 			}
@@ -157,6 +197,7 @@ namespace majesty {
 		nintmap arrival_times(m.nnodes());
 		nintmap area_flows(m.nnodes());
 		auto nodes = m.nodes();
+		vector<cut*> eval_cuts;
 		for (auto i = 0u; i < nodes.size(); i++) {
 			const auto& node = nodes.at(i);
 			if (is_pi(node)) {
@@ -165,8 +206,11 @@ namespace majesty {
 				area_flows[i] = 0;
 			} else if (node.ecrep == static_cast<nodeid>(i)) {
 				const auto& cuts = cut_map.at(i);
-				const auto eval_area_rec = best_cut_area_recover(cuts,
-						area_flows, arrival_times, req.at(i)); 
+				eval_cuts.clear();
+				for (const auto& cut : cuts) {
+					eval_cuts.push_back(cut.get());
+				}
+				const auto eval_area_rec = best_cut_area_recover(eval_cuts, area_flows, arrival_times, req.at(i)); 
 				auto numfanouts = nref.at(i) == 0 ? 1 : nref.at(i);
 				best[i] = get<0>(eval_area_rec);
 				area_flows[i] = get<1>(eval_area_rec) / numfanouts;
@@ -278,6 +322,49 @@ namespace majesty {
 		return area;
 	}
 
+	void improve_cover_exact_area_timeout(const xmg& m, const cutmap& cm,
+			bestmap& best, nintmap& nref, const funcmap& fm, const vector<tt>& timeoutfuncs) {
+		cout << "Running exact area improvements..." << endl;
+		auto nodes = m.nodes();
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				continue;
+			} else if (node.ecrep != static_cast<nodeid>(i)) {
+				// Not an eq. class representative
+				continue;
+			}
+			if (nref.at(i) != 0) {
+				recursive_deselect(node, nodes, best, nref);
+			}
+			auto best_area = numeric_limits<unsigned int>::max();
+			cut* best_cut = NULL;
+			const auto& cuts = cm.at(i);
+			for (const auto& cut : cuts) {
+				if (cut->size() == 1) { // Trivial cut
+					continue;
+				}
+				auto& cutfunction = fm.at(cut.get());
+				if (find(timeoutfuncs.begin(), timeoutfuncs.end(), cutfunction) != timeoutfuncs.end()) {
+					// Don't select this function as exact synthesis will timeout on it
+					continue;
+				}
+				best[i] = cut.get();
+				auto area1 = recursive_select(node, nodes, best, nref);
+				auto area2 = recursive_deselect(node, nodes, best, nref);
+				assert(area1 == area2);
+				if (area1 < best_area) {
+					best_area = area1;
+					best_cut = cut.get();
+				}
+			}
+			best[i] = best_cut;
+			if (nref.at(i) != 0) {
+				recursive_select(node, nodes, best, nref);
+			}
+		}
+	}
+
 	void improve_cover_exact_area(const xmg& m, const cutmap& cm, 
 			bestmap& best, nintmap& nref) {
 		cout << "Running exact area improvements..." << endl;
@@ -379,6 +466,20 @@ namespace majesty {
 		auto csize = cover_size(m, cover);
 		while (true) {
 			improve_cover_exact_area(m, cm, best, cover);
+			auto nsize = cover_size(m, cover);
+			if (nsize < csize) {
+				csize = nsize;
+			} else {
+				break;
+			}
+		}
+	}
+	
+	void it_exact_cover_timeout(const xmg& m, cover& cover, const cutmap& cm, bestmap& best, 
+		const funcmap& fm, const vector<tt>& timeoutfuncs) {
+		auto csize = cover_size(m, cover);
+		while (true) {
+			improve_cover_exact_area_timeout(m, cm, best, cover, fm, timeoutfuncs);
 			auto nsize = cover_size(m, cover);
 			if (nsize < csize) {
 				csize = nsize;

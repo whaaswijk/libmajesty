@@ -355,7 +355,7 @@ namespace majesty {
 		const auto& mnode = m.nodes().at(nodeid);
 		assert(is_po(mnode));
 
-		auto cut = best.at(mnode.ecrep);
+		const auto cut = best.at(mnode.ecrep);
 		const auto& inputs = cut->nodes();
 		const auto& function = *funcmap.at(cut);
 		if (is_zero(function)) {

@@ -1,8 +1,8 @@
 #ifndef LUT_COVER_H
 #define LUT_COVER_H
 
-#include "xmg.h"
-#include "cut.h"
+#include <xmg.h>
+#include <cut.h>
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -16,8 +16,8 @@ namespace majesty {
 
 	bestmap eval_matches_depth(const xmg&, const cutmap&, nintmap&);
 	bestmap eval_matches_area(const xmg&, const cutmap&);
-	bestmap eval_matches_af_recover(
-			const xmg&, const cutmap&, const reqmap&, const nintmap&);
+	bestmap eval_matches_area_timeout(const xmg&, const cutmap&, const funcmap&, const std::vector<cirkit::tt>&);
+	bestmap eval_matches_af_recover(const xmg&, const cutmap&, const reqmap&, const nintmap&);
 
 	static inline bool contains(const cover& cover, nodeid id) {
 		return cover.at(id) != 0;
@@ -27,13 +27,12 @@ namespace majesty {
 			const xmg&, const nintmap&, const nintmap&, const bestmap&);
 
 	unsigned int cover_size(const xmg&, const cover&);
-	void improve_cover_exact_area(
-			const xmg&, const cutmap&, bestmap&, nintmap&);
-	void improve_cover_exact_area(
-			const xmg&, const cutmap&, bestmap&, nintmap&, 
-			nintmap&, const reqmap&);
+	void improve_cover_exact_area( const xmg&, const cutmap&, bestmap&, nintmap&);
+	void improve_cover_exact_area_timeout( const xmg&, const cutmap&, bestmap&, nintmap&, const funcmap&, const std::vector<cirkit::tt>&);
+	void improve_cover_exact_area( const xmg&, const cutmap&, bestmap&, nintmap&, nintmap&, const reqmap&);
 
 	void it_exact_cover(const xmg&, cover&, const cutmap&, bestmap&);
+	void it_exact_cover_timeout(const xmg&, cover&, const cutmap&, bestmap&, const funcmap&, const std::vector<cirkit::tt>&);
 	void it_exact_cover(const xmg&, cover&, const cutmap&, bestmap&, 
 			nintmap&, const reqmap&);
 
