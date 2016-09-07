@@ -176,7 +176,7 @@ namespace majesty {
 				const auto& cuts = cut_map.at(i);
 				eval_cuts.clear();
 				for (const auto& cut : cuts) {
-					auto& cutfunction = fm.at(cut.get());
+					const auto& cutfunction = *fm.at(cut.get());
 					if (find(timeoutfuncs.begin(), timeoutfuncs.end(), cutfunction) == timeoutfuncs.end()) {
 						eval_cuts.push_back(cut.get());
 					}
@@ -344,7 +344,7 @@ namespace majesty {
 				if (cut->size() == 1) { // Trivial cut
 					continue;
 				}
-				auto& cutfunction = fm.at(cut.get());
+				const auto& cutfunction = *fm.at(cut.get());
 				if (find(timeoutfuncs.begin(), timeoutfuncs.end(), cutfunction) != timeoutfuncs.end()) {
 					// Don't select this function as exact synthesis will timeout on it
 					continue;
