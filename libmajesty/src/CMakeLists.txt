@@ -5,7 +5,7 @@ add_subdirectory(minisat)
 
 set(CMAKE_LIBRARY_APTH ${CMAKE_LIBRARY_PATH} $ENV{HIREDIS_HOME})
 
-set(SOURCE_FILES xmg.cpp mlputil.c  mlpext.cpp strashmap.cpp 
+set(SOURCE_FILES xmg.cpp mlputil.c mlpmemory.c  mlpext.cpp strashmap.cpp 
 	mig_interface.cpp convert.cpp bitset_utils.cpp truth_table_utils.cpp npn_canonization.cpp conversion_utils.cpp
 	mig_functional_hashing_constants.cpp cut.cpp lut_cover.cpp lut_optimize.cpp maj_io.cpp function_store.cpp)
 
