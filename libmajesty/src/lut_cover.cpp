@@ -35,12 +35,12 @@ namespace majesty {
 		}
 
 	static inline const tuple<cut*,unsigned> 
-		best_cut_area(const vector<cut*>& cuts, const nintmap& area_flows) {
+		best_cut_area(nodeid eqclassid, const vector<cut*>& cuts, const nintmap& area_flows) {
 			cut* best_cut = NULL;
 			auto best_aflow = numeric_limits<unsigned>::max();
 			auto best_size = numeric_limits<unsigned>::max();
 			for (const auto& cut : cuts) {
-				if (cut->size() == 1) { // Trivial cut
+				if (cut->size() == 1 && cut->nodes()[0] == eqclassid) { // Trivial cut
 					continue;
 				}
 				auto aflow = cut_area_flow(cut, area_flows);
@@ -55,14 +55,14 @@ namespace majesty {
 		}
 
 	static inline const tuple<cut*,unsigned,unsigned> 
-		best_cut_area_recover(const vector<cut*>& cuts, const nintmap& area_flows,
+		best_cut_area_recover(nodeid eqclassid, const vector<cut*>& cuts, const nintmap& area_flows,
 				const nintmap& atimes, unsigned int req) {
 			cut* best_cut = NULL;
 			auto best_atime = numeric_limits<unsigned>::max();
 			auto best_size = numeric_limits<unsigned>::max();
 			auto best_aflow = numeric_limits<unsigned>::max();
 			for (const auto& cut : cuts) {
-				if (cut->size() == 1) { // Trivial cut
+				if (cut->size() == 1 && cut->nodes()[0] == eqclassid) { // Trivial cut
 					continue;
 				}
 				auto atime = cut_arrival_time(cut, atimes);
@@ -79,14 +79,14 @@ namespace majesty {
 		}
 
 	static inline const tuple<cut*,unsigned,unsigned> 
-		best_cut_depth(const vector<cut*>& cuts, const nintmap& arrival_times, 
+		best_cut_depth(nodeid eqclassid, const vector<cut*>& cuts, const nintmap& arrival_times, 
 				const nintmap& area_flows) {
 			cut* best_cut = NULL;
 			auto best_atime = numeric_limits<unsigned>::max();
 			auto best_size = numeric_limits<unsigned>::max();
 			auto best_aflow = numeric_limits<unsigned>::max();
 			for (const auto& cut : cuts) {
-				if (cut->size() == 1) { // Trivial cut
+				if (cut->size() == 1 && cut->nodes()[0] == eqclassid) { // Trivial cut
 					continue;
 				}
 				auto atime = cut_arrival_time(cut, arrival_times);
@@ -124,7 +124,7 @@ namespace majesty {
 				for (const auto& cut : cuts) {
 					eval_cuts.push_back(cut.get());
 				}
-				auto depth_eval = best_cut_depth(eval_cuts, atimes, area_flows);
+				auto depth_eval = best_cut_depth(node.ecrep, eval_cuts, atimes, area_flows);
 				best[i] = get<0>(depth_eval);
 				atimes[i] = get<1>(depth_eval);
 				area_flows[i] = get<2>(depth_eval);
@@ -151,7 +151,7 @@ namespace majesty {
 				for (const auto& cut : cuts) {
 					eval_cuts.push_back(cut.get());
 				}
-				auto area_eval = best_cut_area(eval_cuts, area_flows);
+				auto area_eval = best_cut_area(node.ecrep, eval_cuts, area_flows);
 				best[i] = get<0>(area_eval);
 				area_flows[i] = get<1>(area_eval);
 			}
@@ -181,7 +181,7 @@ namespace majesty {
 						eval_cuts.push_back(cut.get());
 					}
 				}
-				auto area_eval = best_cut_area(eval_cuts, area_flows);
+				auto area_eval = best_cut_area(node.ecrep, eval_cuts, area_flows);
 				best[i] = get<0>(area_eval);
 				area_flows[i] = get<1>(area_eval);
 			}
@@ -210,7 +210,7 @@ namespace majesty {
 				for (const auto& cut : cuts) {
 					eval_cuts.push_back(cut.get());
 				}
-				const auto eval_area_rec = best_cut_area_recover(eval_cuts, area_flows, arrival_times, req.at(i)); 
+				const auto eval_area_rec = best_cut_area_recover(node.ecrep, eval_cuts, area_flows, arrival_times, req.at(i)); 
 				auto numfanouts = nref.at(i) == 0 ? 1 : nref.at(i);
 				best[i] = get<0>(eval_area_rec);
 				area_flows[i] = get<1>(eval_area_rec) / numfanouts;
@@ -341,7 +341,7 @@ namespace majesty {
 			cut* best_cut = NULL;
 			const auto& cuts = cm.at(i);
 			for (const auto& cut : cuts) {
-				if (cut->size() == 1) { // Trivial cut
+				if (cut->size() == 1 && cut->nodes()[0] == node.ecrep) { // Trivial cut
 					continue;
 				}
 				const auto& cutfunction = *fm.at(cut.get());
@@ -384,7 +384,7 @@ namespace majesty {
 			cut* best_cut = NULL;
 			const auto& cuts = cm.at(i);
 			for (const auto& cut : cuts) {
-				if (cut->size() == 1) { // Trivial cut
+				if (cut->size() == 1 && cut->nodes()[0] == node.ecrep) { // Trivial cut
 					continue;
 				}
 				best[i] = cut.get();
@@ -423,7 +423,7 @@ namespace majesty {
 				cut* best_cut = NULL;
 				auto& cuts = cm.at(i);
 				for (const auto& cut : cuts) {
-					if (cut->size() == 1) { // Trivial cut
+					if (cut->size() == 1 && cut->nodes()[0] == node.ecrep) { // Trivial cut
 						continue;
 					}
 					best[i] = cut.get();
