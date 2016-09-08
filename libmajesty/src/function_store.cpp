@@ -71,18 +71,20 @@ namespace majesty {
 					if (reply == NULL) {
 						throw runtime_error("Error connecting to server");
 					}
+					freeReplyObject(reply);
 				}
 				break;
 			case REDIS_REPLY_STRING:
 				expr = string(reply->str, reply->len);
+				freeReplyObject(reply);
 				break;
 			default:
 				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
 				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
 				throw runtime_error(errorstring);
 				break;
 		}
-		freeReplyObject(reply);
 #else
 		expr = "<ab0>";
 #endif

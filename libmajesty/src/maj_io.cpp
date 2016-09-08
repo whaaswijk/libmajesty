@@ -36,7 +36,9 @@ namespace majesty {
 		parse_verilog(fp, &mig);
 		auto params = default_xmg_params();
 		params->nr_backtracks = 100;
-		return xmg(mig, params.get());
+		auto res = xmg(mig, params.get());
+		freemig(mig);
+		return res;
 	}
 
 	xmg* ptr_read_verilog(const std::string filename) {
@@ -106,9 +108,9 @@ namespace majesty {
 		return res;
 	}
 
-	void write_verilog(const string& filename, const majesty::xmg& xmg) {
+	void write_verilog(const majesty::xmg& xmg, const string& filename) {
 		ofstream outfile(filename);
-		write_verilog(outfile, xmg);
+		write_verilog(xmg, outfile);
 		outfile.close();
 	}
 
@@ -133,7 +135,7 @@ namespace majesty {
 			}
 		}
 
-	void write_verilog(ofstream& file, const xmg& xmg) {
+	void write_verilog(const xmg& xmg, ofstream& file) {
 		time_t now;
 		time(&now);
 		file << "// Written by the Majesty Logic Package " << ctime(&now); 

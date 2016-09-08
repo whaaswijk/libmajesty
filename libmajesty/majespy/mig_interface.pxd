@@ -68,7 +68,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
 cdef extern from "maj_io.h" namespace "majesty":
     xmg* ptr_read_bench(const string & filename)
     xmg* ptr_read_verilog(const string & filename)
-    void write_verilog(const string & filename, const xmg &)
+    void write_verilog(const xmg &, const string & filename)
     void lut_map_area(const xmg &, const string &)
 
 cdef extern from "lut_optimize.h" namespace "majesty":

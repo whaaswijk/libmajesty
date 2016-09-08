@@ -31,6 +31,11 @@ namespace majesty {
 			return NULL;
 		}
 	}
+	
+	optional<xmg> lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout) {
+		auto frparams = default_xmg_params();
+		return lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout);
+	}
 
 	optional<xmg> lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, unsigned timeout) {
 		xmg cmig(m, frparams);
@@ -241,7 +246,7 @@ namespace majesty {
 			if (decomp_cut) {
 				nodemap[i] = decomp_cut.get();
 			} else {
-				//nodemap[i] = make_pair(0, false);
+				nodemap[i] = make_pair(0, false);
 				timeout_occurred = true;
 			}
 			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";

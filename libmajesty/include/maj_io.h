@@ -12,8 +12,8 @@ namespace majesty {
 	xmg* ptr_read_verilog(const std::string);
 	xmg read_verilog(std::ifstream&);
 
-	void write_verilog(const std::string&, const majesty::xmg&);
-	void write_verilog(std::ofstream&, const majesty::xmg&);
+	void write_verilog(const majesty::xmg&, const std::string&);
+	void write_verilog(const majesty::xmg&, std::ofstream&);
 
 	void lut_map_area(const majesty::xmg&, const std::string&);
 }
