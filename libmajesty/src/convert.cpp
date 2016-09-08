@@ -367,7 +367,7 @@ namespace majesty {
 		auto optcmd = (boost::format("read_truth %s; strash; resyn2; write_verilog tmp.v") % tt_to_hex(func)).str();
 		auto success = system(optcmd.c_str());
 		if (success != 0) {
-			throw runtime_error("Heuristic optimization through Cirkit failed");
+			throw runtime_error("Heuristic optimization through ABC failed");
 		}
 		auto upperbound_xmg = read_verilog("tmp.v");
 		auto start = upperbound_xmg.nnodes() - upperbound_xmg.nin() - 1;

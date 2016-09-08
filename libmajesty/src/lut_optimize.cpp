@@ -192,7 +192,7 @@ namespace majesty {
 			cout << "Start size for synthesis: " << start_size << endl;
 			min_xmg = exact_xmg_expression(npn, timeout, start_size + 1);
 			if (!min_xmg) { 
-				min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size, behavior);
+				min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size + 1, behavior);
 				// Depending on the specified behavior we may want to try to use a 
 				// heuristic XMG or to exclude this cut from the cover.
 				if (behavior == combine) {

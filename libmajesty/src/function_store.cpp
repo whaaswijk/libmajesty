@@ -33,11 +33,8 @@ namespace majesty {
 	function_store::function_store(const std::string& server_url, const unsigned port) {
 		auto path = boost::filesystem::unique_path();
 		_logfile = path.native();
-		//cout << "connecting to " << server_url << ":" << port << endl;
 #ifndef _WIN32
 		_rcontext = redisConnect(server_url.c_str(), port);
-		//cout << "context: " << _rcontext << endl;
-		//cout << "context->err: " << _rcontext->err << endl;
 		if (_rcontext == NULL || _rcontext->err) {
 			if (_rcontext) {
 				throw runtime_error("Error initializing Redis context");
@@ -56,18 +53,38 @@ namespace majesty {
 		// First see if the optimum xmg has already been computed
 		optional<string> expr;
 #ifndef _WIN32
-		redisReply* reply = (redisReply*)
-			redisCommand(_rcontext, "GET %s:expr", to_string(f).c_str());
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "GET %s:expr", to_string(f).c_str());
         if (reply == NULL) {
             throw runtime_error("Error connecting to server");
         }
 		switch (reply->type) {
 			case REDIS_REPLY_NIL:
 				freeReplyObject(reply);
+				// Maybe the expression doesn't exist because we've timed out trying to compute it
+				reply = (redisReply*) redisCommand(_rcontext, "GET %s:timeout", to_string(f).c_str());
+				if (reply->type == REDIS_REPLY_STRING) {
+					// We only attempt to synthesize again if our timeout is bigger this time
+					auto oldtimeout = unsigned(stoi(string(reply->str, reply->len)));
+					freeReplyObject(reply);
+					if (oldtimeout >= timeout) {
+						cout << "Skipping because of previous timeout" << endl;
+						break;
+					}
+				} else {
+					assert(reply->type == REDIS_REPLY_NIL);
+					freeReplyObject(reply);
+				}
 				expr = exact_xmg_expression(f, timeout);
-				if (expr) { // A timeout may have occurred on synthesis
+				if (expr) { // Exact synthesis may time out
 					reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s",
 						to_string(f).c_str(), expr.get().c_str());
+					if (reply == NULL) {
+						throw runtime_error("Error connecting to server");
+					}
+					freeReplyObject(reply);
+				} else { // Ensure we don't try to synthesize it again with the same timeout
+					reply = (redisReply*)redisCommand(_rcontext, "SET %s:timeout %u",
+						to_string(f).c_str(), timeout);
 					if (reply == NULL) {
 						throw runtime_error("Error connecting to server");
 					}
