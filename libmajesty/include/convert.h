@@ -6,6 +6,7 @@
 #include <map>
 #include <unordered_map>
 #include <boost/optional.hpp>
+#include <lut_optimize.h>
 
 namespace majesty {
 
@@ -25,6 +26,10 @@ namespace majesty {
 	boost::optional<std::string> exact_mig_expression(const cirkit::tt&, unsigned);
 	std::string exact_xmg_expression(const cirkit::tt&);
 	boost::optional<std::string> exact_xmg_expression(const cirkit::tt&, unsigned);
+	boost::optional<std::string> exact_xmg_expression(const cirkit::tt&, unsigned, unsigned);
+	boost::optional<std::string> heuristic_xmg_expression(const cirkit::tt&, unsigned, unsigned, unsigned, timeout_behavior);
+
+	boost::optional<unsigned> last_size_from_file(const std::string&);
 
 	xmg exact_mig(const cirkit::tt&);
 	xmg exact_xmg(const cirkit::tt&);
@@ -34,4 +39,6 @@ namespace majesty {
 	using bracket_map_t = std::unordered_map<unsigned, unsigned>;
 	using input_map_t = std::unordered_map<char, std::pair<nodeid, bool>>;
 	bracket_map_t find_bracket_pairs(const std::string&, char, char);
+
+	std::string xmg_to_expr(const xmg&);
 }

@@ -27,6 +27,7 @@ namespace majesty {
 	}
 
 	extern "C" void parse_verilog(FILE *file, MIG **m);
+
 	xmg read_verilog(const std::string filename) {
 		MIG* mig;
 		auto fp = fopen(filename.c_str(), "r");

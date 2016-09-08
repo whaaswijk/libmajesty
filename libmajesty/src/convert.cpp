@@ -5,6 +5,9 @@
 #include <sstream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/format.hpp>
+#include <maj_io.h>
+#include <sstream>
 
 using namespace std;
 using namespace cirkit;
@@ -271,7 +274,6 @@ namespace majesty {
 
 	optional<string> xmg_expression_from_file(const string& filename) {
 		ifstream infile(filename);
-		//stringstream infile("[{ \"command\": \"tt 1000\", \"time\" : \"2016-08-23 15:00:20\", \"tt\" : \"1000\" }, { \"command\": \"exact_mig\", \"time\" : \"2016-08-23 15:00:20\", \"min_depth\" : false, \"all_solutions\" : false, \"start\" : 1, \"runtime\" : 0.02 }, { \"command\": \"convert --mig_to_expr\", \"time\" : \"2016-08-23 15:00:20\" }, { \"command\": \"ps -e\", \"time\" : \"2016-08-23 15:00:29\", \"expression\" : \"<0ab>\" }]");
 
 		boost::property_tree::ptree pt;
 		boost::property_tree::read_json(infile, pt);
@@ -279,7 +281,6 @@ namespace majesty {
 		for (ptree::const_iterator it = pt.begin(); it != pt.end(); ++it) {
 			auto obj = it->second;
 			for (auto it2 = obj.begin(); it2 != obj.end(); it2++) {
-				//cout << it2->first << ":" << it2->second.get_value<string>() << endl;
 				if (it2->first == "expression") {
 					expression = it2->second.get_value<string>();
 				}
@@ -288,10 +289,33 @@ namespace majesty {
 		return expression;
 	}
 
-	optional<string> min_size_expression(const tt& func, unsigned timeout, const string& synth_type) {
+	optional<unsigned> last_size_from_file(const string& filename) {
+		ifstream infile(filename);
+		//stringstream infile("[{ \"command\": \"tt 1000\", \"time\" : \"2016-08-23 15:00:20\", \"tt\" : \"1000\" }, { \"command\": \"exact_mig\", \"time\" : \"2016-08-23 15:00:20\", \"min_depth\" : false, \"all_solutions\" : false, \"start\" : 1, \"runtime\" : 0.02 }, { \"command\": \"convert --mig_to_expr\", \"time\" : \"2016-08-23 15:00:20\" }, { \"command\": \"ps -e\", \"time\" : \"2016-08-23 15:00:29\", \"expression\" : \"<0ab>\" }]");
+
+		boost::property_tree::ptree pt;
+		boost::property_tree::read_json(infile, pt);
+		optional<unsigned> last_size;
+		for (ptree::const_iterator it = pt.begin(); it != pt.end(); ++it) {
+			auto obj = it->second;
+			for (auto it2 = obj.begin(); it2 != obj.end(); it2++) {
+				//cout << it2->first << ":" << it2->second.get_value<string>() << endl;
+				if (it2->first == "last_size") {
+					last_size = it2->second.get_value<unsigned>();
+				}
+			}
+		}
+		return last_size;
+	}
+
+
+	optional<string> min_size_expression(const tt& func, unsigned timeout, unsigned start_size, const string& synth_type) {
 		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_" + synth_type;
 		if (timeout > 0) {
 			cmdstr += " --timeout " + to_string(timeout);
+		}
+		if (start_size > 0) {
+			cmdstr += " --start " + to_string(start_size);
 		}
 		cmdstr += "; convert --" + synth_type + "_to_expr; ps -e; quit\" > /dev/null";
 		auto success = system(cmdstr.c_str());
@@ -300,9 +324,14 @@ namespace majesty {
 		}
 		return xmg_expression_from_file("cirkit.log");
 	}
+
+
+	boost::optional<std::string> exact_xmg_expression(const cirkit::tt& func, unsigned timeout, unsigned start_size) {
+		return min_size_expression(func, timeout, start_size, "xmg");
+	}
 	
 	optional<string> exact_xmg_expression(const tt& func, unsigned timeout) {
-		return min_size_expression(func, timeout, "xmg");
+		return min_size_expression(func, timeout, 0, "xmg");
 	}
 
 	string exact_xmg_expression(const tt& func) {
@@ -310,7 +339,7 @@ namespace majesty {
 	}
 
 	optional<string> exact_mig_expression(const tt& func, unsigned timeout) {
-		return min_size_expression(func, timeout, "mig");
+		return min_size_expression(func, timeout, 0, "mig");
 	}
 
 	string exact_mig_expression(const tt& func) {
@@ -329,5 +358,98 @@ namespace majesty {
 		auto ninputs = tt_num_vars(func);
 		auto exact_parsed = xmg_from_string(ninputs, expression);
 		return strash(exact_parsed);
+	}
+
+	static const auto heuristic_threshold = 3u;
+	optional<string> heuristic_xmg_expression(const tt& func, unsigned ninputs, unsigned timeout, 
+		unsigned last_size, timeout_behavior behavior) {
+		// Get an upper bound for optimization by using ABC's size optimization.
+		auto optcmd = (boost::format("read_truth %s; strash; resyn2; write_verilog tmp.v") % tt_to_hex(func)).str();
+		auto success = system(optcmd.c_str());
+		if (success != 0) {
+			throw runtime_error("Heuristic optimization through Cirkit failed");
+		}
+		auto upperbound_xmg = read_verilog("tmp.v");
+		auto start = upperbound_xmg.nnodes() - upperbound_xmg.nin() - 1;
+		cout << "upper bound from aig: " << start << endl;
+		// What we do now depends on the specified behavior. If the difference between the heuristic result and the last
+		// is too great it is unlikely that we will find an optimum result by going down from the starting point. We
+		// We also may not want to invoke exact synthesis too often.
+		if (behavior == combine) {
+			if (start - last_size > heuristic_threshold) {
+				return boost::none;
+			}
+		}
+		optional<string> expr = xmg_to_expr(upperbound_xmg);
+		while (true) {
+			auto sat_xmg_expr = min_size_expression(func, timeout, start - 1, "xmg");
+			if (sat_xmg_expr) {
+				auto sat_xmg = xmg_from_string(ninputs, sat_xmg_expr.get());
+				if (sat_xmg.nnodes() == upperbound_xmg.nnodes()) {
+					// The upperbound found by ABC was already optimum (otherwise we would've found and XMG with size start - 1)
+					expr = sat_xmg_expr;
+					break;
+				} else {
+					--start;
+				}
+			} else {
+				// Exact synthesis times out before finding a solution better than the heuristic one.
+				break;
+			}
+		}
+
+		return expr;
+	}
+
+	void node_to_expr(const vector<node>& nodes, const vector<string> innames, nodeid nodeid, stringstream& os) {
+		const auto& node = nodes[nodeid];
+		if (nodeid == 0) {
+			os << "1";
+		} else if (is_pi(node)) {
+			os << innames[nodeid - 1];
+		} else {
+			if (is_xor(node)) {
+				os << "[";
+				if (is_c1(node)) {
+					os << "!";
+				}
+				node_to_expr(nodes, innames, node.in1, os);
+				if (is_c2(node)) {
+					os << "!";
+				}
+				node_to_expr(nodes, innames, node.in2, os);
+				os << "]";
+			} else {
+				os << "<";
+				if (is_c1(node)) {
+					os << "!";
+				}
+				node_to_expr(nodes, innames, node.in1, os);
+				if (is_c2(node)) {
+					os << "!";
+				}
+				node_to_expr(nodes, innames, node.in2, os);
+				if (is_c3(node)) {
+					os << "!";
+				}
+				node_to_expr(nodes, innames, node.in3, os);
+				os << ">";
+			}
+		}
+	}
+
+
+	// NOTE: only works for single-output XMGs!
+	string xmg_to_expr(const xmg& xmg) {
+		stringstream os;
+		const auto& nodes = xmg.nodes();
+		const auto& innames = xmg.innames();
+		const auto outnodeid = xmg.outputs()[0];
+		const auto outnodec = xmg.outcompl()[0];
+		if (outnodec) {
+			os << "!";
+		}
+		node_to_expr(nodes, innames, outnodeid, os);
+		return os.str();
 	}
 }

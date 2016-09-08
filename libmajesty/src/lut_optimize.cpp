@@ -18,13 +18,13 @@ namespace majesty {
 	}
 
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
-        return lut_area_timeout_strategy(m, frparams, lut_size, 0).value();
+        return lut_area_timeout_strategy(m, frparams, lut_size, 0, rebuild_cover).value();
 	}
 
 	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
 		frparams->nr_backtracks = nr_backtracks;
-		auto oxmg = lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout);
+		auto oxmg = lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout, rebuild_cover);
 		if (oxmg) {
 			return new xmg(std::move(oxmg.get()));
 		} else {
@@ -34,10 +34,17 @@ namespace majesty {
 	
 	optional<xmg> lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout) {
 		auto frparams = default_xmg_params();
-		return lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout);
+		return lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout, rebuild_cover);
+	}
+	
+	optional<xmg> lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, timeout_behavior behavior) {
+		auto frparams = default_xmg_params();
+		return lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout, behavior);
 	}
 
-	optional<xmg> lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, unsigned timeout) {
+	optional<xmg> 
+		lut_area_timeout_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size, 
+			unsigned timeout, timeout_behavior behavior) {
 		xmg cmig(m, frparams);
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
@@ -52,7 +59,7 @@ namespace majesty {
 			auto best_area = eval_matches_area_timeout(cmig, cut_map, fm, timeoutfuncs);
 			auto area_cover = build_cover(cmig, best_area);
 			it_exact_cover_timeout(cmig, area_cover, cut_map, best_area, fm, timeoutfuncs);
-			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, timeoutfuncs, timeout);
+			auto lutxmg = xmg_from_luts(cmig, area_cover, best_area, fm, timeoutfuncs, timeout, behavior);
 			if (lutxmg) {
 				auto newsize = lutxmg.get_ptr()->nnodes();
 				if (newsize < oldsize) {
@@ -155,7 +162,7 @@ namespace majesty {
 
 	optional<pair<nodeid,bool>> decompose_cut(
 			xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap, 
-			nodemap& nodemap, function_store& fstore, vector<tt>& timeoutfuncs, unsigned timeout) {
+			nodemap& nodemap, function_store& fstore, vector<tt>& timeoutfuncs, unsigned timeout, timeout_behavior behavior) {
 		const auto& cutnodes = cut->nodes();
 		//const auto npn = exact_npn_canonization(cutfunction, phase, perm);
 		//auto npn = fstore.npn_canon(cutfunction, phase, perm);
@@ -172,10 +179,28 @@ namespace majesty {
         npn.resize(cutfunction.size());
         
 		//cout  << "got npn: " << to_string(npn) << endl;
-		const auto min_xmg = fstore.min_size_xmg(npn, timeout);
+		auto min_xmg = fstore.min_size_xmg(npn, timeout);
 		if (!min_xmg) { // Exact synthesis may have timed out
-			timeoutfuncs.push_back(cutfunction);
-			return boost::none;
+			if (behavior == rebuild_cover) {
+				timeoutfuncs.push_back(cutfunction);
+				return boost::none;
+			} 
+			// Try to resynthesize, starting from the last size that failed
+			auto ostart_size = last_size_from_file("cirkit.log");
+			assert(ostart_size);
+			auto start_size = ostart_size.get();
+			cout << "Start size for synthesis: " << start_size << endl;
+			min_xmg = exact_xmg_expression(npn, timeout, start_size + 1);
+			if (!min_xmg) { 
+				min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size, behavior);
+				// Depending on the specified behavior we may want to try to use a 
+				// heuristic XMG or to exclude this cut from the cover.
+				if (behavior == combine) {
+					return boost::none;
+				} else {
+
+				}
+			}
 		}
 		//cout  << "got min: " << min_xmg << endl;
 		input_map_t imap;
@@ -198,16 +223,21 @@ namespace majesty {
         res.second = (res.second != (phase.test(num_vars)));
 		return res;
 	}
-    // p[0] = 1, p[1] = 0 --> ip[0] = 1, p[1] = 0
 
 	pair<nodeid, bool> decompose_cut(xmg& xmg, const cut* cut, tt& cutfunction, strashmap& shmap,
 		nodemap& nodemap, function_store& fstore) {
 		vector<tt> emptyset;
-		return decompose_cut(xmg, cut, cutfunction, shmap, nodemap, fstore, emptyset, 0).get();
+		return decompose_cut(xmg, cut, cutfunction, shmap, nodemap, fstore, emptyset, 0, rebuild_cover).get();
+	}
+
+
+	optional<xmg> xmg_from_luts(const xmg& m, const cover& cover,
+		const bestmap& best, const funcmap& funcmap, vector<tt>& timeoutfuncs, unsigned timeout) {
+		return xmg_from_luts(m, cover, best, funcmap, timeoutfuncs, timeout, rebuild_cover);
 	}
 
 	optional<xmg> xmg_from_luts(const xmg& m, const cover& cover,
-			const bestmap& best, const funcmap& funcmap, vector<tt>& timeoutfuncs, unsigned timeout) {
+			const bestmap& best, const funcmap& funcmap, vector<tt>& timeoutfuncs, unsigned timeout, timeout_behavior behavior) {
 		bool timeout_occurred = false;
 
 		xmg n;
@@ -242,7 +272,7 @@ namespace majesty {
 			}
 			const auto& cut = best.at(i);
 			auto& f = *funcmap.at(cut);
-			auto decomp_cut = decompose_cut(n, cut, f, shmap, nodemap, fstore, timeoutfuncs, timeout);
+			auto decomp_cut = decompose_cut(n, cut, f, shmap, nodemap, fstore, timeoutfuncs, timeout, behavior);
 			if (decomp_cut) {
 				nodemap[i] = decomp_cut.get();
 			} else {
@@ -273,7 +303,6 @@ namespace majesty {
 		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
     /*
-
 	// NPN canonization function from ABC
 	tt jake_canon(const tt& ttf, unsigned* uCanonPhase, char* pCanonPerm, unsigned num_vars) {
 		vector<word> pTruth( ttf.num_blocks() );

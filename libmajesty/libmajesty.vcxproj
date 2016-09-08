@@ -131,6 +131,7 @@
     <ClCompile Include="src\minisat\Options.cpp" />
     <ClCompile Include="src\minisat\Solver.cpp" />
     <ClCompile Include="src\mlpext.cpp" />
+    <ClCompile Include="src\mlpmemory.c" />
     <ClCompile Include="src\mlputil.c" />
     <ClCompile Include="src\npn_canonization.cpp" />
     <ClCompile Include="src\range_utils.cpp" />
