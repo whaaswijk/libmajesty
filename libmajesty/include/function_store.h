@@ -28,6 +28,7 @@ namespace majesty {
 			boost::optional<std::string> min_size_xmg(const cirkit::tt&, unsigned);
 			cirkit::tt npn_canon(const cirkit::tt&, 
 					cirkit::tt& phase, std::vector<unsigned>& perm);
+			boost::optional<unsigned> get_last_size(const cirkit::tt& func);
 	};
 }
 

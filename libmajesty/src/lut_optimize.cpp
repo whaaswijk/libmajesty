@@ -186,13 +186,13 @@ namespace majesty {
 				return boost::none;
 			} 
 			// Try to resynthesize, starting from the last size that failed
-			auto ostart_size = last_size_from_file("cirkit.log");
-			assert(ostart_size);
-			auto start_size = ostart_size.get();
-			cout << "Start size for synthesis: " << start_size << endl;
-			min_xmg = exact_xmg_expression(npn, timeout, start_size + 1);
+			auto olast_size = fstore.get_last_size(npn);
+			assert(olast_size);
+			auto start_size = olast_size.get() + 1;
+			cout << "Start size for heuristic synthesis: " << start_size << endl;
+			min_xmg = exact_xmg_expression(npn, timeout, start_size);
 			if (!min_xmg) { 
-				min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size + 1, behavior);
+				min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size, behavior);
 				// Depending on the specified behavior we may want to try to use a 
 				// heuristic XMG or to exclude this cut from the cover.
 				if (behavior == combine) {

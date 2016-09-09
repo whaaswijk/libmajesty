@@ -49,6 +49,32 @@ namespace majesty {
 		return min_size_xmg(f, 0).get();
 	}
 
+
+	optional<unsigned> function_store::get_last_size(const cirkit::tt& f) {
+		optional<unsigned> last_size;
+#ifndef _WIN32
+		redisReply* reply = (redisReply*)redisCommand(_rcontext, "GET %s:expr", to_string(f).c_str());
+		if (reply == NULL) {
+			throw runtime_error("Error connecting to server");
+		}
+		switch (reply->type) {
+		case REDIS_REPLY_NIL:
+			// Haven't timed out on this function
+			break;
+		case REDIS_REPLY_STRING:
+			auto ulast_size = unsigned(stoi(string(reply->str, reply->len)));
+			last_size = ulast_size;
+			break;
+		default:
+			auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+			auto errorstring = errorformat.str();
+			freeReplyObject(reply);
+			throw runtime_error(errorstring);
+		}
+#endif
+		return last_size;
+	}
+
 	optional<string> function_store::min_size_xmg(const cirkit::tt& f, unsigned timeout) {
 		// First see if the optimum xmg has already been computed
 		optional<string> expr;
@@ -76,8 +102,17 @@ namespace majesty {
 				}
 				expr = exact_xmg_expression(f, timeout);
 				if (expr) { // Exact synthesis may time out
+					auto olast_size = last_size_from_file("cirkit.log");
+					assert(ostart_size);
+					auto last_size = ostart_size.get();
 					reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s",
 						to_string(f).c_str(), expr.get().c_str());
+					if (reply == NULL) {
+						throw runtime_error("Error connecting to server");
+					}
+					freeReplyObject(reply);
+					reply = (redisReply*)redisCommand(_rcontext, "SET %s:last_size %u",
+						to_string(f).c_str(), last_size);
 					if (reply == NULL) {
 						throw runtime_error("Error connecting to server");
 					}
