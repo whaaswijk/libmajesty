@@ -53,26 +53,79 @@ namespace majesty {
 	optional<unsigned> function_store::get_last_size(const cirkit::tt& f) {
 		optional<unsigned> last_size;
 #ifndef _WIN32
-		redisReply* reply = (redisReply*)redisCommand(_rcontext, "GET %s:expr", to_string(f).c_str());
+		redisReply* reply = (redisReply*)redisCommand(_rcontext, "GET %s:last_size", to_string(f).c_str());
 		if (reply == NULL) {
 			throw runtime_error("Error connecting to server");
 		}
 		switch (reply->type) {
-		case REDIS_REPLY_NIL:
-			// Haven't timed out on this function
-			break;
-		case REDIS_REPLY_STRING:
-			auto ulast_size = unsigned(stoi(string(reply->str, reply->len)));
-			last_size = ulast_size;
-			break;
-		default:
+			case REDIS_REPLY_NIL:
+				// Haven't timed out on this function
+				break;
+			case REDIS_REPLY_STRING:
+				last_size = unsigned(stoi(string(reply->str, reply->len)));
+				break;
+			default:
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
+				throw runtime_error(errorstring);
+		}
+#endif
+		return last_size;
+	}
+
+	void function_store::set_heuristic_size_xmg(const cirkit::tt& f, const string& expr, unsigned timeout) {
+		redisReply* reply = (redisReply*)redisCommand(_rcontext, "SET %s:heuristic %s",
+				to_string(f).c_str(), expr.c_str());
+		if (reply == NULL) {
+			throw runtime_error("Error connecting to server");
+		}
+		freeReplyObject(reply);
+		reply = (redisReply*)redisCommand(_rcontext, "SET %s:heuristic_timeout %u",
+				to_string(f).c_str(), timeout);
+		if (reply == NULL) {
+			throw runtime_error("Error connecting to server");
+		}
+		freeReplyObject(reply);
+	}
+			
+	optional<string> function_store::heuristic_size_xmg(const cirkit::tt& f, unsigned timeout) {
+		// Make sure that we've timed out for this function before. If not, no heurstic version exists.
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "GET %s:heuristic_timeout", to_string(f).c_str());
+		if (reply->type == REDIS_REPLY_STRING) {
+			// We only attempt to synthesize again if our timeout is bigger this time
+			auto oldtimeout = unsigned(stoi(string(reply->str, reply->len)));
+			freeReplyObject(reply);
+			if (oldtimeout < timeout) {
+				// If our timeout is now bigger we want to see if we can get a
+				// better heurstic version with this new timeout
+				return boost::none;
+			}
+			// Return the current heuristic
+			reply = (redisReply*) redisCommand(_rcontext, "GET %s:heuristic", to_string(f).c_str());
+			if (reply->type == REDIS_REPLY_STRING) {
+				auto expr = string(reply->str, reply->len);
+				freeReplyObject(reply);
+				return expr;
+			} else if (reply->type == REDIS_REPLY_NIL) {
+				// No heuristic was computed yet
+				freeReplyObject(reply);
+				return boost::none;
+			} else {
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
+				throw runtime_error(errorstring);
+			}
+		} else if (reply->type == REDIS_REPLY_NIL) {
+			freeReplyObject(reply);
+			return boost::none;
+		} else {
 			auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
 			auto errorstring = errorformat.str();
 			freeReplyObject(reply);
 			throw runtime_error(errorstring);
 		}
-#endif
-		return last_size;
 	}
 
 	optional<string> function_store::min_size_xmg(const cirkit::tt& f, unsigned timeout) {
@@ -101,18 +154,9 @@ namespace majesty {
 					freeReplyObject(reply);
 				}
 				expr = exact_xmg_expression(f, timeout);
-				if (expr) { // Exact synthesis may time out
-					auto olast_size = last_size_from_file("cirkit.log");
-					assert(ostart_size);
-					auto last_size = ostart_size.get();
+				if (expr) {
 					reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s",
-						to_string(f).c_str(), expr.get().c_str());
-					if (reply == NULL) {
-						throw runtime_error("Error connecting to server");
-					}
-					freeReplyObject(reply);
-					reply = (redisReply*)redisCommand(_rcontext, "SET %s:last_size %u",
-						to_string(f).c_str(), last_size);
+							to_string(f).c_str(), expr.get().c_str());
 					if (reply == NULL) {
 						throw runtime_error("Error connecting to server");
 					}
@@ -120,6 +164,15 @@ namespace majesty {
 				} else { // Ensure we don't try to synthesize it again with the same timeout
 					reply = (redisReply*)redisCommand(_rcontext, "SET %s:timeout %u",
 						to_string(f).c_str(), timeout);
+					if (reply == NULL) {
+						throw runtime_error("Error connecting to server");
+					}
+					freeReplyObject(reply);
+					auto olast_size = last_size_from_file("cirkit.log");
+					assert(olast_size);
+					auto last_size = olast_size.get();
+					reply = (redisReply*)redisCommand(_rcontext, "SET %s:last_size %u",
+						to_string(f).c_str(), last_size);
 					if (reply == NULL) {
 						throw runtime_error("Error connecting to server");
 					}

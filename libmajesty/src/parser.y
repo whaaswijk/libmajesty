@@ -51,7 +51,6 @@ std::pair<bool,struct MAJ3*> *pval;
 
 
 %token <ival> MODULE
-%token <ival> TOP
 %token <ival> INPUT
 %token <ival> OUTPUT
 %token <ival> WIRE
@@ -67,7 +66,7 @@ std::pair<bool,struct MAJ3*> *pval;
 
 %%
 
-circuit: MODULE TOP '(' tnames ')' ';' inputs outputs wires assignments mig_init ENDMODULE { parse_wrap(); }
+circuit: MODULE NAME '(' tnames ')' ';' inputs outputs wires assignments mig_init ENDMODULE { parse_wrap(); }
 ;
 
 tnames: /* empty */

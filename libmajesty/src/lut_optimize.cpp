@@ -178,7 +178,6 @@ namespace majesty {
         }
         npn.resize(cutfunction.size());
         
-		//cout  << "got npn: " << to_string(npn) << endl;
 		auto min_xmg = fstore.min_size_xmg(npn, timeout);
 		if (!min_xmg) { // Exact synthesis may have timed out
 			if (behavior == rebuild_cover) {
@@ -189,17 +188,26 @@ namespace majesty {
 			auto olast_size = fstore.get_last_size(npn);
 			assert(olast_size);
 			auto start_size = olast_size.get() + 1;
-			cout << "Start size for heuristic synthesis: " << start_size << endl;
-			min_xmg = exact_xmg_expression(npn, timeout, start_size);
-			if (!min_xmg) { 
-				min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size, behavior);
-				// Depending on the specified behavior we may want to try to use a 
-				// heuristic XMG or to exclude this cut from the cover.
-				if (behavior == combine) {
-					return boost::none;
+			// We may have stored a heuristic version of this NPN class before,
+			// so no need to compute it again
+			min_xmg = fstore.heuristic_size_xmg(npn, timeout);
+			if (!min_xmg) {
+				min_xmg = exact_xmg_expression(npn, timeout, start_size);
+				if (!min_xmg) { 
+					if (!min_xmg) {
+						// Try to compute a heuristic version
+						min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size, behavior);
+						if (!min_xmg) {
+							return boost::none;
+						} else {
+							fstore.set_heuristic_size_xmg(npn, min_xmg.get(), timeout);
+						}
+					}
 				} else {
-
+					fstore.set_heuristic_size_xmg(npn, min_xmg.get(), timeout);
 				}
+			} else {
+				cout << "Using cached heuristic result" << endl;
 			}
 		}
 		//cout  << "got min: " << min_xmg << endl;

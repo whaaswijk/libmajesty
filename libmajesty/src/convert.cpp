@@ -360,11 +360,11 @@ namespace majesty {
 		return strash(exact_parsed);
 	}
 
-	static const auto heuristic_threshold = 3u;
+	static const auto heuristic_threshold = 5u;
 	optional<string> heuristic_xmg_expression(const tt& func, unsigned ninputs, unsigned timeout, 
 		unsigned last_size, timeout_behavior behavior) {
 		// Get an upper bound for optimization by using ABC's size optimization.
-		auto optcmd = (boost::format("read_truth %s; strash; resyn2; write_verilog tmp.v") % tt_to_hex(func)).str();
+		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % tt_to_hex(func)).str();
 		auto success = system(optcmd.c_str());
 		if (success != 0) {
 			throw runtime_error("Heuristic optimization through ABC failed");
@@ -388,8 +388,10 @@ namespace majesty {
 				if (sat_xmg.nnodes() == upperbound_xmg.nnodes()) {
 					// The upperbound found by ABC was already optimum (otherwise we would've found and XMG with size start - 1)
 					expr = sat_xmg_expr;
+					cout << "Got optimum result from heuristic..." << endl;
 					break;
 				} else {
+					cout << "Found better result than heuristic upper bound..." << endl;
 					--start;
 				}
 			} else {

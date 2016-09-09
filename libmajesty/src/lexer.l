@@ -26,7 +26,6 @@ comma ,
 %%
 
 module { return MODULE; }
-top { return TOP; }
 input { return INPUT; }
 output { return OUTPUT; }
 wire { return WIRE; }
