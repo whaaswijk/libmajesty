@@ -454,4 +454,64 @@ namespace majesty {
 		node_to_expr(nodes, innames, outnodeid, os);
 		return os.str();
 	}
+
+	static inline tt tt_from_node(const node& node) {
+		tt res;
+
+		const auto ttlen = (is_xor(node) || is_and(node) || is_or(node)) ? 4u : 8u;
+		for (auto i = 0u; i < ttlen; i++) {
+			bool i1pol = ((i >> 0) & 1);
+			bool i2pol = ((i >> 1) & 1);
+			bool i3pol = ((i >> 2) & 1);
+			if (is_xor(node)) {
+				const auto i1val = is_c1(node) ? !i1pol : i1pol;
+				const auto i2val = is_c2(node) ? !i2pol : i2pol;
+				res.push_back(i1val ^ i2val);
+			} else if (is_and(node)) {
+				const auto i1val = is_c2(node) ? !i1pol : i1pol;
+				const auto i2val = is_c3(node) ? !i2pol : i2pol;
+				res.push_back(i1val & i2val);
+			} else if (is_or(node)) {
+				const auto i1val = is_c2(node) ? !i1pol : i1pol;
+				const auto i2val = is_c3(node) ? !i2pol : i2pol;
+				res.push_back(i1val | i2val);
+			} else {
+				const auto i1val = is_c1(node) ? !i1pol : i1pol;
+				const auto i2val = is_c2(node) ? !i2pol : i2pol;
+				const auto i3val = is_c3(node) ? !i3pol : i3pol;
+				res.push_back((i1val & i2val) | (i1val & i3val) | (i2val & i3val));
+			}
+		}
+
+		return res;
+	}
+	
+	logic_ntk xmg_to_logic_ntk(const xmg& xmg) {
+		logic_ntk ntk;
+
+		unordered_map<nodeid, nodeid> nodemap;
+
+		const auto& innames = xmg.innames();
+		for (const auto& name : innames) {
+			ntk.create_input(name);
+		}
+		const auto& nodes = xmg.nodes();
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			const auto faninvec = fanin(node);
+			const auto node_tt = tt_from_node(node);
+			nodemap[i] = ntk.create_node(faninvec, node_tt);
+		}
+
+		const auto& outputs = xmg.outputs();
+		const auto& outnames = xmg.outnames();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			ntk.create_output(nodemap[outputs[i]], outnames[i]);
+		}
+		
+		return ntk;
+	}
 }

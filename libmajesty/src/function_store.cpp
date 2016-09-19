@@ -75,6 +75,7 @@ namespace majesty {
 	}
 
 	void function_store::set_heuristic_size_xmg(const cirkit::tt& f, const string& expr, unsigned timeout) {
+#ifndef _WIN32
 		redisReply* reply = (redisReply*)redisCommand(_rcontext, "SET %s:heuristic %s",
 				to_string(f).c_str(), expr.c_str());
 		if (reply == NULL) {
@@ -87,9 +88,11 @@ namespace majesty {
 			throw runtime_error("Error connecting to server");
 		}
 		freeReplyObject(reply);
+#endif
 	}
 			
 	optional<string> function_store::heuristic_size_xmg(const cirkit::tt& f, unsigned timeout) {
+#ifndef _WIN32
 		// Make sure that we've timed out for this function before. If not, no heurstic version exists.
 		redisReply* reply = (redisReply*) redisCommand(_rcontext, "GET %s:heuristic_timeout", to_string(f).c_str());
 		if (reply->type == REDIS_REPLY_STRING) {
@@ -126,6 +129,9 @@ namespace majesty {
 			freeReplyObject(reply);
 			throw runtime_error(errorstring);
 		}
+#else
+		return "placeholder";
+#endif
 	}
 
 	optional<string> function_store::min_size_xmg(const cirkit::tt& f, unsigned timeout) {

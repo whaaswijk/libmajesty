@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xmg.h>
+#include <logic_network.h>
 #include <vector>
 #include <truth_table_utils.hpp>
 #include <map>
@@ -41,4 +42,5 @@ namespace majesty {
 	bracket_map_t find_bracket_pairs(const std::string&, char, char);
 
 	std::string xmg_to_expr(const xmg&);
+	logic_ntk xmg_to_logic_ntk(const xmg&);
 }

@@ -523,4 +523,72 @@ namespace majesty {
 		write_blif(filename, xmg, area_cover, best_area, functionmap);
 	}
 
+	static inline string nodename(nodeid id) {
+		return "n_" + to_string(id);
+	}
+
+	void write_blif(const logic_ntk& ntk, const std::string& fname) {
+		ofstream f;
+		time_t now;
+		time(&now);
+		f.open(fname, ios::out | ios::trunc);
+
+		f << "# Written by Majesty " << ctime(&now);
+
+		f << ".model mapping" << endl;
+		f << ".inputs ";
+
+		const auto& innames = ntk.innames();
+		assert(innames.size() > 0);
+		for (auto i = 0u; i < ntk.nin(); i++) {
+			f << blif_name(innames[i - 1]) << " ";
+		}
+		f << endl;
+		f << ".outputs ";
+		const auto& outnames = ntk.outnames();
+		assert(outnames.size() > 0);
+		for (auto i = 0u; i < ntk.nout(); i++) {
+			f << blif_name(outnames[i]) << " ";
+		}
+		f << endl;
+
+		const auto& nodes = ntk.nodes();
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes[i];
+			if (node.pi) {
+				continue;
+			}
+			cout << ".names ";
+			for (auto nodeid : node.fanin) {
+				string name;
+				const auto& fanin_node = nodes[nodeid];
+				if (fanin_node.pi) {
+					name = innames[nodeid];
+				} else {
+					name = nodename(nodeid);
+				}
+				cout << name << " ";
+			}
+			cout << nodename(i) << endl;
+			// Simply print the truth table implemented by this node
+			const auto& tt = node.function;
+			for (auto j = 0u; j < tt.size(); j++) {
+				for (auto k = 0u; k < node.fanin.size(); k++) {
+					f << ((j >> k) & 1u) << " ";
+				}
+				f << tt.test(j) << endl;
+			}
+		}
+
+		const auto& outputs = ntk.outputs();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto& outnode = outputs[i];
+			const auto& outname = outnames[i];
+			cout << ".names " << nodename(outnode) << " " << outname << endl;
+			cout << 1 << " " << 1 << endl;
+		}
+
+		f << ".end";
+	}
+
 }

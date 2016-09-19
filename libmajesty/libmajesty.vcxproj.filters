@@ -78,6 +78,9 @@
     <ClCompile Include="src\mlpmemory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\logic_network.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mlp.h">
@@ -174,6 +177,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\exact.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\logic_network.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

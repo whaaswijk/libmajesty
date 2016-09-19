@@ -218,6 +218,14 @@ namespace majesty {
 		clear_bit(n.flag, 6);
 	}
 
+	static inline std::vector<nodeid> fanin(const node& node) {
+		if (is_xor(node) || is_and(node) || is_or(node)) {
+			return{ node.in2, node.in3 };
+		} else {
+			return{ node.in1, node.in2, node.in3 };
+		}
+	}
+
 	static inline std::vector<std::pair<nodeid, bool>> get_children(const node& node) {
 		return { std::make_pair(node.in1, is_c1(node)), std::make_pair(node.in2, is_c2(node)), std::make_pair(node.in3, is_c3(node)) };
 	}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xmg.h>
+#include <logic_network.h>
 #include <fstream>
 
 namespace majesty {
@@ -16,4 +17,6 @@ namespace majesty {
 	void write_verilog(const majesty::xmg&, std::ofstream&);
 
 	void lut_map_area(const majesty::xmg&, const std::string&);
+
+	void write_blif(const logic_ntk&, const std::string&);
 }
