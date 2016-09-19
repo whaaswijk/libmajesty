@@ -541,7 +541,7 @@ namespace majesty {
 		const auto& innames = ntk.innames();
 		assert(innames.size() > 0);
 		for (auto i = 0u; i < ntk.nin(); i++) {
-			f << blif_name(innames[i - 1]) << " ";
+			f << blif_name(innames[i]) << " ";
 		}
 		f << endl;
 		f << ".outputs ";
