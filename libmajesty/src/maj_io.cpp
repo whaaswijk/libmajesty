@@ -541,6 +541,8 @@ namespace majesty {
 		const auto& innames = ntk.innames();
 		assert(innames.size() > 0);
 		for (auto i = 0u; i < ntk.nin(); i++) {
+			const auto& inname = innames[i];
+			cout << "inname: " << inname << endl;
 			f << blif_name(innames[i]) << " ";
 		}
 		f << endl;
@@ -558,7 +560,7 @@ namespace majesty {
 			if (node.pi) {
 				continue;
 			}
-			cout << ".names ";
+			f << ".names ";
 			for (auto nodeid : node.fanin) {
 				string name;
 				const auto& fanin_node = nodes[nodeid];
@@ -567,11 +569,12 @@ namespace majesty {
 				} else {
 					name = nodename(nodeid);
 				}
-				cout << name << " ";
+				f << name << " ";
 			}
-			cout << nodename(i) << endl;
+			f << nodename(i) << endl;
 			// Simply print the truth table implemented by this node
 			const auto& tt = node.function;
+			cout << "function size: " << tt.size();
 			for (auto j = 0u; j < tt.size(); j++) {
 				for (auto k = 0u; k < node.fanin.size(); k++) {
 					f << ((j >> k) & 1u) << " ";
@@ -584,8 +587,8 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto& outnode = outputs[i];
 			const auto& outname = outnames[i];
-			cout << ".names " << nodename(outnode) << " " << outname << endl;
-			cout << 1 << " " << 1 << endl;
+			f << ".names " << nodename(outnode) << " " << outname << endl;
+			f << 1 << " " << 1 << endl;
 		}
 
 		f << ".end";
