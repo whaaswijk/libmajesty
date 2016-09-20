@@ -5,6 +5,20 @@ using namespace cirkit;
 
 namespace majesty {
 
+	logic_ntk::logic_ntk(logic_ntk&& ntk) {
+		_nodes = std::move(ntk._nodes);
+		_outputs = std::move(ntk._outputs);
+		_innames = std::move(ntk._innames);
+		_outnames = std::move(ntk._outnames);
+	}
+
+	logic_ntk& logic_ntk::operator=(logic_ntk&& ntk) {
+		_nodes = std::move(ntk._nodes);
+		_outputs = std::move(ntk._outputs);
+		_innames = std::move(ntk._innames);
+		_outnames = std::move(ntk._outnames);
+		return *this;
+	}
 
 	unsigned logic_ntk::nin() const {
 		auto res = 0u;

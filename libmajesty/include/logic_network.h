@@ -26,6 +26,12 @@ namespace majesty {
 			std::vector<std::string> _outnames;
 			
 		public:
+			logic_ntk() {  }
+			logic_ntk(const logic_ntk&) = delete;
+			logic_ntk(logic_ntk&&);
+			logic_ntk& operator=(logic_ntk&) = delete;
+			logic_ntk& operator=(logic_ntk&&);
+
 			// Counts the nr. of PI nodes
 			unsigned nin() const;
 			// Counts the total number of nodes

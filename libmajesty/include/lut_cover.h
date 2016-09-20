@@ -2,6 +2,7 @@
 #define LUT_COVER_H
 
 #include <xmg.h>
+#include <logic_network.h>
 #include <cut.h>
 #include <map>
 #include <unordered_map>
@@ -26,7 +27,6 @@ namespace majesty {
 	reqmap compute_required_times(
 			const xmg&, const nintmap&, const nintmap&, const bestmap&);
 
-	unsigned int cover_size(const xmg&, const cover&);
 	void improve_cover_exact_area( const xmg&, const cutmap&, bestmap&, nintmap&);
 	void improve_cover_exact_area_timeout( const xmg&, const cutmap&, bestmap&, nintmap&, const funcmap&, const std::vector<cirkit::tt>&);
 	void improve_cover_exact_area( const xmg&, const cutmap&, bestmap&, nintmap&, nintmap&, const reqmap&);
@@ -41,9 +41,7 @@ namespace majesty {
 	funcmap compute_functions(const xmg&, const bestmap&, const cutmap&);
 	funcmap compute_functions(const xmg&, const cover&, const bestmap&, const cutmap&);
 
-	void lut_map(const xmg&, const cut_params*, const std::string&);
-
-	void abc_lut_map(const xmg&, const cut_params*, const std::string&);
+	logic_ntk lut_map_area(const xmg&, const cut_params*);
 }
 
 #endif

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <convert.h>
 
 using namespace std;
 using namespace cirkit;
@@ -553,15 +554,13 @@ namespace majesty {
 
 	extern void write_blif(const string&, const xmg&, const cover&, const bestmap&, const funcmap&);
 	
-	void lut_map(const xmg& m, const cut_params* params, const string& f) {
+	logic_ntk lut_map_area(const xmg& m, const cut_params* params) {
 		const auto cut_map = enumerate_cuts(m, params);
 		auto best_area = eval_matches_area(m, cut_map);
 		auto area_cover = build_cover(m, best_area);
 		it_exact_cover(m, area_cover, cut_map, best_area);
-		auto csize = cover_size(m, area_cover);
-		cout << "Cover size: " << csize << endl;
 		auto functionmap = compute_functions(m, area_cover, best_area, cut_map);
-		write_blif(f, m, area_cover, best_area, functionmap);
+		return xmg_cover_to_logic_ntk(m, area_cover, best_area, functionmap);
 	}
 
 }

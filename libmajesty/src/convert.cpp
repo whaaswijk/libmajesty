@@ -524,4 +524,43 @@ namespace majesty {
 		
 		return ntk;
 	}
+	
+	logic_ntk xmg_cover_to_logic_ntk(const xmg& xmg, const cover& cover, const bestmap& best, const funcmap& fm) {
+		logic_ntk ntk;
+		unordered_map<nodeid, nodeid> nodemap;
+
+		const auto& innames = xmg.innames();
+		for (auto i = 0u; i < innames.size(); i++) {
+            const auto& name = innames[i];
+            // Add one because we don't use the constant input
+            nodemap[i+1] = ntk.create_input(name);
+		}
+		const auto& nodes = xmg.nodes();
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			if (!contains(cover, i)) {
+				continue;
+			}
+			auto cut = best.at(node.ecrep);
+			const auto& inputs = cut->nodes();
+			const auto& function = *fm.at(cut);
+			vector<nodeid> fanin;
+			for (auto input : inputs) {
+				fanin.push_back(nodemap[input]);
+			}
+			nodemap[i] = ntk.create_node(fanin, function);
+		}
+
+		const auto& outputs = xmg.outputs();
+		const auto& outcompl = xmg.outcompl();
+		const auto& outnames = xmg.outnames();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			ntk.create_output(nodemap[outputs[i]], outcompl[i], outnames[i]);
+		}
+
+		return ntk;
+	}
 }
