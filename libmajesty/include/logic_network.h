@@ -13,6 +13,7 @@ namespace majesty {
 
 	struct ln_node {
 		std::vector<nodeid> fanin;
+		std::vector<nodeid> fanout;
 		cirkit::tt function;
 		bool pi;
 	};

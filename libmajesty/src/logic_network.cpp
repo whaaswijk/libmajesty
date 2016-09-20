@@ -30,10 +30,10 @@ namespace majesty {
 	}
 
 	nodeid logic_ntk::create_output(nodeid id, bool c) {
-        if (c) {
-            const auto& old_node = _nodes[id];
+		const auto& old_node = _nodes[id];
+        if (c && old_node.fanout.size() > 0) {
             id = create_node(old_node.fanin, ~old_node.function);
-        } 
+        }
         _outputs.push_back(id);
         return _outputs.size() - 1;
 	}
@@ -47,6 +47,10 @@ namespace majesty {
 		ln_node node;
 		node.pi = false;
 		node.fanin = fanin;
+		for (auto nodeid : fanin) {
+			auto& faninnode = _nodes[nodeid];
+			faninnode.fanout.push_back(_nodes.size());
+		}
 		node.function = function;
 		_nodes.push_back(node);
 		return _nodes.size() - 1;
