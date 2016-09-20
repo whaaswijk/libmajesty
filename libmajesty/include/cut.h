@@ -37,6 +37,7 @@ namespace majesty {
 
 		public:
 			cut();
+			cut(const cut&);
 			cut(nodeid);
 			cut(cut*, cut*);
 			cut(cut*, cut*, cut*);

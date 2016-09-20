@@ -78,15 +78,23 @@ namespace majesty {
 			return crossproduct(cuts1, cuts2, cuts3, p);
 		}
 	}
+
+	cutvec rec_crossproduct(const vector<nodeid>& fanin, const cutmap& cut_map, const cut_params* p, unsigned idx) {
+		if (idx == fanin.size() - 1) {
+			cutvec res;
+			auto& lastvec = cut_map.at(fanin[idx]);
+			for (const auto& c : lastvec) {
+				unique_ptr<cut> cp(new cut(*c));
+				res.push_back(move(cp));
+			}
+			return res;
+		}
+		auto& curvec = cut_map.at(fanin[idx]);
+		return crossproduct(curvec, rec_crossproduct(fanin, cut_map, p, idx + 1), p);
+	}
 	
 	cutvec node_cuts(const ln_node& n, const cutmap& cut_map, const cut_params* p) {
-		auto res = cut_map.at(n.fanin[0]);
-
-		for (auto i = 1u; i < n.fanin.size(); i++) {
-			res = crossproduct(res, cut_map.at(n.fanin[i]), p);
-		}
-
-		return res;
+		return rec_crossproduct(n.fanin, cut_map, p, 0);
 	}
 
 	cutvec crossproduct(
@@ -223,6 +231,15 @@ namespace majesty {
 
 	cut::cut() {
 		_sig = 0u;
+	}
+
+	cut::cut(const cut& c) {
+		_nodes = c._nodes;
+		_sig = c._sig;
+		_c1 = c._c1;
+		_c2 = c._c2;
+		_c3 = c._c3;
+		_is_required = c._is_required;
 	}
 
 	cut::cut(nodeid n) {
