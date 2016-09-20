@@ -46,8 +46,8 @@ namespace majesty {
 			nodeid create_input();
 			nodeid create_input(const std::string&);
 
-			nodeid create_output(nodeid);
-			nodeid create_output(nodeid, const std::string&);
+			nodeid create_output(nodeid, bool);
+			nodeid create_output(nodeid, bool, const std::string&);
 
 			nodeid create_node(const std::vector<nodeid>&, const cirkit::tt&);
 

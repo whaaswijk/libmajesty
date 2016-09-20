@@ -25,21 +25,22 @@ namespace majesty {
 	}
 
 	nodeid logic_ntk::create_input(const std::string& name) {
-		ln_node input;
-		input.pi = true;
-		_nodes.push_back(input);
 		_innames.push_back(name);
-		return _innames.size() - 1;
+        return create_input();
 	}
 
-	nodeid logic_ntk::create_output(nodeid id) {
-		_outputs.push_back(id);
-		return _outputs.size() - 1;
+	nodeid logic_ntk::create_output(nodeid id, bool c) {
+        if (c) {
+            const auto& old_node = _nodes[id];
+            id = create_node(old_node.fanin, ~old_node.function);
+        } 
+        _outputs.push_back(id);
+        return _outputs.size() - 1;
 	}
-	nodeid logic_ntk::create_output(nodeid id, const std::string& name) {
-		_outputs.push_back(id);
-		_outnames.push_back(name);
-		return _outputs.size() - 1;
+
+	nodeid logic_ntk::create_output(nodeid id, bool c, const std::string& name) {
+        _outnames.push_back(name);
+        return create_output(id, c);
 	}
 
 	nodeid logic_ntk::create_node(const std::vector<nodeid>& fanin, const cirkit::tt& function) {

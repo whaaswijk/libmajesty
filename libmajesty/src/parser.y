@@ -208,7 +208,7 @@ void lit_assignment(string *s, int lit) {
 		exit(1);
 	}
 	one->PO = 1;
-	set_outcompl(idx, lit == 0 ? true : false, one);
+	set_outcompl(idx, lit == 0, one);
 }
 
 void unary_assignment(string *s, pair<bool,MAJ3*> *p) {
@@ -334,7 +334,7 @@ void set_outcompl(int idx, bool c, MAJ3 *n) {
 		outcompl.reserve(outnodes.size());
 	}
 	out[idx] = n;
-	outcompl[idx] = c ? true : false;
+	outcompl[idx] = c;
 }
 
 void parse_wrap(void) {

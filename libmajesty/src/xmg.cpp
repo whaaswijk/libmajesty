@@ -884,6 +884,54 @@ namespace majesty {
 		return *this;
 	}
 
+    xmg::xmg(MIG* mig) {
+        xmg_stats stats {
+			0u, // Nr. strash hits
+			0u, // nr_potentials
+			0u, // nr_matches
+			0u, // nr_misses
+			0u, // nr_undefined
+		};
+
+		unordered_map<MAJ3*,pair<nodeid,bool>> nodemap;
+        strashmap shmap(mig->Nnodes/2, stats);
+
+		auto torder = mig_topsort(mig);
+
+		// Create the "one" input
+		nodemap[mig->one] = make_pair(create_input(), false);
+		for (auto node : torder) {
+			if (node == mig->one) {
+				continue;
+			} else if (node->PI) {
+				nodemap[node] = make_pair(create_input(), false);
+				continue;
+			}
+			const auto& p1 = nodemap[node->in1];
+			const auto& p2 = nodemap[node->in2];
+			const auto& p3 = nodemap[node->in3];
+			nodemap[node] = find_or_create(
+					p1.first, p1.second != node->compl1,
+					p2.first, p2.second != node->compl2, 
+					p3.first, p3.second != node->compl3, 
+					shmap);
+        }
+        for (auto i = 0u; i < mig->Nin; i++) {
+			_innames.push_back(string(mig->innames[i]));
+		}
+
+		for (auto i = 0u; i < mig->Nout; i++) {
+			const auto& np = nodemap[mig->out[i]];
+			const auto nodeid = np.first; const auto c = np.second;
+			const auto migc = static_cast<bool>(mig->outcompl[i]);
+			_outputs.push_back(nodeid);
+			_outcompl.push_back(c != migc);
+			auto& outnode = _nodes[nodeid];
+			set_po(outnode);
+			_outnames.push_back(string(mig->outnames[i]));
+		}
+    }
+
 	xmg::xmg(MIG* mig, const xmg_params* p) {
 		unordered_map<MAJ3*,pair<nodeid,bool>> nodemap;
 
@@ -1404,8 +1452,6 @@ namespace majesty {
 			return true;
 		}
 	}
-
-	
 
 	bool simulate_node(const node& n, unordered_map<nodeid, bool>& simval) {
 		if (is_xor(n)) {

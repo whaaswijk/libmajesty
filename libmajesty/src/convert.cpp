@@ -299,7 +299,6 @@ namespace majesty {
 		for (ptree::const_iterator it = pt.begin(); it != pt.end(); ++it) {
 			auto obj = it->second;
 			for (auto it2 = obj.begin(); it2 != obj.end(); it2++) {
-				//cout << it2->first << ":" << it2->second.get_value<string>() << endl;
 				if (it2->first == "last_size") {
 					last_size = it2->second.get_value<unsigned>();
 				}
@@ -371,7 +370,6 @@ namespace majesty {
 		}
 		auto upperbound_xmg = read_verilog("tmp.v");
 		auto start = upperbound_xmg.nnodes() - upperbound_xmg.nin() - 1;
-		cout << "upper bound from aig: " << start << endl;
 		// What we do now depends on the specified behavior. If the difference between the heuristic result and the last
 		// is too great it is unlikely that we will find an optimum result by going down from the starting point. We
 		// We also may not want to invoke exact synthesis too often.
@@ -388,10 +386,8 @@ namespace majesty {
 				if (sat_xmg.nnodes() == upperbound_xmg.nnodes()) {
 					// The upperbound found by ABC was already optimum (otherwise we would've found and XMG with size start - 1)
 					expr = sat_xmg_expr;
-					cout << "Got optimum result from heuristic..." << endl;
 					break;
 				} else {
-					cout << "Found better result than heuristic upper bound..." << endl;
 					--start;
 				}
 			} else {
@@ -492,8 +488,10 @@ namespace majesty {
 		unordered_map<nodeid, nodeid> nodemap;
 
 		const auto& innames = xmg.innames();
-		for (const auto& name : innames) {
-			ntk.create_input(name);
+		for (auto i = 0u; i < innames.size(); i++) {
+            const auto& name = innames[i];
+            // Add one because we don't use the constant input
+            nodemap[i+1] = ntk.create_input(name);
 		}
 		const auto& nodes = xmg.nodes();
 		for (auto i = 0u; i < nodes.size(); i++) {
@@ -501,15 +499,27 @@ namespace majesty {
 			if (is_pi(node)) {
 				continue;
 			}
-			const auto faninvec = fanin(node);
+            vector<nodeid> fanin;
+            if (is_xor(node)) {
+                fanin.push_back(nodemap[node.in1]);
+                fanin.push_back(nodemap[node.in2]);
+            } else if (is_and(node) || is_or(node)) {
+                fanin.push_back(nodemap[node.in2]);
+                fanin.push_back(nodemap[node.in3]);
+            } else {
+                fanin.push_back(nodemap[node.in1]);
+                fanin.push_back(nodemap[node.in2]);
+                fanin.push_back(nodemap[node.in3]);
+            }
 			const auto node_tt = tt_from_node(node);
-			nodemap[i] = ntk.create_node(faninvec, node_tt);
+			nodemap[i] = ntk.create_node(fanin, node_tt);
 		}
 
 		const auto& outputs = xmg.outputs();
+		const auto& outcompl = xmg.outcompl();
 		const auto& outnames = xmg.outnames();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			ntk.create_output(nodemap[outputs[i]], outnames[i]);
+			ntk.create_output(nodemap[outputs[i]], outcompl[i], outnames[i]);
 		}
 		
 		return ntk;

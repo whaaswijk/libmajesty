@@ -219,7 +219,9 @@ namespace majesty {
 	}
 
 	static inline std::vector<nodeid> fanin(const node& node) {
-		if (is_xor(node) || is_and(node) || is_or(node)) {
+        if (is_xor(node)) {
+			return{ node.in1, node.in2 };
+        } else if (is_and(node) || is_or(node)) {
 			return{ node.in2, node.in3 };
 		} else {
 			return{ node.in1, node.in2, node.in3 };
@@ -281,6 +283,7 @@ namespace majesty {
 			xmg(const xmg&) = delete;
 			xmg(xmg&&);
 			xmg& operator=(xmg&&);
+			xmg(MIG* mig);
 			xmg(MIG* mig, const xmg_params*);
 			xmg(const xmg&, const xmg_params*);
 			// Counts the nr. of PI nodes

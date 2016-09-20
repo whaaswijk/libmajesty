@@ -35,9 +35,7 @@ namespace majesty {
 			throw runtime_error("Unable to open input file");
 		}
 		parse_verilog(fp, &mig);
-		auto params = default_xmg_params();
-		params->nr_backtracks = 100;
-		auto res = xmg(mig, params.get());
+		xmg res(mig);
 		freemig(mig);
 		return res;
 	}
@@ -541,8 +539,6 @@ namespace majesty {
 		const auto& innames = ntk.innames();
 		assert(innames.size() > 0);
 		for (auto i = 0u; i < ntk.nin(); i++) {
-			const auto& inname = innames[i];
-			cout << "inname: " << inname << endl;
 			f << blif_name(innames[i]) << " ";
 		}
 		f << endl;
@@ -574,12 +570,13 @@ namespace majesty {
 			f << nodename(i) << endl;
 			// Simply print the truth table implemented by this node
 			const auto& tt = node.function;
-			cout << "function size: " << tt.size();
 			for (auto j = 0u; j < tt.size(); j++) {
-				for (auto k = 0u; k < node.fanin.size(); k++) {
-					f << ((j >> k) & 1u) << " ";
-				}
-				f << tt.test(j) << endl;
+                if (tt.test(j)) {
+                    for (auto k = 0u; k < node.fanin.size(); k++) {
+                        f << ((j >> k) & 1u);
+                    }
+                    f << " " << tt.test(j) << endl;
+                }
 			}
 		}
 
