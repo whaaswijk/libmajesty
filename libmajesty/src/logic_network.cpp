@@ -56,7 +56,15 @@ namespace majesty {
         return _outputs.size() - 1;
 	}
 
-	nodeid logic_ntk::create_output(nodeid id, bool c, const std::string& name) {
+	nodeid logic_ntk::create_output(nodeid id) {
+		return create_output(id, false);
+	}
+
+	nodeid logic_ntk::create_output(nodeid id, const std::string& name) {
+		return create_output(id, name, false);
+	}
+
+	nodeid logic_ntk::create_output(nodeid id, const std::string& name, bool c) {
         _outnames.push_back(name);
         return create_output(id, c);
 	}

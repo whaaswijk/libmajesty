@@ -40,6 +40,7 @@ namespace majesty {
 		return res;
 	}
 
+
 	cutvec eqclass_cuts_eval_funcs(const vector<node>& nodes, const node& N,
 			const cutmap& cut_map, const cut_params* p, funcmap& fm) {
 		// Compute the union of the k-feasible cuts of this equivalence class,
@@ -76,6 +77,16 @@ namespace majesty {
 			const auto& cuts3 = cut_map.at(n.in3);
 			return crossproduct(cuts1, cuts2, cuts3, p);
 		}
+	}
+	
+	cutvec node_cuts(const ln_node& n, const cutmap& cut_map, const cut_params* p) {
+		auto res = cut_map.at(n.fanin[0]);
+
+		for (auto i = 1u; i < n.fanin.size(); i++) {
+			res = crossproduct(res, cut_map.at(n.fanin[i]), p);
+		}
+
+		return res;
 	}
 
 	cutvec crossproduct(
@@ -309,6 +320,32 @@ namespace majesty {
 				res = eqclass_cuts(nodes, n, cut_map, p);
 			}
 			cut_map[n.ecrep] = move(res);
+			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
+			cout << ")\r";
+		}
+		cout << endl;
+
+		return cut_map;
+	}
+	
+	cutmap enumerate_cuts(const logic_ntk& ntk, const cut_params* p) {
+		cout << "Enumerating cuts..." << endl;
+		cutmap cut_map(ntk.nnodes());
+
+		// We assume that the nodes are stored in topological order
+		auto nodes = ntk.nodes();
+		auto total_nodes = nodes.size();
+		auto processed_nodes = 0u;
+		for (auto i = 0u; i < total_nodes; i++) {
+			cutvec res;
+			const auto& n = nodes[i];
+			if (!n.pi) {
+				res = node_cuts(n, cut_map, p);
+			}
+			// Always add the trivial cut
+			unique_ptr<cut> c(new cut(i));
+			res.push_back(move(c));
+			cut_map[i] = move(res);
 			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
 			cout << ")\r";
 		}

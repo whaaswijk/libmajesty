@@ -1,7 +1,8 @@
 #ifndef CUT_H
 #define CUT_H
 
-#include "xmg.h"
+#include <xmg.h>
+#include <logic_network.h>
 #include "truth_table_utils.hpp"
 #include <cstdint>
 #include <vector>
@@ -62,6 +63,7 @@ namespace majesty {
 		const cut_params*, funcmap&, const std::vector<cirkit::tt>&);
 
 	cutvec node_cuts(const node&, const cutmap&, const cut_params*);
+	cutvec node_cuts(const ln_node&, const cutmap&, const cut_params*);
 	
 	cutvec crossproduct(const cutvec&, const cutvec&, const cut_params*);
 
@@ -71,6 +73,7 @@ namespace majesty {
 	void safeinsert(cutvec& v, std::unique_ptr<cut> c);
 
 	cutmap enumerate_cuts(const xmg&, const cut_params*);
+	cutmap enumerate_cuts(const logic_ntk&, const cut_params*);
 	cutmap enumerate_cuts_eval_funcs(const xmg&, const cut_params*, funcmap&);
 }
 

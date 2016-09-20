@@ -519,7 +519,7 @@ namespace majesty {
 		const auto& outcompl = xmg.outcompl();
 		const auto& outnames = xmg.outnames();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			ntk.create_output(nodemap[outputs[i]], outcompl[i], outnames[i]);
+			ntk.create_output(nodemap[outputs[i]], outnames[i], outcompl[i]);
 		}
 		
 		return ntk;
@@ -558,7 +558,7 @@ namespace majesty {
 		const auto& outcompl = xmg.outcompl();
 		const auto& outnames = xmg.outnames();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			ntk.create_output(nodemap[outputs[i]], outcompl[i], outnames[i]);
+			ntk.create_output(nodemap[outputs[i]], outnames[i], outcompl[i]);
 		}
 
 		return ntk;
