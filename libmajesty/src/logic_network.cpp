@@ -30,9 +30,13 @@ namespace majesty {
 	}
 
 	nodeid logic_ntk::create_output(nodeid id, bool c) {
-		const auto& old_node = _nodes[id];
-        if (c && old_node.fanout.size() > 0) {
-            id = create_node(old_node.fanin, ~old_node.function);
+		auto& old_node = _nodes[id];
+        if (c) {
+			if (old_node.fanout.size() > 0) {
+				id = create_node(old_node.fanin, ~old_node.function);
+			} else {
+				old_node.function = ~old_node.function;
+			}
         }
         _outputs.push_back(id);
         return _outputs.size() - 1;
