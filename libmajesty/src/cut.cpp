@@ -132,8 +132,12 @@ namespace majesty {
 		return res;
 	}
 	
-	cutvec node_cuts(const ln_node& n, const cutmap& cut_map, const cut_params* p) {
-		return nway_crossproduct(n.fanin, cut_map, p);
+	cutvec node_cuts(const ln_node& n, const nodeid nid, const cutmap& cut_map, const cut_params* p) {
+		auto crossproductvec = nway_crossproduct(n.fanin, cut_map, p);
+		// Add the trivial cut
+		unique_ptr<cut> trivcut(new cut(nid));
+		crossproductvec.push_back(move(trivcut));
+		return crossproductvec;
 	}
 
 	cutvec crossproduct(
