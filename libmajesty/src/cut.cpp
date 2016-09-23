@@ -406,7 +406,7 @@ namespace majesty {
 			cutvec res;
 			const auto& n = nodes[i];
 			if (!n.pi) {
-				res = node_cuts(n, cut_map, p);
+				res = node_cuts(n, i, cut_map, p);
 			}
 			// Always add the trivial cut
 			unique_ptr<cut> c(new cut(i));
