@@ -406,6 +406,20 @@ namespace majesty {
 		return idx;
 	}
 
+	nodeid xmg::create_input(const string& name, varmap& var_map, Solver& solver) {
+		node in;
+		in.flag = in.in1 = in.in2 = in.in3 = 0;
+		in.ecnext = EC_NULL;
+		set_pi(in);
+		auto idx = _nodes.size();
+		in.ecrep = idx;
+		_nodes.push_back(in);
+		_innames.push_back(name);
+		// Make a SAT variable for this input
+		var_map[idx] = solver.newVar();
+		return idx;
+	}
+
 	nodeid xmg::create_node(maj3inputs) {
 		node n;
 		n.flag = 0;
@@ -881,6 +895,54 @@ namespace majesty {
 		return *this;
 	}
 
+    xmg::xmg(MIG* mig) {
+        xmg_stats stats {
+			0u, // Nr. strash hits
+			0u, // nr_potentials
+			0u, // nr_matches
+			0u, // nr_misses
+			0u, // nr_undefined
+		};
+
+		unordered_map<MAJ3*,pair<nodeid,bool>> nodemap;
+        strashmap shmap(mig->Nnodes/2, stats);
+
+		auto torder = mig_topsort(mig);
+
+		// Create the "one" input
+		nodemap[mig->one] = make_pair(create_input(), false);
+		for (auto node : torder) {
+			if (node == mig->one) {
+				continue;
+			} else if (node->PI) {
+				nodemap[node] = make_pair(create_input(), false);
+				continue;
+			}
+			const auto& p1 = nodemap[node->in1];
+			const auto& p2 = nodemap[node->in2];
+			const auto& p3 = nodemap[node->in3];
+			nodemap[node] = find_or_create(
+					p1.first, p1.second != node->compl1,
+					p2.first, p2.second != node->compl2, 
+					p3.first, p3.second != node->compl3, 
+					shmap);
+        }
+        for (auto i = 0u; i < mig->Nin; i++) {
+			_innames.push_back(string(mig->innames[i]));
+		}
+
+		for (auto i = 0u; i < mig->Nout; i++) {
+			const auto& np = nodemap[mig->out[i]];
+			const auto nodeid = np.first; const auto c = np.second;
+			const auto migc = static_cast<bool>(mig->outcompl[i]);
+			_outputs.push_back(nodeid);
+			_outcompl.push_back(c != migc);
+			auto& outnode = _nodes[nodeid];
+			set_po(outnode);
+			_outnames.push_back(string(mig->outnames[i]));
+		}
+    }
+
 	xmg::xmg(MIG* mig, const xmg_params* p) {
 		unordered_map<MAJ3*,pair<nodeid,bool>> nodemap;
 
@@ -1043,10 +1105,16 @@ namespace majesty {
 		initsim(bv_map, hashnode_map, inputs);
 		simulate(bv_map, hashnode_map, simrep, xmg);
 
+		const auto& innames = xmg.innames();
+
 		for (auto i = 0u; i < xmg.nnodes(); i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				nodemap[node.ecrep] = make_pair(create_input(var_map, solver), false);
+				if (i == 0u) {
+					nodemap[node.ecrep] = make_pair(create_input(var_map, solver), false);
+				} else {
+					nodemap[node.ecrep] = make_pair(create_input(innames[i - 1], var_map, solver), false);
+				}
 				continue;
 			}
 			const auto& p1 = nodemap[node.in1];
@@ -1145,44 +1213,6 @@ namespace majesty {
 		cout << "Nr. undefined: " << stats.nr_undefined << endl;
 	}
 
-	xmg::xmg(const xmg& sxmg) {
-		nodemap nodemap;
-		const auto& nodes = sxmg.nodes();
-		const auto nnodes = sxmg.nnodes();
-
-		for (auto i = 0u; i < nnodes; i++) {
-			const auto& node = nodes[i];
-			if (is_pi(node)) {
-				nodemap[i] = make_pair(create_input(), false);
-			} else if (is_xor(node)) {
-				auto in1 = nodemap[node.in1];
-				in1.second = (in1.second != is_c1(node));
-				auto in2 = nodemap[node.in2];
-				in2.second = (in2.second != is_c2(node));
-				nodemap[i] = create(in1, in2);
-			} else {
-				auto in1 = nodemap[node.in1];
-				in1.second = (in1.second != is_c1(node));
-				auto in2 = nodemap[node.in2];
-				in2.second = (in2.second != is_c2(node));
-				auto in3 = nodemap[node.in3];
-				in3.second = (in3.second != is_c3(node));
-				nodemap[i] = create(in1, in2, in3);
-			}
-		}
-
-		const auto& outputs = sxmg.outputs();
-		const auto& outcompl = sxmg.outcompl();
-		const auto& outnames = sxmg.outnames();
-		const auto nouts = outputs.size();
-		for (auto i = 0u; i < nouts; i++) {
-			auto outid = outputs[i];
-			auto outc = outcompl[i];
-			auto outnode = nodemap[outid];
-			create_output(outnode.first, outnode.second != outc, outnames[i]);
-		}
-	}
-
 	xmg strash(const xmg& sxmg) {
 		xmg res;
 
@@ -1199,11 +1229,16 @@ namespace majesty {
 		};
 
 		strashmap shmap(nnodes / 2, stats);
+		const auto& innames = sxmg.innames();
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				auto is_c = is_pi_c(node);
-				nodemap[i] = make_pair(res.create_input(), is_c);
+				if (i == 0u) {
+					nodemap[i] = make_pair(res.create_input(), is_c);
+				} else {
+					nodemap[i] = make_pair(res.create_input(innames[i - 1]), is_c);
+				}
 			} else {
 				auto in1 = nodemap[node.in1];
 				in1.second = (in1.second != is_c1(node));
@@ -1474,16 +1509,6 @@ namespace majesty {
 		} else {
 			return true;
 		}
-	}
-
-	void write_verilog(const string& filename, const majesty::xmg& xmg) {
-		write_verilog(filename.c_str(), xmg);
-	}
-	
-	void write_verilog(const char* filename, const majesty::xmg& xmg) {
-		ofstream outfile(filename);
-		write_verilog(outfile, xmg);
-		outfile.close();
 	}
 
 	bool simulate_node(const node& n, unordered_map<nodeid, bool>& simval) {

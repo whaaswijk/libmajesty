@@ -14,7 +14,7 @@
 
 using nodeid = uint32_t;
 using input = std::pair<nodeid,bool>;
-#define EC_NULL numeric_limits<uint32_t>::max()
+#define EC_NULL std::numeric_limits<uint32_t>::max()
 using bv = std::vector<unsigned int>;
 using hashmap = std::unordered_map<unsigned int,MAJ3*>;
 using xhashmap = std::unordered_map<unsigned int,nodeid>;
@@ -218,6 +218,16 @@ namespace majesty {
 		clear_bit(n.flag, 6);
 	}
 
+	static inline std::vector<nodeid> fanin(const node& node) {
+        if (is_xor(node)) {
+			return{ node.in1, node.in2 };
+        } else if (is_and(node) || is_or(node)) {
+			return{ node.in2, node.in3 };
+		} else {
+			return{ node.in1, node.in2, node.in3 };
+		}
+	}
+
 	static inline std::vector<std::pair<nodeid, bool>> get_children(const node& node) {
 		return { std::make_pair(node.in1, is_c1(node)), std::make_pair(node.in2, is_c2(node)), std::make_pair(node.in3, is_c3(node)) };
 	}
@@ -270,9 +280,10 @@ namespace majesty {
 
 		public:
 			xmg() {  }
-			xmg(const xmg&);
+			xmg(const xmg&) = delete;
 			xmg(xmg&&);
 			xmg& operator=(xmg&&);
+			xmg(MIG* mig);
 			xmg(MIG* mig, const xmg_params*);
 			xmg(const xmg&, const xmg_params*);
 			// Counts the nr. of PI nodes
@@ -282,6 +293,7 @@ namespace majesty {
 			// Counts the nr. of PO nodes
 			unsigned nout() const { return _outputs.size(); }
 			const std::vector<node>& nodes() const { return _nodes; }
+			node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
 			const std::vector<std::string>& innames() const { 
 				return _innames;
@@ -297,6 +309,7 @@ namespace majesty {
 			nodeid create_input(bool c);
 			nodeid create_input(const std::string&);
 			nodeid create_input(varmap&, Minisat::Solver&);
+			nodeid create_input(const std::string&, varmap&, Minisat::Solver&);
 			void create_output(nodeid, bool, const std::string&);
 			// Creates a raw node, without strashing or propagation
 			std::pair<nodeid,bool> create(maj3signature);
@@ -332,9 +345,7 @@ namespace majesty {
 	xmg strash(const xmg&);
 	xmg rdup(const xmg&);
 
-	void write_verilog(const std::string&, const majesty::xmg&);
-	void write_verilog(const char*, const majesty::xmg&);
-	void write_verilog(std::ofstream&, const majesty::xmg&);
+	
 
 	// Simulates every possible input vector on an xmg and returns the function it computes
 	boost::dynamic_bitset<> simulate_xmg(const xmg&);

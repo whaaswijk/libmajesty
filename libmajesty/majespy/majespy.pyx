@@ -469,6 +469,12 @@ def get_optimum_mig(PyXmg py_xmg) -> PyXmg:
     result = mig_interface.get_optimum_mig(py_xmg.c_xmg[0])
     return PyXmg().set_pt_to(result)
 
+def get_optimum_xmg(PyXmg py_xmg) -> PyXmg:
+    cdef:
+        xmg* result
+    result = mig_interface.get_optimum_xmg(py_xmg.c_xmg[0])
+    return PyXmg().set_pt_to(result)
+
 def strash_xmg(PyXmg py_xmg) -> PyXmg:
     cdef:
         xmg* result
@@ -483,3 +489,44 @@ def remove_duplicates(PyXmg py_xmg) -> PyXmg:
 
 def compute_reward(PyXmg xmg_initial, PyXmg xmg_final) -> float:
     return mig_interface.compute_reward(xmg_initial.c_xmg[0], xmg_final.c_xmg[0])
+
+def read_bench(py_filename) -> PyXmg:
+    cdef:
+        string filename
+        xmg* result
+    filename = py_filename.encode('UTF-8')
+    result = mig_interface.ptr_read_bench(filename)
+    return PyXmg().set_pt_to(result)
+
+def read_verilog(py_filename) -> PyXmg:
+    cdef:
+        string filename
+        xmg* result
+    filename = py_filename.encode('UTF-8')
+    result = mig_interface.ptr_read_verilog(filename)
+    return PyXmg().set_pt_to(result)
+
+def write_verilog(PyXmg py_xmg, py_filename) -> None:
+    cdef:
+        string filename
+    filename = py_filename.encode('UTF-8')
+    mig_interface.write_verilog(py_xmg.c_xmg[0], filename)
+
+
+def lut_map_area(PyXmg py_xmg, py_filename) -> None:
+    cdef:
+        string filename
+    filename = py_filename.encode('UTF-8')
+    mig_interface.lut_map_area(py_xmg.c_xmg[0], filename)
+
+def lut_area_strategy(PyXmg py_xmg, lut_size, nr_backtracks=4096) -> PyXmg:
+    cdef:
+        xmg* result
+    result = mig_interface.ptr_lut_area_strategy(py_xmg.c_xmg[0], lut_size, nr_backtracks)
+    return PyXmg().set_pt_to(result)
+
+def lut_area_timeout_strategy(PyXmg py_xmg, lut_size, timeout, nr_backtracks=4096) -> PyXmg:
+    cdef:
+        xmg* result
+    result = mig_interface.ptr_lut_area_timeout_strategy(py_xmg.c_xmg[0], lut_size, timeout, nr_backtracks)
+    return PyXmg().set_pt_to(result)

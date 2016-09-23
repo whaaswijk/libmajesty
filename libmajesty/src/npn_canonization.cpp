@@ -28,6 +28,12 @@
 
 #include "range_utils.hpp"
 
+extern "C" {
+#include <bool/lucky/luckyInt.h>
+#include <misc/util/utilTruth.h>
+}
+
+
 namespace cirkit
 {
 
@@ -476,6 +482,44 @@ namespace cirkit
 
 		return t;
 	}
+
+    tt npn_canonization_lucky( const tt& t, boost::dynamic_bitset<>& phase, std::vector<unsigned>& perm )
+    {
+        std::vector<word> truth( t.num_blocks() );
+        boost::to_block_range( t, &truth[0] );
+
+        const auto num_vars = tt_num_vars( t );
+
+        char pCanonPerm[16];
+        resetPCanonPermArray( pCanonPerm, num_vars );
+        auto uCanonPhase = luckyCanonicizer_final_fast( &truth[0], num_vars, pCanonPerm );
+
+        boost::dynamic_bitset<> phase_direct( num_vars + 1, uCanonPhase );
+        phase = phase_direct;
+
+        perm.resize( num_vars );
+        for ( auto i = 0u; i < num_vars; ++i )
+        {
+            perm[i] = pCanonPerm[i] - 'a';
+
+            if ( perm[i] >= num_vars )
+            {
+                std::cout << "[e] problem with canonization" << std::endl;
+                std::cout << "[e] pCanonPerm:";
+                for ( auto i = 0u; i < num_vars; ++i )
+                {
+                    std::cout << " " << (int)pCanonPerm[i];
+                }
+                std::cout << std::endl;
+                std::cout << "[e] truth table: " << t << std::endl;
+                std::cout << "[e] tt num vars: " << tt_num_vars( t ) << std::endl;
+                assert( false );
+            }
+            phase[perm[i]] = phase_direct[i];
+        }
+
+        return tt( truth.begin(), truth.end() );
+    }
 
 }
 

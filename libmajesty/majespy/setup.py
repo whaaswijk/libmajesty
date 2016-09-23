@@ -2,12 +2,16 @@ from distutils.core import setup, Extension
 from Cython.Build import cythonize
 import platform
 import pkg_resources
+import os
 
-INCLUDE_DIRS = [pkg_resources.resource_filename('numpy', 'core/include'), '../include']
+INCLUDE_DIRS = [pkg_resources.resource_filename('numpy', 'core/include'), '../include', os.environ['HIREDIS_HOME']]
 LIBRARY_DIRS = []
 LIBRARIES = []
 EXTRA_OBJECTS = ["../build/src/liblibmajesty.a",
-               "../build/src/minisat/libMiniSat.a"]
+               "../build/src/minisat/libMiniSat.a",
+               os.environ['HIREDIS_HOME']+'/libhiredis.a',
+               os.environ['LIBABC_HOME']+'/libabc.a',
+               os.environ['BOOST_LIB_DIR']+'/libboost_filesystem.so']
 EXTRA_COMPILE_ARGS = ["-std=c++11"]
 EXTRA_LINK_ARGS = ["-std=c++11"]
 

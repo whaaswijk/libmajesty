@@ -28,9 +28,4 @@ vector<MAJ3*> mig_topsort(MIG *mig);
 vector<unsigned int> outidx(MIG* m, MAJ3* n);
 //vector<unsigned int> outidx(const xmg&, MAJ3*);
 
-namespace majesty {
-	class xmg;
-	void write_verilog(std::ofstream&, const majesty::xmg&);
-}
-
 #endif

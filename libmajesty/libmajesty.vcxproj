@@ -69,17 +69,17 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\winst\Documents\libmajesty\libmajesty\include;C:\Program Files %28x86%29\GnuWin32\include;C:\Program Files\boost\boost_1_61_0;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\winst\Documents\libmajesty\libmajesty\include;C:\Program Files %28x86%29\GnuWin32\include;C:\Program Files\boost\boost_1_61_0;C:\Users\winst\Documents\abc\src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\Users\winst\Documents\libmajesty\libmajesty\include;C:\Program Files %28x86%29\GnuWin32\include;C:\Program Files\boost\boost_1_61_0;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\winst\Documents\libmajesty\libmajesty\include;C:\Program Files %28x86%29\GnuWin32\include;C:\Program Files\boost\boost_1_61_0;C:\Users\winst\Documents\abc\src;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -96,7 +96,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -120,11 +120,19 @@
     <ClCompile Include="src\bitset_utils.cpp" />
     <ClCompile Include="src\conversion_utils.cpp" />
     <ClCompile Include="src\convert.cpp" />
+    <ClCompile Include="src\cut.cpp" />
+    <ClCompile Include="src\exact.cpp" />
+    <ClCompile Include="src\function_store.cpp" />
+    <ClCompile Include="src\logic_network.cpp" />
+    <ClCompile Include="src\lut_cover.cpp" />
+    <ClCompile Include="src\lut_optimize.cpp" />
+    <ClCompile Include="src\maj_io.cpp" />
     <ClCompile Include="src\mig_functional_hashing_constants.cpp" />
     <ClCompile Include="src\mig_interface.cpp" />
     <ClCompile Include="src\minisat\Options.cpp" />
     <ClCompile Include="src\minisat\Solver.cpp" />
     <ClCompile Include="src\mlpext.cpp" />
+    <ClCompile Include="src\mlpmemory.c" />
     <ClCompile Include="src\mlputil.c" />
     <ClCompile Include="src\npn_canonization.cpp" />
     <ClCompile Include="src\range_utils.cpp" />
@@ -134,11 +142,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\convert.h" />
+    <ClInclude Include="include\exact.h" />
+    <ClInclude Include="include\logic_network.h" />
+    <ClInclude Include="include\maj_io.h" />
     <ClInclude Include="include\mig_interface.h" />
     <ClInclude Include="include\xmg.h" />
     <ClInclude Include="include\bitset_utils.hpp" />
     <ClInclude Include="src\conversion_utils.hpp" />
     <ClInclude Include="include\mig_functional_hashing_constants.hpp" />
+    <ClInclude Include="include\cut.h" />
+    <ClInclude Include="include\lut_cover.h" />
+    <ClInclude Include="include\lut_optimize.h" />
+    <ClInclude Include="include\function_store.h" />
     <ClInclude Include="src\minisat\Alg.h" />
     <ClInclude Include="src\minisat\Alloc.h" />
     <ClInclude Include="src\minisat\Heap.h" />
@@ -170,12 +185,9 @@
     <None Include="majespy\majespy.pyx" />
     <None Include="majespy\mig_interface.pxd" />
     <None Include="majespy\node_utils.pxd" />
-    <None Include="majespy\pymig.pyx" />
     <None Include="majespy\setup.py" />
     <None Include="pymajesty\build.sh" />
-    <None Include="pymajesty\mig_interface.pxd" />
     <None Include="pymajesty\node_utils.pxd" />
-    <None Include="pymajesty\pymig.pyx" />
     <None Include="pymajesty\setup.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

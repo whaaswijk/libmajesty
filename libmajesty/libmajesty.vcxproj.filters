@@ -57,6 +57,30 @@
     <ClCompile Include="src\convert.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\lut_cover.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\lut_optimize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cut.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\maj_io.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\function_store.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\exact.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mlpmemory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\logic_network.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\mlp.h">
@@ -137,6 +161,27 @@
     <ClInclude Include="include\convert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\maj_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lut_cover.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lut_optimize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\function_store.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\exact.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\logic_network.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\minisat\CMakeLists.txt" />
@@ -145,15 +190,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="pymajesty\build.sh" />
-    <None Include="pymajesty\mig_interface.pxd" />
     <None Include="pymajesty\node_utils.pxd" />
-    <None Include="pymajesty\pymig.pyx" />
     <None Include="pymajesty\setup.py" />
     <None Include="majespy\setup.py" />
     <None Include="majespy\build.sh" />
     <None Include="majespy\majespy.pyx" />
     <None Include="majespy\mig_interface.pxd" />
     <None Include="majespy\node_utils.pxd" />
-    <None Include="majespy\pymig.pyx" />
   </ItemGroup>
 </Project>
