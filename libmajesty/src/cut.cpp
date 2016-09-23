@@ -79,7 +79,7 @@ namespace majesty {
 		}
 	}
 
-	cutvec nway_crossproduct(const vector<nodeid>& fanin, const cutmap& cut_map, const cut_params* p, unsigned idx) {
+	cutvec nway_crossproduct(const vector<nodeid>& fanin, const cutmap& cut_map, const cut_params* p) {
 		cutvec res;
 
 		vector<cut> current_cuts;
@@ -133,7 +133,7 @@ namespace majesty {
 	}
 	
 	cutvec node_cuts(const ln_node& n, const cutmap& cut_map, const cut_params* p) {
-		return nway_crossproduct(n.fanin, cut_map, p, 0);
+		return nway_crossproduct(n.fanin, cut_map, p);
 	}
 
 	cutvec crossproduct(
@@ -490,17 +490,17 @@ namespace majesty {
 		}
 		// Align the truth tables so that they all have the same size
 		auto& f0 = parfuncs[0];
-		for (auto i = 1; i < parfuncs.size(); i++) {
+		for (auto i = 1u; i < parfuncs.size(); i++) {
 			tt_align(f0, parfuncs[i]);
 		}
-		for (auto i = 1; i < parfuncs.size(); i++) {
+		for (auto i = 1u; i < parfuncs.size(); i++) {
 			tt_align(f0, parfuncs[i]);
 		}
 
 		tt function;
 		for (auto i = 0u; i < f0.size(); i++) {
 			auto fidx = 0u;
-			for (auto j = 0; j < parfuncs.size(); j++) {
+			for (auto j = 0u; j < parfuncs.size(); j++) {
 				auto ifuncval = parfuncs[j].test(i);
 				if (ifuncval)
 					fidx += (1u << j);

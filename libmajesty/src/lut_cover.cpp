@@ -297,7 +297,6 @@ namespace majesty {
 
 		int i = nodes.size();
 		while (i-- > 0) {
-			const auto& node = nodes[i];
 			if (nref[i] > 0) {
 				auto cutnodes = best[i]->nodes();
 				for (auto nodeid : cutnodes) {
