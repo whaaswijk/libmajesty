@@ -423,7 +423,7 @@ namespace majesty {
 			}
 		}
 	}
-
+	
 	void cut::compute_maj3_function(const node& node, funcmap& m) { 
 		map<nodeid,unsigned> sigma;
 		for (auto i = 0u; i < _nodes.size(); i++) {

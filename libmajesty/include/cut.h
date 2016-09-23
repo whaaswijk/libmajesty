@@ -76,6 +76,8 @@ namespace majesty {
 	cutmap enumerate_cuts(const xmg&, const cut_params*);
 	cutmap enumerate_cuts(const logic_ntk&, const cut_params*);
 	cutmap enumerate_cuts_eval_funcs(const xmg&, const cut_params*, funcmap&);
+
+	cirkit::tt compute_function(const ln_node&, cutmap&);
 }
 
 
