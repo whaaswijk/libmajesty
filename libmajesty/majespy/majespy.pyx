@@ -395,8 +395,17 @@ cdef class MigManager:
         assert num_input + 1 <= num_nodes, "num_input can not be larger that num_nodes"
         return PyXmg().set_pt_to(self.c_mig_manager.create_random_graph(num_input, num_nodes))
 
-    def random_mig_decomposition(self, unsigned int ninputs) -> PyXmg:
-        return PyXmg().set_pt_to(self.c_mig_manager.random_mig_decomposition(ninputs))
+    def random_mig_decomposition(self, unsigned int ninputs, strash=True) -> PyXmg:
+        cdef:
+            xmg* result
+            xmg* strashed_result
+        result = self.c_mig_manager.random_mig_decomposition(ninputs)
+        if strash:
+            strashed_result = mig_interface.remove_duplicates(result[0])
+            del result
+            return PyXmg().set_pt_to(strashed_result)
+        else:
+            return PyXmg().set_pt_to(result)
 
 
 def get_nr_unary_moves() -> int:
@@ -408,9 +417,10 @@ def get_nr_ternary_moves() -> int:
 def get_nr_edge_types() -> int:
     return mig_interface.get_nr_edge_types()
 
-def apply_move(PyXmg py_xmg, PyMove move) -> Union[None, PyXmg]:
+def apply_move(PyXmg py_xmg, PyMove move, strash=True) -> Union[None, PyXmg]:
     cdef:
         xmg* result
+        xmg* strashed_result
     for node_id in move.get_involved_nodes():
         if node_id not in range(py_xmg.get_total_nr_nodes()):
             return None
@@ -418,7 +428,12 @@ def apply_move(PyXmg py_xmg, PyMove move) -> Union[None, PyXmg]:
     if result == NULL:
         return None
     else:
-        return PyXmg().set_pt_to(result)
+        if (strash):
+            strashed_result = mig_interface.remove_duplicates(result[0])
+            del result
+            return PyXmg().set_pt_to(strashed_result)
+        else:
+            return PyXmg().set_pt_to(result)
 
 def mig_string_decompose(tt) -> PyXmg:
     cdef:
@@ -458,6 +473,12 @@ def strash_xmg(PyXmg py_xmg) -> PyXmg:
     cdef:
         xmg* result
     result = mig_interface.strash_xmg(py_xmg.c_xmg[0])
+    return PyXmg().set_pt_to(result)
+
+def remove_duplicates(PyXmg py_xmg) -> PyXmg:
+    cdef:
+        xmg* result
+    result = mig_interface.remove_duplicates(py_xmg.c_xmg[0])
     return PyXmg().set_pt_to(result)
 
 def compute_reward(PyXmg xmg_initial, PyXmg xmg_final) -> float:

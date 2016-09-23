@@ -63,3 +63,4 @@ cdef extern from "mig_interface.h" namespace "majesty":
     xmg* get_optimum_mig(const xmg&)
     
     xmg* strash_xmg(const xmg&)
+    xmg* remove_duplicates(const xmg&)
