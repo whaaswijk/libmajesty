@@ -116,6 +116,9 @@ namespace majesty {
 					// Create the merged cut and check it's size
 					cut merged(c1, *c2);
 					if (merged.size() <= p->klut_size) {
+						for (auto incut : c1.incuts()) {
+							merged.add_incut(incut);
+						}
 						merged.add_incut(c2.get());
 						new_cuts.push_back(merged);
 					}
