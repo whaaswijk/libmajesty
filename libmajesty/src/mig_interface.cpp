@@ -1275,7 +1275,6 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
-					/*
 					if (constructive_maj_applies(nodes, i, j, k)) {
 						move move;
 						move.type = MAJ3_XXY;
@@ -1286,7 +1285,6 @@ namespace majesty {
 						move.type = MAJ3_XYY;
 						moves.push_back(move);
 					}
-					*/
 				}
 			}
 		}
