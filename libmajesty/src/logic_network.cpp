@@ -83,6 +83,7 @@ namespace majesty {
 	}
 
 	void logic_ntk::create_dummy_innames() {
+        _innames.clear();
 		auto count = 0u;
 		for (const auto& node : _nodes) {
 			if (!node.pi) {
@@ -94,6 +95,7 @@ namespace majesty {
 	}
 
 	void logic_ntk::create_dummy_outnames() {
+        _outnames.clear();
 		for (auto i = 0u; i < _outputs.size(); i++) {
 			_outnames.push_back("f[" + std::to_string(i) + "]");
 		}

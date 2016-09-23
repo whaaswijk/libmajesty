@@ -64,25 +64,31 @@ namespace majesty {
 		for (auto i = 0u; i < noutputs; i++) {
 			auto outidx = static_cast<nodeid>(node_dist(rng));
 			auto outcompl = rule_sel(rng) == 0;
-			mig->create_output(outidx, outcompl, "out" + i);
+			mig->create_output(outidx, outcompl);
 		}
 
 		return mig;
 	}
 
 	xmg* mig_manager::create_random_graph(unsigned ninputs, unsigned nnodes) {
-		return random_mig(rng, ninputs, nnodes, ninputs);
+		auto res = random_mig(rng, ninputs, nnodes, ninputs);
+        res->create_dummy_names();
+        return res;
 	}
 	
 	xmg* mig_manager::create_random_graph(unsigned ninputs, unsigned nnodes, unsigned noutputs) {
-		return random_mig(rng, ninputs, nnodes, noutputs);
+		auto res = random_mig(rng, ninputs, nnodes, noutputs);
+        res->create_dummy_names();
+        return res;
 	}
 
 	xmg* mig_manager::random_mig_decomposition(unsigned ninputs) {
 		auto num_funcs = (1u << (1u << ninputs));
 		static uniform_int_distribution<mt19937_64::result_type> rule_dist(0, num_funcs-1);
 		auto rand_func = rule_dist(rng);
-		return new xmg(mig_decompose(ninputs, rand_func));
+        auto res = new xmg(mig_decompose(ninputs, rand_func));
+        res->create_dummy_names();
+        return res;
 	}
 
 	xmg* mig_string_decompose(const string& func) {

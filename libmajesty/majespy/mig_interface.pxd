@@ -70,7 +70,6 @@ cdef extern from "maj_io.h" namespace "majesty":
     xmg* ptr_read_bench(const string & filename)
     xmg* ptr_read_verilog(const string & filename)
     void write_verilog(const xmg &, const string & filename)
-    void lut_map_area(const xmg &, const string &)
 
 cdef extern from "lut_optimize.h" namespace "majesty":
     xmg* ptr_lut_area_strategy(const xmg &, unsigned, unsigned) except + # Can throw is Cirkit or Redis server are not found

@@ -1229,7 +1229,6 @@ namespace majesty {
 		};
 
 		strashmap shmap(nnodes / 2, stats);
-		const auto& innames = sxmg.innames();
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
@@ -1237,7 +1236,7 @@ namespace majesty {
 				if (i == 0u) {
 					nodemap[i] = make_pair(res.create_input(), is_c);
 				} else {
-					nodemap[i] = make_pair(res.create_input(innames[i - 1]), is_c);
+					nodemap[i] = make_pair(res.create_input(), is_c);
 				}
 			} else {
 				auto in1 = nodemap[node.in1];
@@ -1252,14 +1251,23 @@ namespace majesty {
 
 		const auto& outputs = sxmg.outputs();
 		const auto& outcompl = sxmg.outcompl();
-		const auto& outnames = sxmg.outnames();
 		const auto nouts = outputs.size();
 		for (auto i = 0u; i < nouts; i++) {
 			auto outid = outputs[i];
 			auto outc = outcompl[i];
 			auto outnode = nodemap[outid];
-			res.create_output(outnode.first, outnode.second != outc, outnames[i]);
+			res.create_output(outnode.first, outnode.second != outc);
 		}
+
+        const auto& innames = sxmg.innames();
+        for (const auto& name : innames) {
+            res.add_inname(name);
+        }
+        
+		const auto& outnames = sxmg.outnames();
+        for (const auto& name : outnames) {
+            res.add_outname(name);
+        }
 
 		return res;
 	}
@@ -1299,23 +1307,36 @@ namespace majesty {
 
 		const auto& outputs = sxmg.outputs();
 		const auto& outcompl = sxmg.outcompl();
-		const auto& outnames = sxmg.outnames();
 		const auto nouts = outputs.size();
 		for (auto i = 0u; i < nouts; i++) {
 			auto outid = outputs[i];
 			auto outc = outcompl[i];
 			auto outnode = nodemap[outid];
-			res.create_output(outnode.first, outnode.second != outc, outnames[i]);
+			res.create_output(outnode.first, outnode.second != outc);
 		}
+        
+		const auto& innames = sxmg.innames();
+        for (const auto& name : innames) {
+            res.add_inname(name);
+        }
+        
+		const auto& outnames = sxmg.outnames();
+        for (const auto& name : outnames) {
+            res.add_outname(name);
+        }
 
 		return res;
 	}
 
-	void xmg::create_output(nodeid nodeid, bool c, const string& name) {
+	void xmg::create_output(nodeid nodeid, bool c) {
 		auto& outnode = _nodes[nodeid];
 		set_po(outnode);
 		_outputs.push_back(nodeid);
 		_outcompl.push_back(c);
+    }
+
+    void xmg::create_output(nodeid nodeid, bool c, const string& name) {
+        create_output(nodeid, c);
 		_outnames.push_back(name);
 	}
 
@@ -1562,6 +1583,30 @@ namespace majesty {
 		assert(func.size() == nsimvectors);
 
 		return func;
+	}
+
+    void xmg::create_dummy_innames() {
+        _innames.clear();
+		auto count = 0u;
+		for (const auto& node : _nodes) {
+			if (!is_pi(node)) {
+				break;
+			}
+			_innames.push_back("x_" + std::to_string(count));
+			++count;
+		}
+	}
+
+	void xmg::create_dummy_outnames() {
+        _outnames.clear();
+		for (auto i = 0u; i < _outputs.size(); i++) {
+			_outnames.push_back("f[" + std::to_string(i) + "]");
+		}
+	}
+
+	void xmg::create_dummy_names() {
+		create_dummy_innames();
+		create_dummy_outnames();
 	}
 }
 

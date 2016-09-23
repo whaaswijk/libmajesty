@@ -305,11 +305,20 @@ namespace majesty {
 				return _outcompl;
 		   	}
 
+            void add_inname(const std::string& name) {
+                _innames.push_back(name);
+            }
+
+            void add_outname(const std::string& name) {
+                _outnames.push_back(name);
+            }
+
 			nodeid create_input();
 			nodeid create_input(bool c);
 			nodeid create_input(const std::string&);
 			nodeid create_input(varmap&, Minisat::Solver&);
 			nodeid create_input(const std::string&, varmap&, Minisat::Solver&);
+			void create_output(nodeid, bool);
 			void create_output(nodeid, bool, const std::string&);
 			// Creates a raw node, without strashing or propagation
 			std::pair<nodeid,bool> create(maj3signature);
@@ -340,6 +349,10 @@ namespace majesty {
 
 			// Check for equality using combinational equivalence checking
 			bool equals(const xmg&) const;
+			
+            void create_dummy_innames();
+			void create_dummy_outnames();
+			void create_dummy_names();
 	};
 
 	xmg strash(const xmg&);

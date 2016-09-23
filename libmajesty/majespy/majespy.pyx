@@ -512,13 +512,6 @@ def write_verilog(PyXmg py_xmg, py_filename) -> None:
     filename = py_filename.encode('UTF-8')
     mig_interface.write_verilog(py_xmg.c_xmg[0], filename)
 
-
-def lut_map_area(PyXmg py_xmg, py_filename) -> None:
-    cdef:
-        string filename
-    filename = py_filename.encode('UTF-8')
-    mig_interface.lut_map_area(py_xmg.c_xmg[0], filename)
-
 def lut_area_strategy(PyXmg py_xmg, lut_size, nr_backtracks=4096) -> PyXmg:
     cdef:
         xmg* result
