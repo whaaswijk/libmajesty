@@ -476,7 +476,11 @@ namespace majesty {
 		}
 	}
 
-	void cut::computefunction(const ln_node& node, funcmap& m) {
+	void cut::computefunction(const nodeid nid, const vector<ln_node>& nodes, funcmap& m) {
+		if (_nodes.size() == 1u && _nodes[0] == nid) { // Trivial cut
+			return;
+		}
+		const auto& node = nodes[nid];
 		map<nodeid, unsigned> sigma;
 		for (auto i = 0u; i < _nodes.size(); i++) {
 			sigma[_nodes[i]] = i;

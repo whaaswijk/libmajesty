@@ -728,7 +728,7 @@ namespace majesty {
 			const auto& cuts = cutmap[i];
 			for (auto& cut : cuts) {
 				if (cut->is_required()) {
-					cut->computefunction(node, fm);
+					cut->computefunction(i, nodes, fm);
 				}
 			}
 		}

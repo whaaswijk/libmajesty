@@ -55,7 +55,7 @@ namespace majesty {
 			void computesignature();
 			void computefunction(const node&,
 					std::unordered_map<const cut*,std::unique_ptr<cirkit::tt>>&);
-			void computefunction(const ln_node&,
+			void computefunction(const nodeid, const std::vector<ln_node>&,
 					std::unordered_map<const cut*,std::unique_ptr<cirkit::tt>>&);
 	};
 
