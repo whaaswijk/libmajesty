@@ -773,7 +773,7 @@ namespace majesty {
 			auto parent = nodes[np.first];
 			// Note that we make that the parent is not complemented. If it is, associativity doesn't apply and
 			// we should try applying inverter propagation first.
-			if (np.first == pid && np.second == false && !is_pi(parent) && share_input_polarity(gp, parent)) {
+			if (np.first == pid && !np.second && !is_pi(parent) && share_input_polarity(gp, parent)) {
 				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
 					return true;
 				}
@@ -804,7 +804,7 @@ namespace majesty {
 		} else if (filtgrandchildren.size() > 1) {
 			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
 			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
-			// For now we just return the non-complemented one.
+			// For now we just return the first one.
 			auto filtgp1 = filtgrandchildren[0];
 			auto filtgp2 = filtgrandchildren[1];
 			if (filtgp1.second != filtgp2.second) {
@@ -823,7 +823,7 @@ namespace majesty {
 		auto outnodechildren = get_children(outnode);
 		auto filtered_innernodes = filter_nodes(outnodechildren, [&nodes, &outnode, innodeid, distnodeid](pair<nodeid,bool> np) {
 			auto parent = nodes[np.first];
-			if (np.first == innodeid && !is_pi(parent)) {
+			if (np.first == innodeid && !np.second && !is_pi(parent)) {
 				if (parent.in1 == distnodeid || parent.in2 == distnodeid || parent.in3 == distnodeid) {
 					return true;
 				}
@@ -831,20 +831,9 @@ namespace majesty {
 			return false;
 		});
 		if (filtered_innernodes.size() == 0) {
-			// The specified inner node is not both a child of the outer node and a parent of the grandchild.
+			// The specified inner node is not a non-complemented child of the outer node and a parent of the grandchild.
 			return false;
 		} 
-		// The call may be ambiguous: there may be multiple inner nodes for which the axiom applies. We do not 
-		// 	allow for ambiguity. The axiom only applies if there is  a non-complemented inner nodes.
-		bool have_non_complemented = false;
-		for (const auto& np : filtered_innernodes) {
-			if (!np.second) {
-				have_non_complemented = true;
-			}
-		}
-		if (!have_non_complemented) {
-			return false;
-		}
 		const auto innernodep = make_pair(innodeid, false);
 
 		const auto& innernode = nodes[innernodep.first];
@@ -857,8 +846,8 @@ namespace majesty {
 		});
 		if (filtinnerchildren.size() > 1) {
 			// NOTE: This may be ambiguous: the distchild occurs multiple times in the inner node. In this case
-			// there is ambiguity if the child occurs in different polarities. We select the non-complemented version
-			// of the child. It should be possible to select the other one with inverter propgation.
+			// there is ambiguity if the child occurs in different polarities. We select the first one
+			// appear in the list of child nodes. 
 			return true;
 		}
 		return true;
@@ -1099,7 +1088,7 @@ namespace majesty {
 			return false;
 		});
 		if (filtered_innernodes.size() == 0) {
-			// The specified inner node is not both a child of the outer node and a parent of the grandchild.
+			// The specified inner node is not a non-complemented child of the outer node and a parent of the grandchild.
 			return NULL;
 		}
 		const auto innernodep = filtered_innernodes[0];
