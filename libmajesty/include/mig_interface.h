@@ -79,4 +79,5 @@ namespace majesty {
 	xmg* mig_int_decompose(unsigned ninputs, unsigned truth_table);
 	xmg* get_optimum_mig(const xmg&);
 	xmg* strash_xmg(const xmg&);
+	xmg* remove_duplicates(const xmg&);
 };

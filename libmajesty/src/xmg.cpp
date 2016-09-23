@@ -657,6 +657,17 @@ namespace majesty {
 			return make_pair(idx, true);
 		}
 	}
+	
+	pair<nodeid, bool> xmg::find_or_create_no_prop(pair<nodeid, bool> in1, pair<nodeid, bool> in2, pair<nodeid, bool> in3, strashmap& shmap) {
+		return find_or_create_no_prop(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second, shmap);
+	}
+
+	// Returns a strashed node without applying MAJ3 propagation rules
+	pair<nodeid, bool> xmg::find_or_create_no_prop(maj3inputs, strashmap& shmap) {
+		auto idx =
+			shmap.find_or_add(in1, c1, in2, c2, in3, c3, *this);
+		return make_pair(idx, false);
+	}
 
 	pair<nodeid, bool> xmg::prop_create(input in1, input in2, input in3) {
 		return prop_create(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second);
@@ -1201,6 +1212,53 @@ namespace majesty {
 				auto in3 = nodemap[node.in3];
 				in3.second = (in3.second != is_c3(node));
 				nodemap[i] = res.find_or_create(in1, in2, in3, shmap);
+			}
+		}
+
+		const auto& outputs = sxmg.outputs();
+		const auto& outcompl = sxmg.outcompl();
+		const auto& outnames = sxmg.outnames();
+		const auto nouts = outputs.size();
+		for (auto i = 0u; i < nouts; i++) {
+			auto outid = outputs[i];
+			auto outc = outcompl[i];
+			auto outnode = nodemap[outid];
+			res.create_output(outnode.first, outnode.second != outc, outnames[i]);
+		}
+
+		return res;
+	}
+
+
+	xmg rdup(const xmg& sxmg) {
+		xmg res;
+
+		nodemap nodemap;
+		const auto& nodes = sxmg.nodes();
+		const auto nnodes = sxmg.nnodes();
+
+		xmg_stats stats{
+			0u, // Nr. strash hits
+			0u, // nr_potentials
+			0u, // nr_matches
+			0u, // nr_misses
+			0u, // nr_undefined
+		};
+
+		strashmap shmap(nnodes / 2, stats);
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res.create_input(), is_c);
+			} else {
+				auto in1 = nodemap[node.in1];
+				in1.second = (in1.second != is_c1(node));
+				auto in2 = nodemap[node.in2];
+				in2.second = (in2.second != is_c2(node));
+				auto in3 = nodemap[node.in3];
+				in3.second = (in3.second != is_c3(node));
+				nodemap[i] = res.find_or_create_no_prop(in1, in2, in3, shmap);
 			}
 		}
 

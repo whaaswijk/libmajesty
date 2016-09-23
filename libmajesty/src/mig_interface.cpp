@@ -1303,6 +1303,11 @@ namespace majesty {
 		return new xmg(strash(mig));
 	}
 
+
+	xmg* remove_duplicates(const xmg& mig) {
+		return new xmg(rdup(mig));
+	}
+
 	xmg* apply_move(const xmg& mig, move& move) {
 		switch (move.type) {
 		case MAJ3_PROP:

@@ -307,6 +307,8 @@ namespace majesty {
 			// Creates a node using both strashing and propagation
 			std::pair<nodeid,bool> find_or_create(maj3signature, strashmap&);
 			std::pair<nodeid,bool> find_or_create(std::pair<nodeid,bool>, std::pair<nodeid,bool>, std::pair<nodeid,bool>, strashmap&);
+			std::pair<nodeid,bool> find_or_create_no_prop(maj3signature, strashmap&);
+			std::pair<nodeid,bool> find_or_create_no_prop(std::pair<nodeid,bool>, std::pair<nodeid,bool>, std::pair<nodeid,bool>, strashmap&);
 			std::pair<nodeid,bool> 
 				find_or_create(maj3signature, strashmap&, 
 						varmap&, Minisat::Solver&, fanoutmap&);
@@ -328,6 +330,7 @@ namespace majesty {
 	};
 
 	xmg strash(const xmg&);
+	xmg rdup(const xmg&);
 
 	void write_verilog(const std::string&, const majesty::xmg&);
 	void write_verilog(const char*, const majesty::xmg&);
