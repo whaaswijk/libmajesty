@@ -575,7 +575,7 @@ namespace majesty {
 		auto oldgpchildren = get_children(gp);
 		auto filt_parents = filter_nodes(oldgpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
 			auto parent = nodes[np.first];
-			if (np.first == pid && !is_pi(parent) && share_input_polarity(gp, parent)) {
+			if (np.first == pid && np.second == false && !is_pi(parent) && share_input_polarity(gp, parent)) {
 				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
 					return true;
 				}
@@ -585,19 +585,11 @@ namespace majesty {
 		if (filt_parents.size() == 0) {
 			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
 			return NULL;
-		} else if (filt_parents.size() > 1) {
-			// The call is ambiguous: there are multiple parents for which the axiom applies. This means that there
-			// are multiple options to swap. We do not allow for ambiguity.
-			return NULL;
 		}
 
 		// If we reach this point, there is one unambigious child of the grandparent to swap with:
 		// the child that is not the shared child and not the parent.
 		const auto parentnp = filt_parents[0];
-		// If the parent is complemented, we need to apply inverter propagation first.
-		if (parentnp.second) {
-			return NULL;
-		}
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
 		auto swap_childnp = drop_child(drop_child(oldgpchildren, parentnp), common_childnp)[0];
@@ -774,7 +766,9 @@ namespace majesty {
 		auto gpchildren = get_children(gp);
 		auto filt_parents = filter_nodes(gpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
 			auto parent = nodes[np.first];
-			if (np.first == pid && !is_pi(parent) && share_input_polarity(gp, parent)) {
+			// Note that we make that the parent is not complemented. If it is, associativity doesn't apply and
+			// we should try applying inverter propagation first.
+			if (np.first == pid && np.second == false && !is_pi(parent) && share_input_polarity(gp, parent)) {
 				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
 					return true;
 				}
@@ -784,16 +778,8 @@ namespace majesty {
 		if (filt_parents.size() == 0) {
 			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
 			return false;
-		} else if (filt_parents.size() > 1) {
-			// The call is ambiguous: there are multiple parents for which the axiom applies. This means that there
-			// are multiple options to swap. We do not allow for ambiguity.
-			return false;
 		}
 		const auto parentnp = filt_parents[0];
-		// If the parent is complemented, we need to apply inverter propagation first.
-		if (parentnp.second) {
-			return false;
-		}
 
 		const auto& parent = nodes[parentnp.first];
 		auto common_childnp = shared_input_polarity(gp, parent);
