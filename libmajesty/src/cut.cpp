@@ -79,22 +79,61 @@ namespace majesty {
 		}
 	}
 
-	cutvec rec_crossproduct(const vector<nodeid>& fanin, const cutmap& cut_map, const cut_params* p, unsigned idx) {
-		if (idx == fanin.size() - 1) {
-			cutvec res;
-			auto& lastvec = cut_map.at(fanin[idx]);
-			for (const auto& c : lastvec) {
-				unique_ptr<cut> cp(new cut(*c));
-				res.push_back(move(cp));
-			}
-			return res;
+	cutvec nway_crossproduct(const vector<nodeid>& fanin, const cutmap& cut_map, const cut_params* p, unsigned idx) {
+		cutvec res;
+
+		vector<cut> current_cuts;
+		const auto& zero_cuts = cut_map.at(fanin[0]);
+		for (const auto& c : zero_cuts) {
+			cut nc(*c);
+			nc.clear_incuts();
+			nc.add_incut(c.get());
+			current_cuts.push_back(nc);
 		}
-		auto& curvec = cut_map.at(fanin[idx]);
-		return crossproduct(curvec, rec_crossproduct(fanin, cut_map, p, idx + 1), p);
+
+		for (auto i = 1u; i < fanin.size(); i++) {
+			vector<cut> new_cuts;
+			const auto& it_cuts = cut_map.at(fanin[i]);
+			for (auto& c1 : current_cuts) {
+				for (const auto& c2 : it_cuts) {
+					auto sig1 = c1.sig();
+					auto sig2 = c2->sig();
+					if(hamming_weight(sig1 | sig2) > p->klut_size) {
+						// Merged cut size will be > k
+						continue;
+					}
+					if (c1.size() == p->klut_size && c2->size() == p->klut_size) {
+						if (sig1 != sig2) {
+							// Merged cut cannot be k-feasible
+							continue;
+						}
+
+						// Cut can be added iff cuts are equal
+						if (!c1.equal(c2.get())) {
+							continue;
+						}
+					}
+					// Create the merged cut and check it's size
+					cut merged(c1, *c2);
+					if (merged.size() <= p->klut_size) {
+						merged.add_incut(c2.get());
+						new_cuts.push_back(merged);
+					}
+				}
+			}
+			current_cuts = new_cuts;
+		}
+		
+		for (const auto& c : current_cuts) {
+			unique_ptr<cut> cp(new cut(c));
+			safeinsert(res, move(cp));
+		}
+
+		return res;
 	}
 	
 	cutvec node_cuts(const ln_node& n, const cutmap& cut_map, const cut_params* p) {
-		return rec_crossproduct(n.fanin, cut_map, p, 0);
+		return nway_crossproduct(n.fanin, cut_map, p, 0);
 	}
 
 	cutvec crossproduct(
@@ -236,9 +275,7 @@ namespace majesty {
 	cut::cut(const cut& c) {
 		_nodes = c._nodes;
 		_sig = c._sig;
-		_c1 = c._c1;
-		_c2 = c._c2;
-		_c3 = c._c3;
+		_incuts = c._incuts;
 		_is_required = c._is_required;
 	}
 
@@ -277,15 +314,23 @@ namespace majesty {
 	// Creates a cut (possibly not k-feasible) by merging two existing ones
 	cut::cut(cut* c1, cut* c2) {
 		_nodes = mergevectors(c1->_nodes, c2->_nodes);
-		_c1 = c1; _c2 = c2;
+		_incuts.push_back(c1);
+		_incuts.push_back(c2);
 		_sig = c1->_sig | c2->_sig;
+	}
+	
+	cut::cut(const cut& c1, const cut& c2) {
+		_nodes = mergevectors(c1._nodes, c2._nodes);
+		_sig = c1._sig | c2._sig;
 	}
 
 	// Creates a cut (possibly not k-feasible) by merging three existing ones
 	cut::cut(cut* c1, cut* c2, cut* c3) {
 		auto m1 = mergevectors(c1->_nodes, c2->_nodes);
 		_nodes = mergevectors(m1, c3->_nodes);
-		_c1 = c1; _c2 = c2; _c3 = c3;
+		_incuts.push_back(c1);
+		_incuts.push_back(c2);
+		_incuts.push_back(c3);
 		_sig = c1->_sig | c2->_sig | c3->_sig;
 	}
 
@@ -408,7 +453,7 @@ namespace majesty {
 
 		return cut_map;
 	}
-
+	
 	void cut::computefunction(const node& node, funcmap& fm) { 
 		if (_nodes.size() == 1) {
 			// This is a trivial cut, we cannot compute its function
@@ -423,6 +468,59 @@ namespace majesty {
 			}
 		}
 	}
+
+	void cut::computefunction(const ln_node& node, funcmap& m) {
+		map<nodeid, unsigned> sigma;
+		for (auto i = 0u; i < _nodes.size(); i++) {
+			sigma[_nodes[i]] = i;
+		}
+
+		// Express parent cut functions in terms of new variable assignment
+		vector<tt> parfuncs;
+		for (const auto c : _incuts) {
+			auto f = *m.at(c);
+			for (int i = c->size() - 1; i >= 0; i--) {
+				auto s_m = tt_nth_var(sigma[c->_nodes[i]]);
+				auto plus = tt_cof1(f, i);
+				auto min = tt_cof0(f, i);
+				tt_align(s_m, plus); tt_align(s_m, min);
+				f = (s_m & plus) | (~s_m & min);
+			}
+			parfuncs.push_back(f);
+		}
+		// Align the truth tables so that they all have the same size
+		auto& f0 = parfuncs[0];
+		for (auto i = 1; i < parfuncs.size(); i++) {
+			tt_align(f0, parfuncs[i]);
+		}
+		for (auto i = 1; i < parfuncs.size(); i++) {
+			tt_align(f0, parfuncs[i]);
+		}
+
+		tt function;
+		for (auto i = 0u; i < f0.size(); i++) {
+			auto fidx = 0u;
+			for (auto j = 0; j < parfuncs.size(); j++) {
+				auto ifuncval = parfuncs[j].test(i);
+				if (ifuncval)
+					fidx += (1u << j);
+			}
+			function.push_back(node.function.test(fidx));
+		}
+
+		tt support;
+		tt_to_minbase(function, &support);
+		vector<nodeid> nonvacs;
+		for (auto i = 0u; i < _nodes.size(); i++) {
+			if (support.test(i))
+				nonvacs.push_back(_nodes[i]);
+		}
+		_nodes = nonvacs;
+		computesignature();
+
+		unique_ptr<tt> funcptr(new tt(function));
+		m[this] = std::move(funcptr);
+	}
 	
 	void cut::compute_maj3_function(const node& node, funcmap& m) { 
 		map<nodeid,unsigned> sigma;
@@ -431,9 +529,10 @@ namespace majesty {
 		}
 
 		// Express parent cut functions in terms of new variable assignment
-		auto f1 = *m.at(_c1);
-		for (int i = _c1->size()-1; i >= 0; i--) {
-			auto s_m = tt_nth_var(sigma[_c1->_nodes[i]]);
+		const auto c1 = _incuts[0];
+		auto f1 = *m.at(c1);
+		for (int i = c1->size()-1; i >= 0; i--) {
+			auto s_m = tt_nth_var(sigma[c1->_nodes[i]]);
 			auto plus = tt_cof1(f1, i);
 			auto min = tt_cof0(f1, i);
 			tt_align(s_m, plus); tt_align(s_m, min);
@@ -442,9 +541,10 @@ namespace majesty {
 		if (is_c1(node)) {
 			f1 = ~f1;
 		}
-		auto f2 = *m.at(_c2);
-		for (int i = _c2->size()-1; i >= 0; i--) {
-			auto s_m = tt_nth_var(sigma[_c2->_nodes[i]]);
+		const auto c2 = _incuts[1];
+		auto f2 = *m.at(c2);
+		for (int i = c2->size()-1; i >= 0; i--) {
+			auto s_m = tt_nth_var(sigma[c2->_nodes[i]]);
 			auto plus = tt_cof1(f2, i);
 			auto min = tt_cof0(f2, i);
 			tt_align(s_m, plus); tt_align(s_m, min);
@@ -453,9 +553,10 @@ namespace majesty {
 		if (is_c2(node)) {
 			f2 = ~f2;
 		}
-		auto f3 = *m.at(_c3);
-		for (int i = _c3->size()-1; i >= 0; i--) {
-			auto s_m = tt_nth_var(sigma[_c3->_nodes[i]]);
+		const auto c3 = _incuts[2];
+		auto f3 = *m.at(c3);
+		for (int i = c3->size()-1; i >= 0; i--) {
+			auto s_m = tt_nth_var(sigma[c3->_nodes[i]]);
 			auto plus = tt_cof1(f3, i);
 			auto min = tt_cof0(f3, i);
 			tt_align(s_m, plus); tt_align(s_m, min);
@@ -490,9 +591,10 @@ namespace majesty {
 		}
 
 		// Express parent cut functions in terms of new variable assignment
-		auto f1 = *m.at(_c1);
-		for (int i = _c1->size()-1; i >= 0; i--) {
-			auto s_m = tt_nth_var(sigma[_c1->_nodes[i]]);
+		auto c1 = _incuts[0];
+		auto f1 = *m.at(c1);
+		for (int i = c1->size()-1; i >= 0; i--) {
+			auto s_m = tt_nth_var(sigma[c1->_nodes[i]]);
 			auto plus = tt_cof1(f1, i);
 			auto min = tt_cof0(f1, i);
 			tt_align(s_m, plus); tt_align(s_m, min);
@@ -501,9 +603,10 @@ namespace majesty {
 		if (is_c1(node)) {
 			f1 = ~f1;
 		}
-		auto f2 = *m.at(_c2);
-		for (int i = _c2->size()-1; i >= 0; i--) {
-			auto s_m = tt_nth_var(sigma[_c2->_nodes[i]]);
+		auto c2 = _incuts[1];
+		auto f2 = *m.at(c2);
+		for (int i = c2->size()-1; i >= 0; i--) {
+			auto s_m = tt_nth_var(sigma[c2->_nodes[i]]);
 			auto plus = tt_cof1(f2, i);
 			auto min = tt_cof0(f2, i);
 			tt_align(s_m, plus); tt_align(s_m, min);
@@ -551,14 +654,8 @@ namespace majesty {
 			return;
 		}
 		_is_required = true;
-		if (_c1 == nullptr) {
-			return;
+		for (auto incut : _incuts) {
+			incut->set_required();
 		}
-		_c1->set_required();
-		_c2->set_required();
-		if (_c3 == nullptr) {
-			return;
-		}
-		_c3->set_required();
 	}
 }

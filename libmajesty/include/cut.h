@@ -27,8 +27,8 @@ namespace majesty {
 	class cut {
 		private:
 			std::vector<nodeid> _nodes;
+			std::vector<cut*> _incuts;
 			unsigned _sig = 0;
-			cut *_c1 = nullptr, *_c2 = nullptr, *_c3 = nullptr;
 			bool _is_required = false;
 			void compute_maj3_function(const node&,
 				std::unordered_map<const cut*,std::unique_ptr<cirkit::tt>>&);
@@ -40,6 +40,7 @@ namespace majesty {
 			cut(const cut&);
 			cut(nodeid);
 			cut(cut*, cut*);
+			cut(const cut&, const cut&);
 			cut(cut*, cut*, cut*);
 			unsigned sig() const { return _sig; }
 			unsigned int size() const { return _nodes.size(); }
@@ -48,10 +49,14 @@ namespace majesty {
 			bool equal(const cut*) const;
 			bool dominates(const cut*) const;
 			const std::vector<nodeid>& nodes() const { return _nodes; }
+			const std::vector<cut*>& incuts() { return _incuts; }
+			void clear_incuts() { _incuts.clear(); }
+			void add_incut(cut* c) { _incuts.push_back(c); }
 			void computesignature();
 			void computefunction(const node&,
 					std::unordered_map<const cut*,std::unique_ptr<cirkit::tt>>&);
-
+			void computefunction(const ln_node&,
+					std::unordered_map<const cut*,std::unique_ptr<cirkit::tt>>&);
 	};
 
 	using cutvec = std::vector<std::unique_ptr<cut>>;
@@ -76,8 +81,6 @@ namespace majesty {
 	cutmap enumerate_cuts(const xmg&, const cut_params*);
 	cutmap enumerate_cuts(const logic_ntk&, const cut_params*);
 	cutmap enumerate_cuts_eval_funcs(const xmg&, const cut_params*, funcmap&);
-
-	cirkit::tt compute_function(const ln_node&, cutmap&);
 }
 
 

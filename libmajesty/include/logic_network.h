@@ -50,6 +50,14 @@ namespace majesty {
 				return _outnames;
 		   	}
 
+			void add_inname(const std::string& name) {
+                _innames.push_back(name);
+            }
+
+            void add_outname(const std::string& name) {
+                _outnames.push_back(name);
+            }
+
 			nodeid create_input();
 			nodeid create_input(const std::string&);
 
