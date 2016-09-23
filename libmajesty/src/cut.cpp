@@ -477,7 +477,11 @@ namespace majesty {
 	}
 
 	void cut::computefunction(const nodeid nid, const vector<ln_node>& nodes, funcmap& m) {
-		if (_nodes.size() == 1u && _nodes[0] == nid) { // Trivial cut
+		if (_nodes.size() == 1u && _nodes[0] == nid) {
+			// This is a trivial cut, we cannot compute its function
+			// based on its child cuts as it has none
+			unique_ptr<tt> f(new tt(tt_nth_var(0)));
+			m[this] = std::move(f);
 			return;
 		}
 		const auto& node = nodes[nid];
