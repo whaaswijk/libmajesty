@@ -508,9 +508,9 @@ namespace majesty {
 			cut* best_cut = NULL;
 			const auto& cuts = cm.at(i);
 			for (const auto& cut : cuts) {
-				/*if (cut->size() == 1 && cut->nodes()[0] == node.ecrep) { // Trivial cut
+				if (cut->size() == 1 && cut->nodes()[0] == i) { // Trivial cut
 					continue;
-				}*/
+				}
 				best[i] = cut.get();
 				auto area1 = recursive_select(i, nodes, best, nref);
 				auto area2 = recursive_deselect(i, nodes, best, nref);
