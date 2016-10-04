@@ -11,6 +11,7 @@ namespace majesty {
 	logic_ntk size_optimum_ntk(cirkit::tt& function, unsigned gate_size);
 	Minisat::lbool exists_fanin_2_ntk(const cirkit::tt& func, Minisat::Solver&, const unsigned nr_gates);
 	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_gates);
+	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_gates, bool invert);
 	logic_ntk extract_fanin_3_ntk(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_gates);
 	boost::optional<logic_ntk> find_fanin_2_ntk(const cirkit::tt& function, const unsigned nr_gates);
 	boost::optional<logic_ntk> find_fanin_3_ntk(const cirkit::tt& function, const unsigned nr_gates);

@@ -143,8 +143,12 @@ namespace majesty {
 			return l_False;
 		}
 	}
+	
+    logic_ntk extract_fanin_2_ntk(const tt& func, const Solver& solver, unsigned nr_gates) {
+        return extract_fanin_2_ntk(func, solver, nr_gates, false);
+    }
 
-	logic_ntk extract_fanin_2_ntk(const tt& func, const Solver& solver, unsigned nr_gates) {
+	logic_ntk extract_fanin_2_ntk(const tt& func, const Solver& solver, unsigned nr_gates, bool invert) {
 		logic_ntk ntk;
 
 		const auto num_vars = tt_num_vars(func);
@@ -160,20 +164,16 @@ namespace majesty {
 		static vector<nodeid> fanin(2);
 		static tt nodefunc(4);
 		for (auto i = 0u; i < nr_gates; i++) {
-			fanin.clear();
-			nodefunc.clear();
-			bool found = false;
-			for (auto j = 0u; !found && j < num_vars + i; j++) {
-				for (auto k = j + 1; !found && k < num_vars + i; k++) {
+			for (auto j = 0u; j < num_vars + i; j++) {
+				for (auto k = j + 1; k < num_vars + i; k++) {
 					if (solver.modelValue(mkLit(var_offset++, false)) == l_True) {
 						// Gate i has gates j and k as fanin
-						found = true;
-						fanin.push_back(j);
-						fanin.push_back(k);
+						fanin[0] = j;
+						fanin[1] = k;
 						nodefunc.set(0, 0);
 						nodefunc.set(1, lbool_to_int(solver.modelValue(function_variable(3, i, 0, nr_gate_vars))));
-						nodefunc.set(1, lbool_to_int(solver.modelValue(function_variable(3, i, 1, nr_gate_vars))));
-						nodefunc.set(1, lbool_to_int(solver.modelValue(function_variable(3, i, 2, nr_gate_vars))));
+						nodefunc.set(2, lbool_to_int(solver.modelValue(function_variable(3, i, 1, nr_gate_vars))));
+						nodefunc.set(3, lbool_to_int(solver.modelValue(function_variable(3, i, 2, nr_gate_vars))));
 						ntk.create_node(fanin, nodefunc);
 					}
 				}
@@ -181,6 +181,10 @@ namespace majesty {
 		}
 
 		// The last node is the output node
+        if (invert) {
+            auto& outnode = ntk.get_node(ntk.nnodes() - 1);
+            outnode.function = ~outnode.function;
+        }
 		ntk.create_output(ntk.nnodes() - 1);
 
 		return ntk;

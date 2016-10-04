@@ -7,9 +7,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wall -Wextra -std=
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
-find_package(Threads)
-
-
 # Add the ./src and ./include dirs to the include path 
 include_directories("$ENV{HIREDIS_HOME}")
 include_directories("${PROJECT_SOURCE_DIR}/src")
