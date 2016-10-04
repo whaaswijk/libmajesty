@@ -21,11 +21,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_Solver_h
 #define Minisat_Solver_h
 
-#include "Vec.h"
-#include "Heap.h"
-#include "Alg.h"
-#include "SolverTypes.h"
-#include "Options.h"
+#include <minisat/Vec.h>
+#include <minisat/Heap.h>
+#include <minisat/Alg.h>
+#include <minisat/SolverTypes.h>
+#include <minisat/Options.h>
 
 namespace Minisat {
 

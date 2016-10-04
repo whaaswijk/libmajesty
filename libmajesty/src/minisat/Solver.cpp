@@ -21,8 +21,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <math.h>
 #include <iostream>
 
-#include "Sort.h"
-#include "Solver.h"
+#include <minisat/Sort.h>
+#include <minisat/Solver.h>
 
 using namespace Minisat;
 

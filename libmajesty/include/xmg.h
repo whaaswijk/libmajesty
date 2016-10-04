@@ -5,8 +5,8 @@
 #include <vector>
 #include <limits>
 #include <boost/dynamic_bitset.hpp>
-#include "../src/minisat/Solver.h"
-#include "../src/minisat/SolverTypes.h"
+#include <minisat/Solver.h>
+#include <minisat/SolverTypes.h>
 #include "../src/mlp.h"
 #include <map>
 #include <unordered_map>
