@@ -1,6 +1,7 @@
 #include <xmg.h>
 #include <truth_table_utils.hpp>
 #include <exact.h>
+//#include <maj_io.h>
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
@@ -45,6 +46,11 @@ TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 		Solver solver;
 		auto exists = exists_fanin_2_ntk(andfunc, solver, 1);
 		REQUIRE(exists == l_True);
+		/*
+		auto ntk = extract_fanin_2_ntk(andfunc, solver, 1);
+		ntk.create_dummy_names();
+		write_blif(ntk, "andfunc.blif");
+		*/
 	}
 	{
 		Solver solver;
@@ -54,6 +60,11 @@ TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 	{
 		Solver solver;
 		auto exists = exists_fanin_2_ntk(orfunc, solver, 2);
+		/*
+		auto ntk = extract_fanin_2_ntk(orfunc, solver, 2);
+		ntk.create_dummy_names();
+		write_blif(ntk, "orfunc.blif");
+		*/
 		REQUIRE(exists == l_True);
 	}
 	{

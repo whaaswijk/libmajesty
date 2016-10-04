@@ -154,38 +154,49 @@ namespace majesty {
 			ntk.create_input();
 		}
 
+		const auto nr_gate_vars = nr_gates * tt_size;
+		const auto nr_function_vars = nr_gates * 3;
+		auto var_offset = nr_gate_vars + nr_function_vars;
+		static vector<nodeid> fanin(2);
+		static tt nodefunc(4);
+		for (auto i = 0u; i < nr_gates; i++) {
+			fanin.clear();
+			nodefunc.clear();
+			bool found = false;
+			for (auto j = 0u; !found && j < num_vars + i; j++) {
+				for (auto k = j + 1; !found && k < num_vars + i; k++) {
+					if (solver.modelValue(mkLit(var_offset++, false)) == l_True) {
+						// Gate i has gates j and k as fanin
+						found = true;
+						fanin.push_back(j);
+						fanin.push_back(k);
+						nodefunc.set(0, 0);
+						nodefunc.set(1, lbool_to_int(solver.modelValue(function_variable(3, i, 0, nr_gate_vars))));
+						nodefunc.set(1, lbool_to_int(solver.modelValue(function_variable(3, i, 1, nr_gate_vars))));
+						nodefunc.set(1, lbool_to_int(solver.modelValue(function_variable(3, i, 2, nr_gate_vars))));
+						ntk.create_node(fanin, nodefunc);
+					}
+				}
+			}
+		}
+
 		// The last node is the output node
 		ntk.create_output(ntk.nnodes() - 1);
 
-		ntk.create_dummy_names();
-
 		return ntk;
-	}
-
-	static inline int lbool_to_int(lbool b) {
-		if (b == l_False) {
-			return 0;
-		} else if (b == l_True) {
-			return 1;
-		} else {
-			return 2;
-		}
 	}
 
 	void print_fanin_2_solution(const tt& func, Solver& solver, const unsigned nr_gates) {
 		const auto num_vars = tt_num_vars(func);
 		const auto tt_size = func.size() - 1;
 
-		// Create variables that represent  the gates' truth tables
 		auto nr_gate_vars = nr_gates * tt_size;
 		for (auto i = 0u; i < nr_gates; i++) {
 			for (auto t = 0u; t < tt_size; t++) {
-				// Print gate variable x_it
 				cout << "x_" << i << "_" << t << ": " << lbool_to_int(solver.modelValue(gate_variable(tt_size, i, t))) << endl;
 			}
 		}
 
-		// The gate's function constraint variables
 		auto nr_function_vars = nr_gates * 3;
 		for (auto i = 0u; i < nr_gates; i++) {
 			for (auto j = 0u; j < 3; j++) {
@@ -193,7 +204,6 @@ namespace majesty {
 			}
 		}
 
-		// Add selection (fanin) constraints
 		auto var_offset = nr_gate_vars + nr_function_vars;
 		for (auto i = 0u; i < nr_gates; i++) {
 			for (auto j = 0u; j < num_vars + i; j++) {

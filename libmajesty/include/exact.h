@@ -39,5 +39,15 @@ namespace majesty {
 		return proj_idx >= num_zeros;
 	}
 
+	static inline int lbool_to_int(Minisat::lbool b) {
+		if (b == l_False) {
+			return 0;
+		} else if (b == l_True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+
 	void print_fanin_2_solution(const cirkit::tt& func, Minisat::Solver& solver, const unsigned nr_gates);
 }
