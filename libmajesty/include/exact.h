@@ -23,4 +23,21 @@ namespace majesty {
 		}
 		return nr_ordered_tuples(tuple_size, bound - 1) + nr_ordered_tuples(tuple_size - 1, bound - 1);
 	}
+
+	static inline Minisat::Var gate_variable(int tt_size, int gate_i, int t) {
+		return tt_size * gate_i + t;
+	}
+
+	static inline Minisat::Var function_variable(int gate_func_size, int f, int idx, int nr_gate_vars) {
+		return f * gate_func_size + idx + nr_gate_vars;
+	}
+	
+	// Tests a primary input's truth table (nonzero) at the specified index
+	static inline bool pi_value(const int pi_num, const int tt_idx) {
+		const auto num_zeros = (1u << pi_num);
+		const auto proj_idx = tt_idx % (2 * num_zeros);
+		return proj_idx >= num_zeros;
+	}
+
+	void print_fanin_2_solution(const cirkit::tt& func, Minisat::Solver& solver, const unsigned nr_gates);
 }

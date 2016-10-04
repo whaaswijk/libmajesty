@@ -1,17 +1,17 @@
 #include <exact.h>
 #include <convert.h>
 #include <vector>
+#include <iostream>
 
 using Minisat::Solver;
 using Minisat::Var;
 using Minisat::Lit;
 using Minisat::mkLit;
 using Minisat::lbool;
-using std::string;
-using std::vector;
 
 using namespace cirkit;
 using namespace boost;
+using namespace std;
 
 namespace majesty {
 
@@ -45,56 +45,40 @@ namespace majesty {
 			(*ntk).get_node((*ntk).nnodes() - 1).function = func;
 		}
 
-		return move(*ntk);
+		return std::move(*ntk);
 	}
 
-
-	static inline Var gate_variable(int tt_size, int gate_i, int t) {
-		return tt_size * gate_i + t;
-	}
-
-	static inline Var function_variable(int gate_func_size, int f, int idx, int nr_gate_vars) {
-		return f * gate_func_size + idx + nr_gate_vars;
-	}
-
-	// Tests a primary input's truth table (nonzero) at the specified index
-	static inline bool pi_value(const int pi_num, const int tt_idx) {
-		const auto num_zeros = (1u << pi_num);
-		const auto proj_idx = tt_idx % (2 * num_zeros);
-		return proj_idx > num_zeros;
-	}
-	
-	static inline void add_selection_clause(Solver& solver, int num_vars, Var sel_var, int nr_gate_vars,
+	static inline void add_selection_clause(Solver& solver, int num_vars, int tt_size, Var sel_var, int nr_gate_vars,
 		int t, int i, int j, int k, bool a, bool b, bool c) {
 		static Minisat::vec<Lit> clause_vec;
 		clause_vec.clear();
 
-		auto sel_lit = mkLit(sel_var, false);
-		auto gate_lit = mkLit(gate_variable(7, i, t), a);
-		clause_vec.push(sel_lit);
-		clause_vec.push(gate_lit);
-
 		if (j < num_vars) { // It's a primary input, so fixed to a constant
-			auto const_val = pi_value(j, t);
+			auto const_val = pi_value(j, t+1);
 			if (const_val != b) {
 				return;
 			}
 		} else {
-			auto fanin1_lit = mkLit(gate_variable(7, j, t), b);
+			auto fanin1_lit = mkLit(gate_variable(tt_size, j - num_vars, t), b);
 			clause_vec.push(fanin1_lit);
 		}
 
 		if (k < num_vars) {
-			auto const_val = pi_value(k, t);
+			auto const_val = pi_value(k, t+1);
 			if (const_val != c) {
 				return;
 			}
 		} else {
-			auto fanin2_lit = mkLit(gate_variable(7, k, t), c);
+			auto fanin2_lit = mkLit(gate_variable(tt_size, k - num_vars, t), c);
 			clause_vec.push(fanin2_lit);
 		}
+
+		auto sel_lit = mkLit(sel_var, true);
+		auto gate_lit = mkLit(gate_variable(tt_size, i, t), a);
+		clause_vec.push(sel_lit);
+		clause_vec.push(gate_lit);
 		
-		if (b || c) {
+		if (b | c) {
 			auto function_lit = mkLit(function_variable(3, i, ((b << 1) | c) - 1, nr_gate_vars), !a);
 			clause_vec.push(function_lit);
 		}
@@ -112,37 +96,45 @@ namespace majesty {
 		auto nr_gate_vars = nr_gates * tt_size;
 		for (auto i = 0u; i < nr_gate_vars; i++) {
 			// Create gate variable x_it
+			//cout << "adding gate tt var " << i << endl;
 			solver.newVar();
 		}
 
 		// The gate's function constraint variables
 		for (auto i = 0u; i < nr_gates * 3; i++) {
+			//cout << "adding function var " << i << endl;
 			solver.newVar();
 		}
 
 		// Add selection (fanin) constraints
+		static Minisat::vec<Lit> sel_vars_clause;
 		for (auto i = 0u; i < nr_gates; i++) {
+			sel_vars_clause.clear();
 			for (auto j = 0u; j < num_vars + i; j++) {
 				for (auto k = j + 1; k < num_vars + i; k++) {
+					auto sel_var = solver.newVar();
+					sel_vars_clause.push(mkLit(sel_var, false));
 					for (auto t = 0u; t < tt_size; t++) {
-						auto sel_var = solver.newVar();
-						add_selection_clause(solver, num_vars, sel_var, nr_gate_vars, t, i, j, k, 0, 0, 1);
-						add_selection_clause(solver, num_vars, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 0);
-						add_selection_clause(solver, num_vars, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 1);
-						add_selection_clause(solver, num_vars, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 0);
-						add_selection_clause(solver, num_vars, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 1);
-						add_selection_clause(solver, num_vars, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 0);
-						add_selection_clause(solver, num_vars, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 1);
+						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 0, 1);
+						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 0);
+						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 1);
+						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 0);
+						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 1);
+						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 0);
+						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 1);
 					}
 				}
 			}
+			solver.addClause(sel_vars_clause);
 		}
-
+		
 		// The final gate's truth table should match the one from the specification
 		static Minisat::vec<Lit> spec_clause;
 		spec_clause.clear();
 		for (auto t = 0u; t < tt_size; t++) {
-			spec_clause.push(mkLit(gate_variable(7, nr_gates - 1, t), !func.test(t + 1)));
+			auto gate_var = gate_variable(tt_size, nr_gates - 1, t);
+			//cout << "setting x_" << nr_gates - 1 << "_" << t << "(" << gate_var << "): " << func.test(t + 1) << endl;
+			spec_clause.push(mkLit(gate_var, !func.test(t + 1)));
 		}
 
 		if (solver.solve(spec_clause)) {
@@ -156,7 +148,7 @@ namespace majesty {
 		logic_ntk ntk;
 
 		const auto num_vars = tt_num_vars(func);
-		const auto tt_size = 7;
+		const auto tt_size = func.size() - 1;
 		
 		for (auto i = 0u; i < num_vars; i++) {
 			ntk.create_input();
@@ -168,6 +160,48 @@ namespace majesty {
 		ntk.create_dummy_names();
 
 		return ntk;
+	}
+
+	static inline int lbool_to_int(lbool b) {
+		if (b == l_False) {
+			return 0;
+		} else if (b == l_True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+
+	void print_fanin_2_solution(const tt& func, Solver& solver, const unsigned nr_gates) {
+		const auto num_vars = tt_num_vars(func);
+		const auto tt_size = func.size() - 1;
+
+		// Create variables that represent  the gates' truth tables
+		auto nr_gate_vars = nr_gates * tt_size;
+		for (auto i = 0u; i < nr_gates; i++) {
+			for (auto t = 0u; t < tt_size; t++) {
+				// Print gate variable x_it
+				cout << "x_" << i << "_" << t << ": " << lbool_to_int(solver.modelValue(gate_variable(tt_size, i, t))) << endl;
+			}
+		}
+
+		// The gate's function constraint variables
+		auto nr_function_vars = nr_gates * 3;
+		for (auto i = 0u; i < nr_gates; i++) {
+			for (auto j = 0u; j < 3; j++) {
+				cout << "f_" << i << "_" << j << ": " << lbool_to_int(solver.modelValue(function_variable(3, i, j, nr_gate_vars))) << endl;
+			}
+		}
+
+		// Add selection (fanin) constraints
+		auto var_offset = nr_gate_vars + nr_function_vars;
+		for (auto i = 0u; i < nr_gates; i++) {
+			for (auto j = 0u; j < num_vars + i; j++) {
+				for (auto k = j + 1; k < num_vars + i; k++) {
+					cout << "s_" << i << "_" << j << "_" << k << ": " << lbool_to_int(solver.modelValue(mkLit(var_offset++, false))) << endl;
+				}
+			}
+		}
 	}
 
 }
