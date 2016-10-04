@@ -28,7 +28,7 @@ namespace majesty {
 
 	extern "C" void parse_verilog(FILE *file, MIG **m);
 
-	xmg read_verilog(const std::string filename) {
+	xmg read_verilog(const std::string& filename) {
 		MIG* mig;
 		auto fp = fopen(filename.c_str(), "r");
 		if (fp == NULL) {
@@ -114,27 +114,27 @@ namespace majesty {
 	}
 
 	static inline string node_name(const nodeid idx, const vector<node>& nodes, const vector<string>& innames, bool c) {
-			const auto& node = nodes[idx];
-			if (idx == 0) {
-				if (c) {
-					return "1'b0";
-				} else {
-					return "1'b1";
-				}
-			} else if (is_pi(node)) {
-				if (c) {
-					return "~" + innames[node.ecrep - 1];
-				} else {
-					return innames[node.ecrep - 1];
-				}
-			} if (c) {
-				return "~w" + to_string(node.ecrep);
+		const auto& node = nodes[idx];
+		if (idx == 0) {
+			if (c) {
+				return "1'b0";
 			} else {
-				return "w" + to_string(node.ecrep);
+				return "1'b1";
 			}
+		} else if (is_pi(node)) {
+			if (c) {
+				return "~" + innames[node.ecrep - 1];
+			} else {
+				return innames[node.ecrep - 1];
+			}
+		} if (c) {
+			return "~w" + to_string(node.ecrep);
+		} else {
+			return "w" + to_string(node.ecrep);
 		}
+	}
 
-	void write_verilog(const xmg& xmg, ofstream& file) {
+	void write_verilog(const xmg& xmg, ostream& file) {
 		time_t now;
 		time(&now);
 		file << "// Written by the Majesty Logic Package " << ctime(&now); 

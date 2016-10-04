@@ -46,4 +46,6 @@ namespace majesty {
 
 	logic_ntk xmg_cover_to_logic_ntk(const xmg&, const cover&, const bestmap&, const funcmap&);
 	logic_ntk ntk_cover_to_logic_ntk(const logic_ntk&, const cover&, const bestmap&, const funcmap&);
+
+	xmg verilog_to_xmg(const std::string&);
 }

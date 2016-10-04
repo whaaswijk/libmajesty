@@ -353,6 +353,8 @@ namespace majesty {
             void create_dummy_innames();
 			void create_dummy_outnames();
 			void create_dummy_names();
+			
+			std::string to_verilog();
 	};
 
 	xmg strash(const xmg&);
@@ -362,6 +364,7 @@ namespace majesty {
 
 	// Simulates every possible input vector on an xmg and returns the function it computes
 	boost::dynamic_bitset<> simulate_xmg(const xmg&);
+
 }
 
 #endif

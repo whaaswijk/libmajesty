@@ -7,6 +7,8 @@
 #include <functional>
 #include <boost/optional.hpp>
 #include "mlpext.h"
+#include <sstream>
+#include <maj_io.h>
 
 using namespace std;
 using boost::optional;
@@ -1607,6 +1609,12 @@ namespace majesty {
 	void xmg::create_dummy_names() {
 		create_dummy_innames();
 		create_dummy_outnames();
+	}
+
+	string xmg::to_verilog() {
+		stringstream s;
+		write_verilog(*this, s);
+		return s.str();
 	}
 }
 
