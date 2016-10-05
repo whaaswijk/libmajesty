@@ -10,10 +10,14 @@
 using namespace std;
 extern "C" int yylex();
 extern "C" int yyparse();
+extern "C" void yy_delete_buffer();
 extern "C" FILE *yyin;
 extern int yylineno;
 extern "C" void parse_verilog(FILE *file, MIG **m);
+extern "C" void parse_verilog_string(const char *verilog_string, MIG **m);
 extern "C" unsigned int char_to_int(char *cstr);
+extern "C" void scan_string(const char*);
+extern "C" void delete_buffer(void);
 
 typedef unsigned int uint;
 
@@ -35,6 +39,9 @@ pair<bool, MAJ3*> *handle_node(bool, string*);
 void lit_assignment(string *s, int lit); 
 void unary_assignment(string *s, pair<bool,MAJ3*>*);
 void binary_assignment(string*, pair<bool,MAJ3*>*, char op, pair<bool,MAJ3*>*);
+void binary_lit_2_assignment(string*, pair<bool,MAJ3*>*, char op, int lit);
+void binary_lit_1_assignment(string*, int lit, char op, pair<bool,MAJ3*>*);
+void binary_lit_1_2_assignment(string*, int lit1, char op, int lit2);
 void maj_assignment(string*, pair<bool,MAJ3*>*, pair<bool,MAJ3*>*, pair<bool, MAJ3*>*);
 void parse_wrap(void);
 void init_mig(void);
@@ -105,7 +112,13 @@ assignment: ASSIGN NAME '=' NUM ';' /* one = 1; */ { delete $2; }
 | ASSIGN NAME '=' LIT ';' { lit_assignment($2, $4); }
 | ASSIGN NAME '=' node ';' { unary_assignment($2, $4); }
 | ASSIGN NAME '=' node '&' node ';' { binary_assignment($2, $4, '&', $6); }
+| ASSIGN NAME '=' node '&' LIT ';' { binary_lit_2_assignment($2, $4, '&', $6); }
+| ASSIGN NAME '=' LIT '&' node ';' { binary_lit_1_assignment($2, $4, '&', $6); }
+| ASSIGN NAME '=' LIT '&' LIT ';' { binary_lit_1_2_assignment($2, $4, '&', $6); }
 | ASSIGN NAME '=' node '|' node ';' { binary_assignment($2, $4, '|', $6); }
+| ASSIGN NAME '=' node '|' LIT ';' { binary_lit_2_assignment($2, $4, '|', $6); }
+| ASSIGN NAME '=' LIT '|' node ';' { binary_lit_1_assignment($2, $4, '|', $6); }
+| ASSIGN NAME '=' LIT '|' LIT ';' { binary_lit_1_2_assignment($2, $4, '|', $6); }
 | ASSIGN NAME '=' '(' node '&' node ')' '|' '(' node '&' node ')' '|' '(' node '&' node ')' ';' { maj_assignment($2, $5, $7, $19); delete $11; delete $13; delete $17; }
 ;
 
@@ -117,7 +130,7 @@ node: NAME { $$ = handle_node(false, $1); }
 %%
 
 void yyerror(char const *e) {
-cout << "Error around line " << yylineno << ": " << e << endl;
+    cout << "Error around line " << yylineno << ": " << e << endl;
 }
 
 int output_idx(string name) {
@@ -229,6 +242,18 @@ void unary_assignment(string *s, pair<bool,MAJ3*> *p) {
 	p->second->PO = 1;
 	set_outcompl(idx, p->first, p->second);
 	delete p;
+}
+
+void binary_lit_2_assignment(string *s, pair<bool,MAJ3*> *n1, char op, int lit) {
+    binary_assignment(s, n1, op, new pair<bool,MAJ3*>(lit == 0, one));
+}
+
+void binary_lit_1_assignment(string *s, int lit, char op, pair<bool,MAJ3*> *n2) {
+    binary_assignment(s, new pair<bool,MAJ3*>(lit == 0, one), op, n2);
+}
+
+void binary_lit_1_2_assignment(string *s, int lit1, char op, int lit2) {
+    binary_assignment(s, new pair<bool, MAJ3*>(lit1 == 0, one), op, new pair<bool,MAJ3*>(lit2 == 0, one));
 }
 
 void binary_assignment(string *s, pair<bool,MAJ3*> *n1, char op, pair<bool,MAJ3*> *n2) {
@@ -368,4 +393,23 @@ void parse_verilog(FILE *file, MIG **m) {
 	omig = m;
 	yyin = file;
 	yyparse();
+}
+
+void parse_verilog_string(const char *verilog_string, MIG **m) {
+	assert(one == NULL);
+	one = (MAJ3*)malloc(sizeof(MAJ3));
+	one->in1=one->in2=one->in3=NULL;
+	one->outEdges=NULL;//to be updated
+	one->value=1;
+	one->fanout=one->label=0;
+	one->aux=NULL;
+	one->flag=0;
+	one->compl1=one->compl2=one->compl3=0;
+	one->PI=1;
+	one->PO = false;
+	
+    omig = m;
+	scan_string(verilog_string);
+	yyparse();
+    delete_buffer();
 }

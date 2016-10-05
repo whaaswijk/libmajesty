@@ -100,7 +100,7 @@ namespace majesty {
 		nodemap nodemap;
 		nodemap[0] = make_pair(res.create_input(), false);
 		for (auto i = 0u; i < ninputs; i++) {
-			nodemap[i + 1] = make_pair(res.create_input(string(1, 'a'+(char)i)), false);
+			nodemap[i + 1] = make_pair(res.create_input(), false);
 		}
 
 		const auto majbrackets = find_bracket_pairs(str, '<', '>');
@@ -114,7 +114,7 @@ namespace majesty {
 		} else {
 			outp = xmg_parse_string(str, 0, majbrackets, xorbrackets, nodemap, res);
 		}
-		res.create_output(outp.first, outp.second != complout, "F");
+		res.create_output(outp.first, outp.second != complout);
 
 		return res;
 	}
@@ -147,7 +147,7 @@ namespace majesty {
 		nodemap nodemap;
 		nodemap[0] = make_pair(res.create_input(), false);
 		for (auto i = 0u; i < ninputs; i++) {
-			res.create_input(string(1, 'a'+(char)i));
+			res.create_input();
 		}
 		auto invperm = inv(perm);
 		for (auto i = 0u; i < ninputs; i++) {
@@ -165,7 +165,7 @@ namespace majesty {
 		} else {
 			outp = xmg_parse_string(str, 0, majbrackets, xorbrackets, nodemap, res);
 		}
-		res.create_output(outp.first, outp.second != complout, "F");
+		res.create_output(outp.first, outp.second != complout);
 
 		return res;
 	}
@@ -248,11 +248,11 @@ namespace majesty {
 		nodemap[0] = make_pair(res.create_input(), false);
 
 		for (auto i = 0u; i < ninputs; i++) {
-			nodemap[i + 1] = make_pair(res.create_input(string(1, 'a' + (char)i)), false);
+			nodemap[i + 1] = make_pair(res.create_input(), false);
 		}
 		assert(tt_num_vars(func) == ninputs);
 		auto output = mig_shannon_decompose_node(res, nodemap, func, ninputs, 0);
-		res.create_output(output.first, output.second, "F");
+		res.create_output(output.first, output.second);
 
 		return res;
 	}
@@ -491,7 +491,7 @@ namespace majesty {
 		for (auto i = 0u; i < innames.size(); i++) {
             const auto& name = innames[i];
             // Add one because we don't use the constant input
-            nodemap[i+1] = ntk.create_input(name);
+            nodemap[i+1] = ntk.create_input();
 		}
 		const auto& nodes = xmg.nodes();
 		for (auto i = 0u; i < nodes.size(); i++) {
@@ -517,9 +517,8 @@ namespace majesty {
 
 		const auto& outputs = xmg.outputs();
 		const auto& outcompl = xmg.outcompl();
-		const auto& outnames = xmg.outnames();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			ntk.create_output(nodemap[outputs[i]], outnames[i], outcompl[i]);
+			ntk.create_output(nodemap[outputs[i]], outcompl[i]);
 		}
 		
 		return ntk;
@@ -529,11 +528,9 @@ namespace majesty {
 		logic_ntk ntk;
 		unordered_map<nodeid, nodeid> nodemap;
 
-		const auto& innames = xmg.innames();
-		for (auto i = 0u; i < innames.size(); i++) {
-            const auto& name = innames[i];
+		for (auto i = 0u; i < xmg.nin(); i++) {
             // Add one because we don't use the constant input
-            nodemap[i+1] = ntk.create_input(name);
+            nodemap[i+1] = ntk.create_input();
 		}
 		const auto& nodes = xmg.nodes();
 		for (auto i = 0u; i < nodes.size(); i++) {
@@ -556,9 +553,8 @@ namespace majesty {
 
 		const auto& outputs = xmg.outputs();
 		const auto& outcompl = xmg.outcompl();
-		const auto& outnames = xmg.outnames();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			ntk.create_output(nodemap[outputs[i]], outnames[i], outcompl[i]);
+			ntk.create_output(nodemap[outputs[i]], outcompl[i]);
 		}
 
 		return ntk;
@@ -604,5 +600,15 @@ namespace majesty {
 		}
 
 		return ntk;
+	}
+
+    extern "C" void parse_verilog_string(const char *verilog_string, MIG **m);
+
+	xmg verilog_to_xmg(const std::string& verilog_string) {
+		MIG* mig;
+		parse_verilog_string(verilog_string.c_str(), &mig);
+		xmg res(mig);
+		freemig(mig);
+		return res;
 	}
 }

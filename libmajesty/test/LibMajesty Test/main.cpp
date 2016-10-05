@@ -1,9 +1,12 @@
 #include <xmg.h>
 #include <truth_table_utils.hpp>
 #include <exact.h>
+#include <mig_interface.h>
 //#include <maj_io.h>
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
+#include <iostream>
+#include <convert.h>
 
 using namespace majesty;
 using Minisat::Solver;
@@ -100,24 +103,34 @@ TEST_CASE("Exact Synthesis Extraction Test", "[exact synthesis]") {
 	auto invorfuncstr = cirkit::to_string(invorfunc);
 	{
 		Solver solver;
-		auto exists = exists_fanin_2_ntk(andfunc, solver, 1);
+		exists_fanin_2_ntk(andfunc, solver, 1);
 		auto ntk = extract_fanin_2_ntk(andfunc, solver, 1);
 		ntk.create_dummy_names();
 		write_blif(ntk, "andfunc.blif");
 	}
 	{
 		Solver solver;
-		auto exists = exists_fanin_2_ntk(orfunc, solver, 2);
+		exists_fanin_2_ntk(orfunc, solver, 2);
 		auto ntk = extract_fanin_2_ntk(orfunc, solver, 2);
 		ntk.create_dummy_names();
 		write_blif(ntk, "orfunc.blif");
 	}
     {
 		Solver solver;
-		auto exists = exists_fanin_2_ntk(invorfunc, solver, 2);
+		exists_fanin_2_ntk(invorfunc, solver, 2);
 		auto ntk = extract_fanin_2_ntk(invorfunc, solver, 2, true);
 		ntk.create_dummy_names();
 		write_blif(ntk, "invorfunc.blif");
 	}
+}
+
+TEST_CASE("XMG String Serialization", "[serialization]") {
+    // Get a MIG and use it to test on
+    auto mig = mig_int_decompose(6, 20);
+    mig->create_dummy_names();
+    auto mig_verilog_str = mig->to_verilog();
+    auto dez_mig = verilog_to_xmg(mig_verilog_str);
+    REQUIRE(mig->equals(dez_mig));
+    delete mig;
 }
 #endif

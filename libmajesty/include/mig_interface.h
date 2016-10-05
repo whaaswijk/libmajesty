@@ -81,4 +81,5 @@ namespace majesty {
 	xmg* get_optimum_xmg(const xmg&);
 	xmg* strash_xmg(const xmg&);
 	xmg* remove_duplicates(const xmg&);
+    xmg* mig_from_verilog(const std::string&);
 };

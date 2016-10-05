@@ -2,7 +2,9 @@
 #include <iostream>
 #include "parser.hpp"
 
-extern "C" int yylex();
+extern "C" int yylex(void);
+extern "C" void scan_string(const char*); 
+extern "C" void delete_buffer(void);
 using namespace std;
 
 #define handle_literal() { return *yytext; } 
@@ -68,4 +70,13 @@ int handle_name(void) {
 
 int yywrap(void) {
   return 1;
+}
+
+static YY_BUFFER_STATE buf = NULL;
+void scan_string(const char* str) {
+    buf = yy_scan_string(str);
+}
+
+void delete_buffer() {
+    yy_delete_buffer(buf);
 }

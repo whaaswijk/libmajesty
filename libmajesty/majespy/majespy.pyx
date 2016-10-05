@@ -374,6 +374,9 @@ cdef class PyXmg:
     def equals(self, PyXmg py_xmg):
         return self.c_xmg.equals(py_xmg.c_xmg[0])
 
+    def to_verilog(self):
+        cdef string vstr = self.c_xmg.to_verilog()
+        return vstr.decode('UTF-8')
 
 cdef class MigManager:
     cdef mig_manager* c_mig_manager  # hold a C++ instance which we're wrapping
@@ -523,3 +526,8 @@ def lut_area_timeout_strategy(PyXmg py_xmg, lut_size, timeout, nr_backtracks=409
         xmg* result
     result = mig_interface.ptr_lut_area_timeout_strategy(py_xmg.c_xmg[0], lut_size, timeout, nr_backtracks)
     return PyXmg().set_pt_to(result)
+
+def mig_from_verilog(str):
+    cdef xmg* result = mig_interface.mig_from_verilog(str.encode('UTF-8'))
+    return PyXmg().set_pt_to(result)
+

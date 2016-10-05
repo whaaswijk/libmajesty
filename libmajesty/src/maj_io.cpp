@@ -40,7 +40,7 @@ namespace majesty {
 		return res;
 	}
 
-	xmg* ptr_read_verilog(const std::string filename) {
+	xmg* ptr_read_verilog(const std::string& filename) {
 		return new xmg(read_verilog(filename));
 	}
 

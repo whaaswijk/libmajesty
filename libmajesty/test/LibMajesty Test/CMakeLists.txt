@@ -5,6 +5,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wall -Wextra -std=
 set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "../../build/src")
 
 include_directories("$ENV{LIBMAJESTY_HOME}/include")
+include_directories("$ENV{HIREDIS_HOME}")
 
 find_package(Boost COMPONENTS filesystem system REQUIRED)
 link_directories(${LINK_DIRECTORIES} $ENV{LIBMAJESTY_HOME}/build/src)

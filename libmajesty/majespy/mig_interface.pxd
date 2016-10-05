@@ -19,6 +19,8 @@ cdef extern from "xmg.h" namespace "majesty":
         const vector[bool]& outcompl() const
         bool equals(const xmg &) const
 
+        string to_verilog() const
+
 
 cdef extern from "mig_interface.h" namespace "majesty":
     cdef enum MoveType:
@@ -65,6 +67,8 @@ cdef extern from "mig_interface.h" namespace "majesty":
     
     xmg* strash_xmg(const xmg&)
     xmg* remove_duplicates(const xmg&)
+    
+    xmg* mig_from_verilog(const string &)
 
 cdef extern from "maj_io.h" namespace "majesty":
     xmg* ptr_read_bench(const string & filename)

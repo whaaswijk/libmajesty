@@ -83,7 +83,7 @@ namespace majesty {
 	}
 
 	xmg* mig_manager::random_mig_decomposition(unsigned ninputs) {
-		auto num_funcs = (1u << (1u << ninputs));
+		auto num_funcs = (1ull << (1ull << ninputs));
 		static uniform_int_distribution<mt19937_64::result_type> rule_dist(0, num_funcs-1);
 		auto rand_func = rule_dist(rng);
         auto res = new xmg(mig_decompose(ninputs, rand_func));
@@ -101,7 +101,9 @@ namespace majesty {
 	}
 
 	xmg* mig_int_decompose(unsigned ninputs, unsigned func) {
-		return new xmg(mig_decompose(ninputs, func));
+		auto res = new xmg(mig_decompose(ninputs, func));
+        res->create_dummy_names();
+        return res;
 	}
 
 	float compute_reward(const majesty::xmg& mig_orig, const majesty::xmg& mig_final) {
@@ -1322,4 +1324,8 @@ namespace majesty {
 			break;
 		}
 	}
+
+    xmg* mig_from_verilog(const string& verilog_string) {
+        return new xmg(verilog_to_xmg(verilog_string));
+    }
 }
