@@ -900,14 +900,9 @@ namespace majesty {
     xmg::xmg(MIG* mig) {
 		unordered_map<MAJ3*, pair<nodeid, bool>> nodemap;
 
-		auto torder = mig_topsort(mig);
-
-		// Create the "one" input
-		nodemap[mig->one] = make_pair(create_input(), false);
-		for (auto node : torder) {
-			if (node == mig->one) {
-				continue;
-			} else if (node->PI) {
+		for (auto i = 0u; i < mig->Nnodes; i++) {
+			const auto& node = mig->nodes[i];
+			if (node->PI) {
 				nodemap[node] = make_pair(create_input(), false);
 				continue;
 			}
