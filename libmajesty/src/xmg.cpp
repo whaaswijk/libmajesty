@@ -898,16 +898,7 @@ namespace majesty {
 	}
 
     xmg::xmg(MIG* mig) {
-        xmg_stats stats {
-			0u, // Nr. strash hits
-			0u, // nr_potentials
-			0u, // nr_matches
-			0u, // nr_misses
-			0u, // nr_undefined
-		};
-
-		unordered_map<MAJ3*,pair<nodeid,bool>> nodemap;
-        strashmap shmap(mig->Nnodes/2, stats);
+		unordered_map<MAJ3*, pair<nodeid, bool>> nodemap;
 
 		auto torder = mig_topsort(mig);
 
@@ -923,11 +914,10 @@ namespace majesty {
 			const auto& p1 = nodemap[node->in1];
 			const auto& p2 = nodemap[node->in2];
 			const auto& p3 = nodemap[node->in3];
-			nodemap[node] = find_or_create(
-					p1.first, p1.second != node->compl1,
-					p2.first, p2.second != node->compl2, 
-					p3.first, p3.second != node->compl3, 
-					shmap);
+			nodemap[node] = create(
+				p1.first, p1.second != node->compl1,
+				p2.first, p2.second != node->compl2,
+				p3.first, p3.second != node->compl3);
         }
         for (auto i = 0u; i < mig->Nin; i++) {
 			_innames.push_back(string(mig->innames[i]));
