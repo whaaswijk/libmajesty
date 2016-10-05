@@ -527,7 +527,7 @@ def lut_area_timeout_strategy(PyXmg py_xmg, lut_size, timeout, nr_backtracks=409
     result = mig_interface.ptr_lut_area_timeout_strategy(py_xmg.c_xmg[0], lut_size, timeout, nr_backtracks)
     return PyXmg().set_pt_to(result)
 
-def mig_from_verilog(str):
-    cdef xmg* result = mig_interface.mig_from_verilog(str.encode('UTF-8'))
+def verilog_to_xmg(str):
+    cdef xmg* result = mig_interface.verilog_to_xmg_ptr(str.encode('UTF-8'))
     return PyXmg().set_pt_to(result)
 

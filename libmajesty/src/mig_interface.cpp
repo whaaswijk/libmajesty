@@ -1325,7 +1325,7 @@ namespace majesty {
 		}
 	}
 
-    xmg* mig_from_verilog(const string& verilog_string) {
+    xmg* verilog_to_xmg_ptr(const string& verilog_string) {
         return new xmg(verilog_to_xmg(verilog_string));
     }
 }
