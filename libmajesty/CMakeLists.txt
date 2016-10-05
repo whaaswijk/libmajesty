@@ -4,8 +4,9 @@ project(libmajesty)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wall -Wextra -std=c++11")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -DLIN64")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -DLIN64")
 
 # Add the ./src and ./include dirs to the include path 
 include_directories("$ENV{HIREDIS_HOME}")

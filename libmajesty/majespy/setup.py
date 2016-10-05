@@ -4,14 +4,17 @@ import platform
 import pkg_resources
 import os
 
-INCLUDE_DIRS = [pkg_resources.resource_filename('numpy', 'core/include'), '../include', os.environ['HIREDIS_HOME']]
+INCLUDE_DIRS = [pkg_resources.resource_filename('numpy', 'core/include'),
+                '../include',
+                os.environ['HIREDIS_HOME'],
+                os.environ['BOOST_ROOT']+'/include']
 LIBRARY_DIRS = []
 LIBRARIES = []
 EXTRA_OBJECTS = ["../build/src/liblibmajesty.a",
                "../build/src/minisat/libMiniSat.a",
                os.environ['HIREDIS_HOME']+'/libhiredis.a',
                os.environ['LIBABC_HOME']+'/libabc.a',
-               os.environ['BOOST_LIB_DIR']+'/libboost_filesystem.so']
+               os.environ['BOOST_ROOT']+'/lib/libboost_filesystem.so']
 EXTRA_COMPILE_ARGS = ["-std=c++11"]
 EXTRA_LINK_ARGS = ["-std=c++11"]
 

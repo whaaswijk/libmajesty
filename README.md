@@ -21,7 +21,7 @@ cd ..
 
 hg clone https://bitbucket.org/alanmi/abc
 cd abc
-make libabc.a
+ABC_USE_PIC=1 make libabc.a -j24
 cd ..
 
 echo 'export HIREDIS_HOME=~/hiredis' >> ~/.bashrc
