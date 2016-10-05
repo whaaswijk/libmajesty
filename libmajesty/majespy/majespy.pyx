@@ -288,25 +288,6 @@ cdef class PyXmg:
             move_list.append(m)
         return move_list
 
-    def get_possible_actions(self):
-        """
-        WORK IN PROGRESS
-        :return:
-        """
-        cdef:
-            node n
-            vector[node] data
-            vector[node_utils.nodeid] node_ids
-
-        data = self.c_xmg.nodes()
-        my_list = []
-        for i in range(data.size()):
-            n = data[i]
-            if ((n.in1 == n.in2) or (n.in1 == n.in3) or (n.in2 == n.in3)) and not node_utils.is_pi(n):
-                node_ids.push_back(n.ecrep)
-                my_list.append(n.ecrep)
-        return my_list
-
     def plot(self, highlight_action=None):
         """
 
