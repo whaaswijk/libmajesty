@@ -19,7 +19,7 @@ cdef extern from "xmg.h" namespace "majesty":
         const vector[bool]& outcompl() const
         bool equals(const xmg &) const
 
-        string to_verilog() const
+        string to_verilog() 
 
 
 cdef extern from "mig_interface.h" namespace "majesty":

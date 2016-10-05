@@ -1597,7 +1597,10 @@ namespace majesty {
 		create_dummy_outnames();
 	}
 
-	string xmg::to_verilog() const {
+	string xmg::to_verilog() {
+        if (_innames.size() == 0) {
+            create_dummy_names();
+        }
 		stringstream s;
 		write_verilog(*this, s);
 		return s.str();

@@ -354,7 +354,7 @@ namespace majesty {
 			void create_dummy_outnames();
 			void create_dummy_names();
 			
-			std::string to_verilog() const;
+			std::string to_verilog();
 	};
 
 	xmg strash(const xmg&);
