@@ -10,6 +10,7 @@ set(SOURCE_FILES xmg.cpp mlputil.c mlpmemory.c  mlpext.cpp strashmap.cpp logic_n
 	mig_functional_hashing_constants.cpp cut.cpp lut_cover.cpp lut_optimize.cpp maj_io.cpp function_store.cpp)
 
 find_package(Boost COMPONENTS filesystem system REQUIRED)
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 find_package(BISON)
 find_package(FLEX)
 BISON_TARGET(Parser parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
