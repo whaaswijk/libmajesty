@@ -79,6 +79,15 @@ cdef class PyMove:
                                       _move_type_str[self.c_move.type],
                                       self.get_involved_nodes())
 
+    def __getstate__(self):
+        return self.c_move.type, self.c_move.nodeid1, self.c_move.nodeid2, self.c_move.nodeid3
+
+    def __setstate__(self, data):
+        self.c_move.type = <MoveType>data[0]
+        self.c_move.nodeid1 = data[1]
+        self.c_move.nodeid2 = data[2]
+        self.c_move.nodeid3 = data[3]
+
 
 cdef class PyXmg:
     cdef xmg* c_xmg
@@ -377,6 +386,13 @@ cdef class PyXmg:
     def to_verilog(self):
         cdef string vstr = self.c_xmg.to_verilog()
         return vstr.decode('UTF-8')
+
+    def __getstate__(self):
+        return self.to_verilog()
+
+    def __setstate__(self, data):
+        cdef xmg* result = mig_interface.verilog_to_xmg_ptr(data.encode('UTF-8'))
+        self.set_pt_to(result)
 
 cdef class MigManager:
     cdef mig_manager* c_mig_manager  # hold a C++ instance which we're wrapping
