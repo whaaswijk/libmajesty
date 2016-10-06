@@ -15,9 +15,9 @@ from graphviz import Digraph
 
 
 # Temporary
-_nr_unary_move = mig_interface.get_nr_unary_moves()
-_nr_binary_move = mig_interface.get_nr_binary_moves()
-_nr_ternary_move = mig_interface.get_nr_ternary_moves()
+cdef unsigned _nr_unary_move = mig_interface.get_nr_unary_moves()
+cdef unsigned _nr_binary_move = mig_interface.get_nr_binary_moves()
+cdef unsigned _nr_ternary_move = mig_interface.get_nr_ternary_moves()
 
 _move_type_str = {mig_interface.MAJ3_PROP: 'Majority',
                   mig_interface.INVERTER_PROP: 'Inverted Propagation',
@@ -69,7 +69,12 @@ cdef class PyMove:
             return [self.c_move.nodeid1, self.c_move.nodeid2, self.c_move.nodeid3]
 
     def as_tuple(self):
-        return self.c_move.type, self.c_move.nodeid1, self.c_move.nodeid2, self.c_move.nodeid3
+        if self.c_move.type < _nr_unary_move:
+            return self.c_move.type, self.c_move.nodeid1
+        elif self.c_move.type < _nr_unary_move+_nr_binary_move:
+            return self.c_move.type, self.c_move.nodeid1, self.c_move.nodeid2
+        else:
+            return self.c_move.type, self.c_move.nodeid1, self.c_move.nodeid2, self.c_move.nodeid3
 
     def __getitem__(self, index):
         return self.as_tuple().__getitem__(index)
@@ -78,6 +83,31 @@ cdef class PyMove:
         return "Move({}:{},{})".format(self.c_move.type,
                                       _move_type_str[self.c_move.type],
                                       self.get_involved_nodes())
+
+    def __richcmp__(self, el, int op):
+        """
+        See http://cython.readthedocs.io/en/latest/src/userguide/special_methods.html#rich-comparisons for explanation
+        :param el: Element to be compared
+        :param op: Comparison operation type
+        :return: Comparison value
+        """
+        if op == 0:
+            return self.as_tuple() < el.as_tuple()
+        elif op == 1:
+            return self.as_tuple() <= el.as_tuple()
+        elif op == 2:
+            return self.as_tuple() == el.as_tuple()
+        elif op == 3:
+            return self.as_tuple() != el.as_tuple()
+        elif op == 4:
+            return self.as_tuple() > el.as_tuple()
+        elif op == 5:
+            return self.as_tuple() >= el.as_tuple()
+        else:
+            raise NotImplementedError('op code unknown ' + str(op))
+
+    def __hash__(self):
+        return hash(self.as_tuple())
 
     def __getstate__(self):
         return self.c_move.type, self.c_move.nodeid1, self.c_move.nodeid2, self.c_move.nodeid3
