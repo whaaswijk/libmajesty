@@ -89,7 +89,7 @@ namespace majesty {
 			if (!node.pi) {
 				break;
 			}
-			_innames.push_back("x_" + std::to_string(count));
+			_innames.push_back("x" + std::to_string(count));
 			++count;
 		}
 	}

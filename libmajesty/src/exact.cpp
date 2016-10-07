@@ -16,35 +16,29 @@ using namespace std;
 namespace majesty {
 
 
-	logic_ntk size_optimum_xmg(tt& func, unsigned gate_size) {
+	logic_ntk size_optimum_ntk(uint64_t func, const unsigned nr_vars, const unsigned gate_size) {
 		// TODO: Check if function is constant or variable. If so, return early.
 
 
 		// Make the function normal if it isn't already
-		bool invert = func.test(0);
+		bool invert = func & 1;
 		if (invert) {
 			func = ~func;
 		}
-
 
 		// Else start by checking for networks with increasing nrs. of gates.
 		optional<logic_ntk> ntk;
 		auto nr_gates = 1u;
 		while (true) {
 			Solver solver;
-			auto network_exists = exists_fanin_2_ntk(func, solver, nr_gates);
+			auto network_exists = exists_fanin_2_ntk(func, solver, nr_vars, nr_gates);
 			if (network_exists == l_True) {
-				ntk = extract_fanin_2_ntk(func, solver, nr_gates);
+				ntk = extract_fanin_2_ntk(func, solver, nr_vars, nr_gates, invert);
 				break;
 			}
 			++nr_gates;
 		}
 		
-		if (invert) { // Invert the output node back to the original specification
-			func = ~func;
-			(*ntk).get_node((*ntk).nnodes() - 1).function = func;
-		}
-
 		return std::move(*ntk);
 	}
 
@@ -85,12 +79,67 @@ namespace majesty {
 
 		solver.addClause(clause_vec);
 	}
+
+
+	lbool exists_fanin_2_ntk(const uint64_t func, Solver& solver, const unsigned nr_vars, const unsigned nr_gates) {
+		const auto tt_size = (1 << nr_vars) - 1;
+		
+		// Create variables that represent  the gates' truth tables
+		auto nr_gate_vars = nr_gates * tt_size;
+		for (auto i = 0u; i < nr_gate_vars; i++) {
+			// Create gate variable x_it
+			//cout << "adding gate tt var " << i << endl;
+			solver.newVar();
+		}
+
+		// The gate's function constraint variables
+		for (auto i = 0u; i < nr_gates * 3; i++) {
+			//cout << "adding function var " << i << endl;
+			solver.newVar();
+		}
+
+		// Add selection (fanin) constraints
+		static Minisat::vec<Lit> sel_vars_clause;
+		for (auto i = 0u; i < nr_gates; i++) {
+			sel_vars_clause.clear();
+			for (auto j = 0u; j < nr_vars + i; j++) {
+				for (auto k = j + 1; k < nr_vars + i; k++) {
+					auto sel_var = solver.newVar();
+					sel_vars_clause.push(mkLit(sel_var, false));
+					for (auto t = 0u; t < tt_size; t++) {
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 0, 1);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 0);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 1);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 0);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 1);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 0);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 1);
+					}
+				}
+			}
+			solver.addClause(sel_vars_clause);
+		}
+		
+		// The final gate's truth table should match the one from the specification
+		static Minisat::vec<Lit> spec_clause;
+		spec_clause.clear();
+		for (auto t = 0u; t < tt_size; t++) {
+			auto gate_var = gate_variable(tt_size, nr_gates - 1, t);
+			//cout << "setting x_" << nr_gates - 1 << "_" << t << "(" << gate_var << "): " << func.test(t + 1) << endl;
+			spec_clause.push(mkLit(gate_var, !((func >> (t + 1)) & 1)));
+		}
+
+		if (solver.solve(spec_clause)) {
+			return l_True;
+		} else {
+			return l_False;
+		}
+	}
 	
 	// Tries to finds a network with the specified size. Result is optional as this may
 	// not be possible.
-	lbool exists_fanin_2_ntk(const tt& func, Solver& solver, const unsigned nr_gates) {
-		const auto num_vars = tt_num_vars(func);
-		const auto tt_size = func.size() - 1;
+	lbool exists_fanin_2_ntk(const tt& func, Solver& solver, const unsigned nr_vars, const unsigned nr_gates) {
+		const auto tt_size = (1 << nr_vars) - 1;
 
 		// Create variables that represent  the gates' truth tables
 		auto nr_gate_vars = nr_gates * tt_size;
@@ -110,18 +159,18 @@ namespace majesty {
 		static Minisat::vec<Lit> sel_vars_clause;
 		for (auto i = 0u; i < nr_gates; i++) {
 			sel_vars_clause.clear();
-			for (auto j = 0u; j < num_vars + i; j++) {
-				for (auto k = j + 1; k < num_vars + i; k++) {
+			for (auto j = 0u; j < nr_vars + i; j++) {
+				for (auto k = j + 1; k < nr_vars + i; k++) {
 					auto sel_var = solver.newVar();
 					sel_vars_clause.push(mkLit(sel_var, false));
 					for (auto t = 0u; t < tt_size; t++) {
-						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 0, 1);
-						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 0);
-						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 1);
-						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 0);
-						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 1);
-						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 0);
-						add_selection_clause(solver, num_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 1);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 0, 1);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 0);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 0, 1, 1);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 0);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 0, 1);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 0);
+						add_selection_clause(solver, nr_vars, tt_size, sel_var, nr_gate_vars, t, i, j, k, 1, 1, 1);
 					}
 				}
 			}
@@ -144,17 +193,16 @@ namespace majesty {
 		}
 	}
 	
-    logic_ntk extract_fanin_2_ntk(const tt& func, const Solver& solver, unsigned nr_gates) {
-        return extract_fanin_2_ntk(func, solver, nr_gates, false);
+    logic_ntk extract_fanin_2_ntk(const tt& func, const Solver& solver, const unsigned nr_vars, const unsigned nr_gates) {
+        return extract_fanin_2_ntk(func, solver, nr_gates, nr_vars, false);
     }
 
-	logic_ntk extract_fanin_2_ntk(const tt& func, const Solver& solver, unsigned nr_gates, bool invert) {
+	logic_ntk extract_fanin_2_ntk(const tt& func, const Solver& solver, const unsigned nr_vars, const unsigned nr_gates, bool invert) {
 		logic_ntk ntk;
 
-		const auto num_vars = tt_num_vars(func);
 		const auto tt_size = func.size() - 1;
 		
-		for (auto i = 0u; i < num_vars; i++) {
+		for (auto i = 0u; i < nr_vars; i++) {
 			ntk.create_input();
 		}
 
@@ -164,8 +212,53 @@ namespace majesty {
 		static vector<nodeid> fanin(2);
 		static tt nodefunc(4);
 		for (auto i = 0u; i < nr_gates; i++) {
-			for (auto j = 0u; j < num_vars + i; j++) {
-				for (auto k = j + 1; k < num_vars + i; k++) {
+			for (auto j = 0u; j < nr_vars + i; j++) {
+				for (auto k = j + 1; k < nr_vars + i; k++) {
+					if (solver.modelValue(mkLit(var_offset++, false)) == l_True) {
+						// Gate i has gates j and k as fanin
+						fanin[0] = j;
+						fanin[1] = k;
+						nodefunc.set(0, 0);
+						nodefunc.set(1, lbool_to_int(solver.modelValue(function_variable(3, i, 0, nr_gate_vars))));
+						nodefunc.set(2, lbool_to_int(solver.modelValue(function_variable(3, i, 1, nr_gate_vars))));
+						nodefunc.set(3, lbool_to_int(solver.modelValue(function_variable(3, i, 2, nr_gate_vars))));
+						ntk.create_node(fanin, nodefunc);
+					}
+				}
+			}
+		}
+
+		// The last node is the output node
+        if (invert) {
+            auto& outnode = ntk.get_node(ntk.nnodes() - 1);
+            outnode.function = ~outnode.function;
+        }
+		ntk.create_output(ntk.nnodes() - 1);
+
+		return ntk;
+	}
+	
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, const Solver& solver, const unsigned nr_vars, const unsigned nr_gates) {
+		return extract_fanin_2_ntk(func, solver, nr_vars, nr_gates, false);
+	}
+
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, const Solver& solver, const unsigned nr_vars, const unsigned nr_gates, bool invert) {
+		logic_ntk ntk;
+
+		const auto tt_size = (1u << nr_vars) - 1;
+		
+		for (auto i = 0u; i < nr_vars; i++) {
+			ntk.create_input();
+		}
+
+		const auto nr_gate_vars = nr_gates * tt_size;
+		const auto nr_function_vars = nr_gates * 3;
+		auto var_offset = nr_gate_vars + nr_function_vars;
+		static vector<nodeid> fanin(2);
+		static tt nodefunc(4);
+		for (auto i = 0u; i < nr_gates; i++) {
+			for (auto j = 0u; j < nr_vars + i; j++) {
+				for (auto k = j + 1; k < nr_vars + i; k++) {
 					if (solver.modelValue(mkLit(var_offset++, false)) == l_True) {
 						// Gate i has gates j and k as fanin
 						fanin[0] = j;
