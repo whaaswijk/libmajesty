@@ -73,7 +73,7 @@ namespace majesty {
 		clause_vec.push(gate_lit);
 		
 		if (b | c) {
-			auto function_lit = mkLit(function_variable(3, i, ((b << 1) | c) - 1, nr_gate_vars), !a);
+			auto function_lit = mkLit(function_variable(3, i, ((c << 1) | b) - 1, nr_gate_vars), !a);
 			clause_vec.push(function_lit);
 		}
 
@@ -283,9 +283,13 @@ namespace majesty {
 		return ntk;
 	}
 
-	void print_fanin_2_solution(const tt& func, Solver& solver, const unsigned nr_gates) {
-		const auto num_vars = tt_num_vars(func);
-		const auto tt_size = func.size() - 1;
+	void print_fanin_2_solution(const uint64_t func, Solver& solver, const unsigned nr_vars, const unsigned nr_gates) {
+		tt functt((1u << nr_vars), func);
+		print_fanin_2_solution(functt, solver, nr_vars, nr_gates);
+	}
+
+	void print_fanin_2_solution(const tt& func, Solver& solver, const unsigned nr_vars, const unsigned nr_gates) {
+		const auto tt_size = (1u << nr_vars) - 1;
 
 		auto nr_gate_vars = nr_gates * tt_size;
 		for (auto i = 0u; i < nr_gates; i++) {
@@ -303,8 +307,8 @@ namespace majesty {
 
 		auto var_offset = nr_gate_vars + nr_function_vars;
 		for (auto i = 0u; i < nr_gates; i++) {
-			for (auto j = 0u; j < num_vars + i; j++) {
-				for (auto k = j + 1; k < num_vars + i; k++) {
+			for (auto j = 0u; j < nr_vars + i; j++) {
+				for (auto k = j + 1; k < nr_vars + i; k++) {
 					cout << "s_" << i << "_" << j << "_" << k << ": " << lbool_to_int(solver.modelValue(mkLit(var_offset++, false))) << endl;
 				}
 			}

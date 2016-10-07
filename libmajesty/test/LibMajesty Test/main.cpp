@@ -85,6 +85,12 @@ TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 		auto ninternal = ntk.ninternal();
 		REQUIRE(ninternal == 2);
 	}
+	{
+		Solver solver;
+		auto exists = exists_fanin_2_ntk(2, solver, 3, 2);
+		REQUIRE(exists == l_True);
+		print_fanin_2_solution(2, solver, 3, 2);
+	}
 
 }
 

@@ -56,5 +56,6 @@ namespace majesty {
 		}
 	}
 
-	void print_fanin_2_solution(const cirkit::tt& func, Minisat::Solver& solver, const unsigned nr_gates);
+	void print_fanin_2_solution(const cirkit::tt& func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
+	void print_fanin_2_solution(const uint64_t func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
 }
