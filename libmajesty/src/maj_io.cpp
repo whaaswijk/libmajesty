@@ -26,7 +26,14 @@ namespace majesty {
 		return new xmg(read_bench(filename));
 	}
 
+#ifndef _WIN32
 	extern "C" void parse_verilog(FILE *file, MIG **m);
+#else
+	// Function stub to allow compilation on Windows
+	void parse_verilog(FILE *file, MIG **m) {
+
+	}
+#endif
 
 	xmg read_verilog(const std::string& filename) {
 		MIG* mig;

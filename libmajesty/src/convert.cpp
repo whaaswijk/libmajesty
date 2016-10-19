@@ -602,7 +602,13 @@ namespace majesty {
 		return ntk;
 	}
 
+#ifndef _WIN32
     extern "C" void parse_verilog_string(const char *verilog_string, MIG **m);
+#else
+	void parse_verilog_string(const char *verilog_string, MIG **m) {
+
+	}
+#endif
 
 	xmg verilog_to_xmg(const std::string& verilog_string) {
 		MIG* mig;

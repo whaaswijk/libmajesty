@@ -38,6 +38,9 @@ namespace majesty {
 			unsigned nnodes() const { return _nodes.size(); }
 			// Counts the nr. of PO nodes
 			unsigned nout() const { return _outputs.size(); }
+			// Counts the nr. of non-PI nodes
+			unsigned ninternal() const { return _nodes.size() - nin(); }
+
 			const std::vector<ln_node>& nodes() const { return _nodes; }
 			ln_node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
