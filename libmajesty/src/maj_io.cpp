@@ -142,7 +142,7 @@ namespace majesty {
 	}
 
 	void write_verilog(const xmg& xmg, ostream& file) {
-		file << "// Written by the Majesty Logic Package";
+		file << "// Written by the Majesty Logic Package\n";
 
 		file << "module top (" << endl;
 		file << "\t\t\t";
@@ -309,7 +309,7 @@ namespace majesty {
 		ofstream f;
 		f.open(fname, ios::out | ios::trunc);
 
-		f << "# Written by the Majesty Logic Package";
+		f << "# Written by the Majesty Logic Package\n";
 
 		f << ".model mapping" << endl;
 		f << ".inputs ";
