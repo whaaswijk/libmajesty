@@ -142,9 +142,7 @@ namespace majesty {
 	}
 
 	void write_verilog(const xmg& xmg, ostream& file) {
-		time_t now;
-		time(&now);
-		file << "// Written by the Majesty Logic Package " << ctime(&now); 
+		file << "// Written by the Majesty Logic Package\n";
 
 		file << "module top (" << endl;
 		file << "\t\t\t";
@@ -309,11 +307,9 @@ namespace majesty {
 
 	void write_blif(const logic_ntk& ntk, const std::string& fname) {
 		ofstream f;
-		time_t now;
-		time(&now);
 		f.open(fname, ios::out | ios::trunc);
 
-		f << "# Written by Majesty " << ctime(&now);
+		f << "# Written by the Majesty Logic Package\n";
 
 		f << ".model mapping" << endl;
 		f << ".inputs ";
