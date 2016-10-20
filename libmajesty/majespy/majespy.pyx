@@ -434,6 +434,10 @@ cdef class PyXmg:
         else:
             raise NotImplementedError('op code unknown ' + str(op))
 
+    def __repr__(self):
+        return "PyXmg({} nodes, {})".format(self.get_total_nr_nodes(), hash(self))
+
+
 cdef class MigManager:
     cdef mig_manager* c_mig_manager  # hold a C++ instance which we're wrapping
     def __cinit__(self, seed=None):
@@ -460,7 +464,8 @@ cdef class MigManager:
             xmg* strashed_result
         result = self.c_mig_manager.random_mig_decomposition(ninputs)
         if strash:
-            strashed_result = mig_interface.remove_duplicates(result[0])
+            strashed_result = mig_interface.strash_xmg(result[0])
+            strashed_result = mig_interface.remove_duplicates(strashed_result[0])
             del result
             return PyXmg().set_pt_to(strashed_result)
         else:
