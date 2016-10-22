@@ -21,11 +21,12 @@ cdef unsigned _nr_ternary_move = mig_interface.get_nr_ternary_moves()
 
 _move_type_str = {mig_interface.MAJ3_PROP: 'Majority',
                   mig_interface.INVERTER_PROP: 'Inverted Propagation',
-                  mig_interface.MAJ3_XXY: 'Majority XXY',
-                  mig_interface.MAJ3_XYY: 'Majority XYY',
-                  mig_interface.SWAP_TERNARY : 'Swap3',
                   mig_interface.DIST_LEFT_RIGHT : 'Distributivity L->R',
-                  mig_interface.DIST_RIGHT_LEFT : 'Distributivity R->L' }
+                  mig_interface.SWAP_TERNARY : 'Swap3',
+                  mig_interface.DIST_RIGHT_LEFT : 'Distributivity R->L',
+                  mig_interface.MAJ3_XXY: 'Majority XXY',
+                  mig_interface.MAJ3_XYY: 'Majority XYY'
+                  }
 
 _move_type_color = {mig_interface.MAJ3_PROP : 'brown1',
                     mig_interface.INVERTER_PROP : 'cadetblue1',
@@ -405,6 +406,38 @@ cdef class PyXmg:
         cdef xmg* result = mig_interface.verilog_to_xmg_ptr(data.encode('UTF-8'))
         self.set_pt_to(result)
 
+    def __hash__(self):
+        return hash(str(self))
+
+    def __str__(self):
+        return self.to_verilog()
+
+    def __richcmp__(self, el, int op):
+        """
+        See http://cython.readthedocs.io/en/latest/src/userguide/special_methods.html#rich-comparisons for explanation
+        :param el: Element to be compared
+        :param op: Comparison operation type
+        :return: Comparison value
+        """
+        if op == 0:
+            return str(self) < str(el)
+        elif op == 1:
+            return str(self) <= str(el)
+        elif op == 2:
+            return str(self) == str(el)
+        elif op == 3:
+            return str(self) != str(el)
+        elif op == 4:
+            return str(self) > str(el)
+        elif op == 5:
+            return str(self) >= str(el)
+        else:
+            raise NotImplementedError('op code unknown ' + str(op))
+
+    def __repr__(self):
+        return "PyXmg({} nodes, {})".format(self.get_total_nr_nodes(), hash(self))
+
+
 cdef class MigManager:
     cdef mig_manager* c_mig_manager  # hold a C++ instance which we're wrapping
     def __cinit__(self, seed=None):
@@ -431,7 +464,8 @@ cdef class MigManager:
             xmg* strashed_result
         result = self.c_mig_manager.random_mig_decomposition(ninputs)
         if strash:
-            strashed_result = mig_interface.remove_duplicates(result[0])
+            strashed_result = mig_interface.strash_xmg(result[0])
+            strashed_result = mig_interface.remove_duplicates(strashed_result[0])
             del result
             return PyXmg().set_pt_to(strashed_result)
         else:
