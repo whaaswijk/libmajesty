@@ -1,7 +1,6 @@
 #ifndef CUT_H
 #define CUT_H
 
-#include <xmg.h>
 #include <logic_network.h>
 #include "truth_table_utils.hpp"
 #include <cstdint>
@@ -23,6 +22,9 @@ namespace majesty {
 
 	std::unique_ptr<cut_params> default_cut_params();
 	class cut;
+	class xmg;
+	struct node;
+	
 
 	class cut {
 		private:

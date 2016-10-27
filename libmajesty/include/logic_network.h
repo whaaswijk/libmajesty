@@ -74,6 +74,8 @@ namespace majesty {
 			void create_dummy_innames();
 			void create_dummy_outnames();
 			void create_dummy_names();
+
+			cirkit::tt simulate();
 	};
 
 

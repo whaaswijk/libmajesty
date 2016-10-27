@@ -1,5 +1,6 @@
 #include <logic_network.h>
 #include <string>
+#include <unordered_map>
 
 using namespace cirkit;
 
@@ -104,6 +105,38 @@ namespace majesty {
 	void logic_ntk::create_dummy_names() {
 		create_dummy_innames();
 		create_dummy_outnames();
+	}
+
+	static inline bool simulate_node(const ln_node& node, const std::unordered_map<nodeid, bool>& simval) {
+		uint64_t func_idx = 0u;
+		for (auto i = 0u; i < node.fanin.size(); i++) {
+			auto sval = simval.at(node.fanin[i]);
+			func_idx += (sval << i);
+		}
+		return node.function[func_idx];
+	}
+
+	tt logic_ntk::simulate() {
+		tt func;
+
+		const auto nsimvectors = (1u << nin());
+		const auto _nnodes = nnodes();
+		std::unordered_map<nodeid, bool> simval;
+		for (auto j = 0u; j < nsimvectors; j++) {
+			for (auto i = 0u; i < _nnodes; i++) {
+				const auto& node = _nodes[i];
+				if (node.pi) {
+					simval[i] = (j >> i) & 1;
+				} else {
+					simval[i] = simulate_node(node, simval);
+				}
+			}
+			auto outval = simval[_outputs[0]];
+			func.push_back(outval);
+		}
+		assert(func.size() == nsimvectors);
+
+		return func;
 	}
 
 }

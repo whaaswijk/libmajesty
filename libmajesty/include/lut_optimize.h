@@ -1,12 +1,14 @@
 #ifndef LUT_OPTIMIZE_H
 #define LUT_OPTIMIZE_H
 
-#include "xmg.h"
 #include "cut.h"
 #include "lut_cover.h"
 #include "function_store.h"
 
 namespace majesty {
+
+	class xmg;
+	struct xmg_params;
 
 	enum timeout_behavior { 
 		rebuild_cover = 0, 

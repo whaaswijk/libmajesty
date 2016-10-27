@@ -2,7 +2,8 @@
 #include <algorithm>
 #include <bitset>
 #include <math.h>
-#include "cut.h"
+#include <cut.h>
+#include <xmg.h>
 
 using namespace std;
 using namespace cirkit;

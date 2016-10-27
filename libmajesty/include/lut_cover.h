@@ -1,7 +1,6 @@
 #ifndef LUT_COVER_H
 #define LUT_COVER_H
 
-#include <xmg.h>
 #include <logic_network.h>
 #include <cut.h>
 #include <map>
@@ -12,6 +11,8 @@ namespace majesty {
 	using bestmap = std::vector<cut*>;
 	using nintmap = std::vector<unsigned int>;
 	using cover = std::vector<unsigned int>;
+
+	class xmg;
 
 	cover build_cover(const xmg&, bestmap&);
 

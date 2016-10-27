@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xmg.h>
 #include <logic_network.h>
 #include <vector>
 #include <truth_table_utils.hpp>
@@ -11,6 +10,8 @@
 
 namespace majesty {
 
+	class xmg;
+	using nodemap = std::unordered_map<nodeid, std::pair<nodeid, bool>>;
 
 	xmg xmg_from_string(unsigned, const std::string&);
 	xmg xmg_from_string(unsigned, const std::string&, const cirkit::tt&,  const std::vector<unsigned>&);

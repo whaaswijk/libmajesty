@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <convert.h>
+#include <xmg.h>
 
 using namespace std;
 using namespace cirkit;

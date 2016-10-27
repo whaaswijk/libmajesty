@@ -8,17 +8,49 @@
 
 namespace majesty {
 
-	logic_ntk size_optimum_ntk(cirkit::tt& func, const unsigned nr_vars, const unsigned gate_size);
-	logic_ntk size_optimum_ntk(uint64_t func, const unsigned nr_vars, const unsigned gate_size);
+	struct synth_options {
+		bool verbose;
+		bool use_cegar;
+		bool colex_order;
+		bool no_triv_ops;
+		bool use_all_gates;
+		bool exact_nr_svars;
+		bool no_reapplication;
+	};
 
-	Minisat::lbool exists_fanin_2_ntk(const cirkit::tt& func, Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates);
-	Minisat::lbool exists_fanin_2_ntk(const uint64_t func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
+	logic_ntk size_optimum_ntk(cirkit::tt& func, synth_options*, const unsigned nr_vars, const unsigned gate_size);
+	logic_ntk size_optimum_ntk(uint64_t func, synth_options*, const unsigned nr_vars, const unsigned gate_size);
+	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_options*, const unsigned nr_vars, const unsigned gate_size);
+
+	Minisat::lbool exists_fanin_2_ntk(const cirkit::tt& func, Minisat::Solver&, synth_options*, const unsigned nr_vars, const unsigned nr_gates);
+	Minisat::lbool exists_fanin_2_ntk(const uint64_t func, Minisat::Solver& solver, synth_options*, const unsigned nr_vars, const unsigned nr_gates);
+	Minisat::lbool exists_fanin_2_ntk_ns(const uint64_t func, Minisat::Solver& solver, synth_options*, const unsigned nr_vars, const unsigned nr_gates);
 
 	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates);
 	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates, bool invert);
 	logic_ntk extract_fanin_2_ntk(const uint64_t func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates);
 	logic_ntk extract_fanin_2_ntk(const uint64_t func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates, bool invert);
 
+	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates);
+	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates, bool invert);
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates);
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates, bool invert);
+	
+	void print_fanin_2_solution(const cirkit::tt& func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
+	void print_fanin_2_solution(const uint64_t func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
+	void print_fanin_2_solution_ns(const cirkit::tt& func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
+	void print_fanin_2_solution_ns(const uint64_t func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
+
+	static inline int lbool_to_int(Minisat::lbool b) {
+		if (b == l_False) {
+			return 0;
+		} else if (b == l_True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+	
 	boost::optional<logic_ntk> find_fanin_2_ntk(const cirkit::tt& function, const unsigned nr_gates);
 	boost::optional<logic_ntk> find_fanin_3_ntk(const cirkit::tt& function, const unsigned nr_gates);
 	
@@ -31,11 +63,11 @@ namespace majesty {
 		return nr_ordered_tuples(tuple_size, bound - 1) + nr_ordered_tuples(tuple_size - 1, bound - 1);
 	}
 
-	static inline Minisat::Var gate_variable(int tt_size, int gate_i, int t) {
+	static inline int gate_variable(int tt_size, int gate_i, int t) {
 		return tt_size * gate_i + t;
 	}
 
-	static inline Minisat::Var function_variable(int gate_func_size, int f, int idx, int nr_gate_vars) {
+	static inline int function_variable(int gate_func_size, int f, int idx, int nr_gate_vars) {
 		return f * gate_func_size + idx + nr_gate_vars;
 	}
 	
@@ -45,17 +77,4 @@ namespace majesty {
 		const auto proj_idx = tt_idx % (2 * num_zeros);
 		return proj_idx >= num_zeros;
 	}
-
-	static inline int lbool_to_int(Minisat::lbool b) {
-		if (b == l_False) {
-			return 0;
-		} else if (b == l_True) {
-			return 1;
-		} else {
-			return 2;
-		}
-	}
-
-	void print_fanin_2_solution(const cirkit::tt& func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
-	void print_fanin_2_solution(const uint64_t func, Minisat::Solver& solver, const unsigned nr_vars, const unsigned nr_gates);
 }
