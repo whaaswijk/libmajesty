@@ -3,7 +3,6 @@
 #include <logic_network.h>
 #include <truth_table_utils.hpp>
 #include <boost/optional.hpp>
-#include <unordered_map>
 #include <tuple>
 //#include "minisat/Solver.h"
 //#include "minisat/SolverTypes.h"
@@ -29,19 +28,20 @@ namespace majesty {
 		unsigned nr_gates;
 		unsigned gate_size;
 		unsigned selection_var_offset;
+		unsigned nr_selection_vars;
 		unsigned gate_var_offset;
+		unsigned nr_gate_vars;
 		unsigned simulation_var_offset;
+		unsigned nr_simulation_vars;
 	};
 	
-	using svar_map = std::unordered_map<std::tuple<unsigned, unsigned, unsigned>, int>;
-
 	logic_ntk size_optimum_ntk(cirkit::tt& func, synth_spec*);
 	logic_ntk size_optimum_ntk(uint64_t func, synth_spec*);
 	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec*);
 
-	lbool exists_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*, const svar_map&);
-	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*, const svar_map&);
-	lbool exists_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*, const svar_map&);
+	lbool exists_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*);
+	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*);
+	lbool exists_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*);
 
 	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*);
 	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*, bool invert);
@@ -88,6 +88,20 @@ namespace majesty {
 		}
 	}
 	*/
+
+	static inline int selection_variable(const synth_spec* spec, unsigned gate_i, unsigned fanin_j, unsigned fanin_k) {
+		auto ctr = 0u;
+		for (auto i = 0u; i < spec->nr_gates; i++) {
+			for (auto j = 0u; j < spec->nr_vars + i; j++) {
+				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
+					if (i == gate_i && j == fanin_j && k == fanin_k) {
+						return spec->selection_var_offset + ctr;
+					}
+					++ctr;
+				}
+			}
+		}
+	}
 	
 	static inline int simulation_variable(int gate_i, int t, const synth_spec* spec) {
 		return spec->tt_size * gate_i + t + spec->simulation_var_offset;

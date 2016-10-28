@@ -74,30 +74,32 @@ namespace majesty {
 
 	//static Minisat::vec<Lit> spec_clause;
 
-	static inline svar_map create_variables(sat_solver* solver, synth_spec* spec) {
+	static inline void create_variables(sat_solver* solver, synth_spec* spec) {
 		auto var_ctr = 0u;
 
 		spec->selection_var_offset = var_ctr;
-		unordered_map<tuple<unsigned, unsigned, unsigned>, int> svar_map;
+		unsigned nr_selection_vars = 0u;
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-					svar_map[make_tuple(i, j, k)] = spec->selection_var_offset + var_ctr++;
+					++var_ctr;
+					++nr_selection_vars;
 				}
 			}
 		}
+		spec->nr_selection_vars = nr_selection_vars;
 
 		spec->gate_var_offset = var_ctr;
 		const auto nr_gate_vars = spec->nr_gates * 3;
+		spec->nr_gate_vars = nr_gate_vars;
 		var_ctr += nr_gate_vars;
 
 		spec->simulation_var_offset = var_ctr;
 		const auto nr_simulation_vars = spec->nr_gates * spec->tt_size;
+		spec->nr_simulation_vars = nr_simulation_vars;
 		var_ctr += nr_simulation_vars;
 		
 		sat_solver_setnvars(solver, var_ctr);
-
-		return svar_map;
 	}
 
 	logic_ntk size_optimum_ntk(uint64_t func, synth_spec* spec) {
@@ -117,8 +119,8 @@ namespace majesty {
 		auto solver = sat_solver_new();
 		while (true) {
 			sat_solver_restart(solver);
-			auto svar_map = create_variables(solver, spec);
-			auto network_exists = exists_fanin_2_ntk(func, solver, spec, svar_map);
+			create_variables(solver, spec);
+			auto network_exists = exists_fanin_2_ntk(func, solver, spec);
 			if (network_exists == l_True) {
 				ntk = extract_fanin_2_ntk(func, solver, spec, invert);
 				if (spec->verbose) {
@@ -166,7 +168,6 @@ namespace majesty {
 	*/
 
 	static inline void add_selection_clause(sat_solver* solver, synth_spec* spec, 
-		const unordered_map<tuple<unsigned,unsigned,unsigned>,int>& svar_map,
 		int t, int i, int j, int k, bool a, bool b, bool c) {
 		static lit plits[5];
 		unsigned ctr = 0u;
@@ -189,7 +190,7 @@ namespace majesty {
 			plits[ctr++] = Abc_Var2Lit(simulation_variable(k - spec->nr_vars, t, spec), c);
 		}
 
-		auto sel_var = svar_map.at(make_tuple(i, j, k));
+		auto sel_var = selection_variable(spec, i, j, k);
 		auto sel_lit = Abc_Var2Lit(sel_var, true);
 		auto gate_lit = Abc_Var2Lit(simulation_variable(i, t, spec), a);
 		plits[ctr++] = sel_lit;
@@ -201,8 +202,7 @@ namespace majesty {
 		sat_solver_addclause(solver, plits, plits + ctr);
 	}
 
-	static inline lbool cegar_solve(const uint64_t func, sat_solver* solver, synth_spec* spec, const svar_map& svar_map, 
-		Vec_Int_t* vlits) {
+	static inline lbool cegar_solve(const uint64_t func, sat_solver* solver, synth_spec* spec, Vec_Int_t* vlits) {
 		Vec_IntClear(vlits);
 
 		while (true) {
@@ -227,14 +227,14 @@ namespace majesty {
 					for (auto i = 0u; i < spec->nr_gates; i++) {
 						for (auto j = 0u; j < spec->nr_vars + i; j++) {
 							for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-								auto sel_var = svar_map.at(make_tuple(i, j, k));
-								add_selection_clause(solver, spec, svar_map, t, i, j, k, 0, 0, 1);
-								add_selection_clause(solver, spec, svar_map, t, i, j, k, 0, 1, 0);
-								add_selection_clause(solver, spec, svar_map, t, i, j, k, 0, 1, 1);
-								add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 0, 0);
-								add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 0, 1);
-								add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 1, 0);
-								add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 1, 1);
+								auto sel_var = selection_variable(spec, i, j, k);
+								add_selection_clause(solver, spec, t, i, j, k, 0, 0, 1);
+								add_selection_clause(solver, spec, t, i, j, k, 0, 1, 0);
+								add_selection_clause(solver, spec, t, i, j, k, 0, 1, 1);
+								add_selection_clause(solver, spec, t, i, j, k, 1, 0, 0);
+								add_selection_clause(solver, spec, t, i, j, k, 1, 0, 1);
+								add_selection_clause(solver, spec, t, i, j, k, 1, 1, 0);
+								add_selection_clause(solver, spec, t, i, j, k, 1, 1, 1);
 							}
 						}
 					}
@@ -249,7 +249,7 @@ namespace majesty {
 		return l_True;
 	}
 
-	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver* solver, synth_spec* spec, const svar_map& svar_map) {
+	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver* solver, synth_spec* spec) {
 		static lit plits[3];
 
 		// The gate's function constraint variables
@@ -277,22 +277,22 @@ namespace majesty {
 		}
 
 		// Add selection (fanin) constraints
-		Vec_Int_t * vlits = Vec_IntAlloc(svar_map.size());
+		Vec_Int_t * vlits = Vec_IntAlloc(spec->nr_selection_vars);
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			Vec_IntClear(vlits);
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-					auto sel_var = svar_map.at(make_tuple(i, j, k));
+					auto sel_var = selection_variable(spec, i, j, k);
 					Vec_IntPush(vlits, Abc_Var2Lit(sel_var, false));
 					if (!spec->use_cegar) {
 						for (auto t = 0u; t < spec->tt_size; t++) {
-							add_selection_clause(solver, spec, svar_map, t, i, j, k, 0, 0, 1);
-							add_selection_clause(solver, spec, svar_map, t, i, j, k, 0, 1, 0);
-							add_selection_clause(solver, spec, svar_map, t, i, j, k, 0, 1, 1);
-							add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 0, 0);
-							add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 0, 1);
-							add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 1, 0);
-							add_selection_clause(solver, spec, svar_map, t, i, j, k, 1, 1, 1);
+							add_selection_clause(solver, spec, t, i, j, k, 0, 0, 1);
+							add_selection_clause(solver, spec, t, i, j, k, 0, 1, 0);
+							add_selection_clause(solver, spec, t, i, j, k, 0, 1, 1);
+							add_selection_clause(solver, spec, t, i, j, k, 1, 0, 0);
+							add_selection_clause(solver, spec, t, i, j, k, 1, 0, 1);
+							add_selection_clause(solver, spec, t, i, j, k, 1, 1, 0);
+							add_selection_clause(solver, spec, t, i, j, k, 1, 1, 1);
 						}
 					}
 				}
@@ -321,8 +321,8 @@ namespace majesty {
 						for (auto jp = 0u; jp < spec->nr_vars + i; jp++) {
 							for (auto kp = jp + 1; kp < spec->nr_vars + i; kp++) {
 								if (k == kp && j > jp || k > kp) {
-									auto sivar = svar_map.at(make_tuple(i, j, k));
-									auto sipvar = svar_map.at(make_tuple(i+1, jp, kp));
+									auto sivar = selection_variable(spec, i, j, k);
+									auto sipvar = selection_variable(spec, i+1, jp, kp);
 									plits[0] = Abc_Var2Lit(sivar, true);
 									plits[1] = Abc_Var2Lit(sipvar, true);
 									sat_solver_addclause(solver, plits, plits + 2);
@@ -340,11 +340,11 @@ namespace majesty {
 				Vec_IntClear(vlits);
 				for (auto ip = i + 1; ip < spec->nr_gates; ip++) {
 					for (auto j = 0u; j < i + spec->nr_vars; j++) {
-						auto sel_var = svar_map.at(make_tuple(ip, j, i + spec->nr_vars));
+						auto sel_var = selection_variable(spec, ip, j, i + spec->nr_vars);
 						Vec_IntPush(vlits, Abc_Var2Lit(sel_var, false));
 					}
 					for (auto j = i + spec->nr_vars + 1; j < ip + spec->nr_vars; j++) {
-						auto sel_var = svar_map.at(make_tuple(ip, i + spec->nr_vars, j));
+						auto sel_var = selection_variable(spec, ip, i + spec->nr_vars, j);
 						Vec_IntPush(vlits, Abc_Var2Lit(sel_var, false));
 					}
 				}
@@ -358,12 +358,12 @@ namespace majesty {
 				for (auto ip = i + 1; ip < spec->nr_gates; ip++) {
 					for (auto j = 0u; j < spec->nr_vars + i; j++) {
 						for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-							auto sivar = svar_map.at(make_tuple(i, j, k));
+							auto sivar = selection_variable(spec, i, j, k);
 							plits[0] = Abc_Var2Lit(sivar, true);
-							auto sipvar = svar_map.at(make_tuple(i + 1, j, i + spec->nr_vars));
+							auto sipvar = selection_variable(spec, i + 1, j, i + spec->nr_vars);
 							plits[1] = Abc_Var2Lit(sipvar, true);
 							sat_solver_addclause(solver, plits, plits + 2);
-							sipvar = svar_map.at(make_tuple(i + 1, k, i + spec->nr_vars));
+							sipvar = selection_variable(spec, i + 1, k, i + spec->nr_vars);
 							plits[1] = Abc_Var2Lit(sipvar, true);
 							sat_solver_addclause(solver, plits, plits + 2);
 						}
@@ -374,7 +374,7 @@ namespace majesty {
 
 
 		if (spec->use_cegar) {
-			auto res = cegar_solve(func, solver, spec, svar_map, vlits);
+			auto res = cegar_solve(func, solver, spec, vlits);
 			Vec_IntFree(vlits);
 			return res;
 		} else {
