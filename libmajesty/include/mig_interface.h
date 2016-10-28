@@ -1,7 +1,7 @@
 #pragma once
 
 #include <random>
-#include "xmg.h"
+#include <xmg.h>
 
 namespace majesty {
 

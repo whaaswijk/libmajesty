@@ -9,6 +9,8 @@
 #include "mlpext.h"
 #include <sstream>
 #include <maj_io.h>
+#include <minisat/Solver.h>
+#include <minisat/SolverTypes.h>
 
 using namespace std;
 using boost::optional;

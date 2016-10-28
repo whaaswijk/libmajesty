@@ -3,12 +3,20 @@
 #include <logic_network.h>
 #include <truth_table_utils.hpp>
 #include <boost/optional.hpp>
-#include "minisat/Solver.h"
-#include "minisat/SolverTypes.h"
-
+#include <unordered_map>
+#include <tuple>
+//#include "minisat/Solver.h"
+//#include "minisat/SolverTypes.h"
+extern "C" {
+#include <base/abc/abc.h>
+#include <misc/vec/vecInt.h>
+#include <misc/vec/vecPtr.h>
+#include <sat/bsat/satSolver.h>
+}
+	
 namespace majesty {
 
-	struct synth_options {
+	struct synth_spec {
 		bool verbose;
 		bool use_cegar;
 		bool colex_order;
@@ -16,15 +24,43 @@ namespace majesty {
 		bool use_all_gates;
 		bool exact_nr_svars;
 		bool no_reapplication;
+		unsigned nr_vars;
+		unsigned nr_gates;
+		unsigned gate_size;
+		unsigned selection_var_offset;
+		unsigned gate_var_offset;
+		unsigned simulation_var_offset;
 	};
+	
+	using svar_map = std::unordered_map<std::tuple<unsigned, unsigned, unsigned>, int>;
 
-	logic_ntk size_optimum_ntk(cirkit::tt& func, synth_options*, const unsigned nr_vars, const unsigned gate_size);
-	logic_ntk size_optimum_ntk(uint64_t func, synth_options*, const unsigned nr_vars, const unsigned gate_size);
-	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_options*, const unsigned nr_vars, const unsigned gate_size);
+	logic_ntk size_optimum_ntk(cirkit::tt& func, synth_spec*);
+	logic_ntk size_optimum_ntk(uint64_t func, synth_spec*);
+	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec*);
 
-	Minisat::lbool exists_fanin_2_ntk(const cirkit::tt& func, Minisat::Solver&, synth_options*, const unsigned nr_vars, const unsigned nr_gates);
-	Minisat::lbool exists_fanin_2_ntk(const uint64_t func, Minisat::Solver& solver, synth_options*, const unsigned nr_vars, const unsigned nr_gates);
-	Minisat::lbool exists_fanin_2_ntk_ns(const uint64_t func, Minisat::Solver& solver, synth_options*, const unsigned nr_vars, const unsigned nr_gates);
+	lbool exists_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*, const svar_map&);
+	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*, const svar_map&);
+	lbool exists_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*, const svar_map&);
+
+	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*);
+	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*, bool invert);
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*);
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*, bool invert);
+	
+	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, sat_solver*, synth_spec*);
+	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, sat_solver*, synth_spec*, bool invert);
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*);
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*, bool invert);
+	
+	void print_fanin_2_solution(const cirkit::tt& func, sat_solver*, synth_spec*);
+	void print_fanin_2_solution(const uint64_t func, sat_solver*, synth_spec*);
+	void print_fanin_2_solution_ns(const cirkit::tt& func, sat_solver*, synth_spec*);
+	void print_fanin_2_solution_ns(const uint64_t func, sat_solver*, synth_spec*);
+
+	/*
+	Minisat::lbool exists_fanin_2_ntk(const cirkit::tt& func, Minisat::Solver&, synth_spec*, const unsigned nr_vars, const unsigned nr_gates);
+	Minisat::lbool exists_fanin_2_ntk(const uint64_t func, Minisat::Solver& solver, synth_spec*, const unsigned nr_vars, const unsigned nr_gates);
+	Minisat::lbool exists_fanin_2_ntk_ns(const uint64_t func, Minisat::Solver& solver, synth_spec*, const unsigned nr_vars, const unsigned nr_gates);
 
 	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates);
 	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, const Minisat::Solver&, const unsigned nr_vars, const unsigned nr_gates, bool invert);
@@ -50,6 +86,7 @@ namespace majesty {
 			return 2;
 		}
 	}
+	*/
 	
 	boost::optional<logic_ntk> find_fanin_2_ntk(const cirkit::tt& function, const unsigned nr_gates);
 	boost::optional<logic_ntk> find_fanin_3_ntk(const cirkit::tt& function, const unsigned nr_gates);
@@ -67,8 +104,8 @@ namespace majesty {
 		return tt_size * gate_i + t;
 	}
 
-	static inline int function_variable(int gate_func_size, int f, int idx, int nr_gate_vars) {
-		return f * gate_func_size + idx + nr_gate_vars;
+	static inline int function_variable(int gate_func_size, int gate, int idx, int nr_gate_vars) {
+		return gate * gate_func_size + idx + nr_gate_vars;
 	}
 	
 	// Tests a primary input's truth table (nonzero) at the specified index
