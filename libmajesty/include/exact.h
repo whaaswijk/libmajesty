@@ -25,6 +25,7 @@ namespace majesty {
 		bool exact_nr_svars;
 		bool no_reapplication;
 		unsigned nr_vars;
+		unsigned tt_size;
 		unsigned nr_gates;
 		unsigned gate_size;
 		unsigned selection_var_offset;
@@ -88,24 +89,12 @@ namespace majesty {
 	}
 	*/
 	
-	boost::optional<logic_ntk> find_fanin_2_ntk(const cirkit::tt& function, const unsigned nr_gates);
-	boost::optional<logic_ntk> find_fanin_3_ntk(const cirkit::tt& function, const unsigned nr_gates);
-	
-	inline unsigned nr_ordered_tuples(unsigned tuple_size, unsigned bound) {
-		if (bound <= tuple_size) {
-			return 0;
-		} else if (tuple_size == bound + 1) {
-			return 1;
-		}
-		return nr_ordered_tuples(tuple_size, bound - 1) + nr_ordered_tuples(tuple_size - 1, bound - 1);
+	static inline int simulation_variable(int gate_i, int t, const synth_spec* spec) {
+		return spec->tt_size * gate_i + t + spec->simulation_var_offset;
 	}
 
-	static inline int gate_variable(int tt_size, int gate_i, int t) {
-		return tt_size * gate_i + t;
-	}
-
-	static inline int function_variable(int gate_func_size, int gate, int idx, int nr_gate_vars) {
-		return gate * gate_func_size + idx + nr_gate_vars;
+	static inline int gate_variable(int gate, int idx, const synth_spec* spec) {
+		return gate * spec->gate_size + idx + spec->gate_var_offset;
 	}
 	
 	// Tests a primary input's truth table (nonzero) at the specified index
