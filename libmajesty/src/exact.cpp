@@ -75,22 +75,27 @@ namespace majesty {
 	//static Minisat::vec<Lit> spec_clause;
 
 	static inline svar_map create_variables(sat_solver* solver, synth_spec* spec) {
-		spec->simulation_var_offset = 0u;
-		const auto nr_simulation_vars = spec->nr_gates * spec->tt_size;
-		spec->gate_var_offset = nr_simulation_vars;
-		const auto nr_gate_vars = spec->nr_gates * 3;
+		auto var_ctr = 0u;
 
+		spec->selection_var_offset = var_ctr;
 		unordered_map<tuple<unsigned, unsigned, unsigned>, int> svar_map;
-		spec->selection_var_offset = nr_simulation_vars + nr_gate_vars;
-		auto nr_selection_vars = 0u;
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-					svar_map[make_tuple(i, j, k)] = spec->selection_var_offset + nr_selection_vars++;
+					svar_map[make_tuple(i, j, k)] = spec->selection_var_offset + var_ctr++;
 				}
 			}
 		}
-		sat_solver_setnvars(solver, nr_gate_vars + nr_simulation_vars + nr_selection_vars);
+
+		spec->gate_var_offset = var_ctr;
+		const auto nr_gate_vars = spec->nr_gates * 3;
+		var_ctr += nr_gate_vars;
+
+		spec->simulation_var_offset = var_ctr;
+		const auto nr_simulation_vars = spec->nr_gates * spec->tt_size;
+		var_ctr += nr_simulation_vars;
+		
+		sat_solver_setnvars(solver, var_ctr);
 
 		return svar_map;
 	}
