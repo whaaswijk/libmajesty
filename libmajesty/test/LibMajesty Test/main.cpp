@@ -49,7 +49,6 @@ TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 	auto invorfuncstr = cirkit::to_string(invorfunc);
 
 	synth_spec spec;
-	spec.gate_size = 2;
 	spec.verbose = true;
 	spec.use_cegar = true;
 		
@@ -91,28 +90,22 @@ TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 
 }
 
-/*
 TEST_CASE("New Selection Variable Test", "[exact synthesis]") {
+	synth_spec spec;
+	spec.use_cegar = false;
+	spec.no_reapplication = true;
+	spec.colex_order = true;
+	spec.nr_vars = 3;
 	for (auto f = 0u; f < 256; f++) {
-		auto nr_gates = 1u;
-		while (true) {
-			Solver solver_old, solver_new;
-			synth_spec spec;
-			spec.colex_order = false;
-			spec.no_triv_ops = false;
-			spec.use_all_gates = false;
-			spec.verbose = false;
-			auto old_exists = exists_fanin_2_ntk(f, solver_old, &spec, 3, nr_gates);
-			auto new_exists = exists_fanin_2_ntk_ns(f, solver_new, &spec, 3, nr_gates);
-			REQUIRE(old_exists == new_exists);
-			if (old_exists == l_True) {
-				break;
-			}
-			++nr_gates;
+		spec.verbose = false;
+		auto old_size = optimum_ntk_size(f, &spec);
+		auto new_size = optimum_ntk_size_ns(f, &spec);
+		if (old_size != new_size) {
+			std::cout << "hur" << std::endl;
 		}
+		REQUIRE(old_size == new_size);
 	}
 }
-*/
 
 #ifndef _WIN32
 #include <maj_io.h>

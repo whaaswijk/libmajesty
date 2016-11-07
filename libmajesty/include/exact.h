@@ -26,7 +26,6 @@ namespace majesty {
 		unsigned nr_vars;
 		unsigned tt_size;
 		unsigned nr_gates;
-		unsigned gate_size;
 		unsigned selection_var_offset;
 		unsigned nr_selection_vars;
 		unsigned gate_var_offset;
@@ -38,6 +37,9 @@ namespace majesty {
 	logic_ntk size_optimum_ntk(cirkit::tt& func, synth_spec*);
 	logic_ntk size_optimum_ntk(uint64_t func, synth_spec*);
 	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec*);
+
+	unsigned optimum_ntk_size(uint64_t func, synth_spec*);
+	unsigned optimum_ntk_size_ns(uint64_t func, synth_spec*);
 
 	lbool exists_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*);
 	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*);
@@ -102,13 +104,17 @@ namespace majesty {
 			}
 		}
 	}
+
+	static inline int selection_variable_ns(const synth_spec* spec, unsigned gate_i, unsigned fanin_j) {
+		return spec->selection_var_offset + fanin_j + gate_i * spec->nr_vars + (((gate_i - 1) * gate_i) / 2);
+	}
 	
 	static inline int simulation_variable(int gate_i, int t, const synth_spec* spec) {
 		return spec->tt_size * gate_i + t + spec->simulation_var_offset;
 	}
 
 	static inline int gate_variable(int gate, int idx, const synth_spec* spec) {
-		return gate * spec->gate_size + idx + spec->gate_var_offset;
+		return gate * 3 + idx + spec->gate_var_offset;
 	}
 	
 	// Tests a primary input's truth table (nonzero) at the specified index
