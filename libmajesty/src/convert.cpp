@@ -489,25 +489,30 @@ namespace majesty {
 
 		const auto& nodes = xmg.nodes();
 		for (auto i = 1u; i < nodes.size(); i++) {
-			const auto& node = nodes[i];
-			if (is_pi(node)) {
-				nodemap[i] = ntk.create_input();
-				continue;
-			}
             vector<nodeid> fanin;
-            if (is_xor(node)) {
-                fanin.push_back(nodemap[node.in1]);
-                fanin.push_back(nodemap[node.in2]);
-            } else if (is_and(node) || is_or(node)) {
-                fanin.push_back(nodemap[node.in2]);
-                fanin.push_back(nodemap[node.in3]);
+            if (i == 0u) {
+                auto const_zero = ntk.create_node(fanin, tt(1, 0));
+                nodemap[0] = const_zero;
             } else {
-                fanin.push_back(nodemap[node.in1]);
-                fanin.push_back(nodemap[node.in2]);
-                fanin.push_back(nodemap[node.in3]);
+                const auto& node = nodes[i];
+                if (is_pi(node)) {
+                    nodemap[i] = ntk.create_input();
+                    continue;
+                }
+                if (is_xor(node)) {
+                    fanin.push_back(nodemap[node.in1]);
+                    fanin.push_back(nodemap[node.in2]);
+                } else if (is_and(node) || is_or(node)) {
+                    fanin.push_back(nodemap[node.in2]);
+                    fanin.push_back(nodemap[node.in3]);
+                } else {
+                    fanin.push_back(nodemap[node.in1]);
+                    fanin.push_back(nodemap[node.in2]);
+                    fanin.push_back(nodemap[node.in3]);
+                }
+                const auto node_tt = tt_from_node(node);
+                nodemap[i] = ntk.create_node(fanin, node_tt);
             }
-			const auto node_tt = tt_from_node(node);
-			nodemap[i] = ntk.create_node(fanin, node_tt);
 		}
 
 		const auto& outputs = xmg.outputs();

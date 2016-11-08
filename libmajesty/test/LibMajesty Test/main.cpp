@@ -117,6 +117,25 @@ TEST_CASE("New Selection Variable Test", "[exact synthesis]") {
 
 #ifndef _WIN32
 #include <maj_io.h>
+#include <convert.h>
+#include <lut_cover.h>
+#include <lut_optimize.h>
+
+TEST_CASE("XMG to Logic Network Test", "[conversion]") {
+    auto xmg = read_verilog("../assets/adder.v");
+    auto ntk = xmg_to_logic_ntk(xmg);
+    write_blif(ntk, "adder_converted.blif");
+}
+
+TEST_CASE("Exact Synthesis Optimization Test", "[optimization]") {
+    auto xmg = read_verilog("../assets/adder.v");
+    auto ntk = xmg_to_logic_ntk(xmg);
+
+    auto cut_params = default_cut_params();
+    cut_params->klut_size = 4;
+    auto lut_ntk = lut_map_area(xmg, cut_params.get());
+    write_blif(lut_ntk, "adder.blif");
+}
 
 TEST_CASE("XMG String Serialization", "[serialization]") {
     // Get a MIG and use it to test on
