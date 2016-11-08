@@ -4,6 +4,7 @@
 #include "cut.h"
 #include "lut_cover.h"
 #include "function_store.h"
+#include <logic_network.h>
 
 namespace majesty {
 
@@ -24,6 +25,11 @@ namespace majesty {
 	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, unsigned, unsigned, timeout_behavior);
 	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, unsigned, unsigned);
 	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, const xmg_params*, unsigned, unsigned, timeout_behavior);
+
+
+	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned, unsigned, timeout_behavior);
+	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned, unsigned);
+	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned, unsigned, timeout_behavior);
 
 	xmg xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned);

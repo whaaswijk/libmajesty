@@ -18,11 +18,12 @@ namespace majesty {
 	struct synth_spec {
 		bool verbose;
 		bool use_cegar;
-		bool colex_order;
-		bool no_triv_ops;
+		bool use_colex_order;
+		bool use_no_triv_ops;
 		bool use_all_gates;
-		bool exact_nr_svars;
-		bool no_reapplication;
+		bool use_exact_nr_svars;
+		bool use_no_reapplication;
+		bool use_colex_functions;
 		unsigned nr_vars;
 		unsigned tt_size;
 		unsigned nr_gates;

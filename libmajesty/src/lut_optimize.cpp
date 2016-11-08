@@ -4,6 +4,7 @@
 #include "strashmap.h"
 #include "npn_canonization.hpp"
 #include <convert.h>
+#include <exact.h>
 
 using namespace std;
 using namespace cirkit;
@@ -310,6 +311,149 @@ namespace majesty {
 		vector<tt> emptyset;
 		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
+
+	pair<nodeid, bool> parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& cut_fanin) {
+		const auto& opt_nodes = opt_ntk.nodes();
+		vector<nodeid> nids(opt_nodes.size());
+		vector<nodeid> ntk_fanin(2);
+		for (auto i = 0u; i < opt_nodes.size(); i++) {
+			const auto& node = opt_nodes[i];
+			if (node.pi) {
+				nids[i] = cut_fanin[i];
+			} else {
+				ntk_fanin[0] = nids[node.fanin[0]];
+				ntk_fanin[1] = nids[node.fanin[1]];
+				nids[i] = ntk.create_node(ntk_fanin, node.function);
+			}
+		}
+		return make_pair(nids[opt_nodes.size() - 1], false);
+	}
+
+	optional<pair<nodeid, bool>> decompose_cut(logic_ntk& ntk, const ln_node& node, nodemap& nodemap, 
+		function_store& fstore, vector<tt>& timeoutfuncs, const unsigned conflict_limit, timeout_behavior behavior) {
+		
+		/*
+        vector<unsigned> perm; tt phase, npn;
+        if (node.fanin.size() < 6) {
+            npn = exact_npn_canonization(node.function, phase, perm);
+        } else {
+            npn = npn_canonization_lucky(node.function, phase, perm);
+        }
+        npn.resize(node.function.size());
+		*/
+
+		synth_spec spec;
+		spec.verbose = false;
+		spec.use_cegar = false;
+		spec.use_all_gates = true;
+		spec.use_no_triv_ops = true;
+		spec.use_colex_order = true;
+		spec.use_exact_nr_svars = true;
+		spec.use_colex_functions = true;
+		spec.use_no_reapplication = true;
+		auto opt_ntk = size_optimum_ntk_ns(node.function.to_ulong(), &spec);
+
+		/*
+		auto min_xmg = fstore.min_size_xmg(npn, timeout);
+		if (!min_xmg) { // Exact synthesis may have timed out
+			if (behavior == rebuild_cover) {
+				timeoutfuncs.push_back(node.function);
+				return boost::none;
+			} 
+			// Try to resynthesize, starting from the last size that failed
+			auto olast_size = fstore.get_last_size(npn);
+			assert(olast_size);
+			auto start_size = olast_size.get() + 1;
+			// We may have stored a heuristic version of this NPN class before,
+			// so no need to compute it again
+			min_xmg = fstore.heuristic_size_xmg(npn, timeout);
+			if (!min_xmg) {
+				min_xmg = exact_xmg_expression(npn, timeout, start_size);
+				if (!min_xmg) { 
+					if (!min_xmg) {
+						// Try to compute a heuristic version
+						min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size, behavior);
+						if (!min_xmg) {
+							return boost::none;
+						} else {
+							fstore.set_heuristic_size_xmg(npn, min_xmg.get(), timeout);
+						}
+					}
+				} else {
+					fstore.set_heuristic_size_xmg(npn, min_xmg.get(), timeout);
+				}
+			} else {
+				cout << "Using cached heuristic result" << endl;
+			}
+		}
+		input_map_t imap;
+
+        auto invperm = inv(perm);
+		for (auto i = 0u; i < node.fanin.size(); i++) {
+			auto inode = nodemap[node.fanin[i]];
+			imap['a' + invperm[i]] = make_pair(inode.first, phase.test(i) ^ inode.second);
+		}
+		*/
+
+		return parse_into_logic_ntk(ntk, opt_ntk, node.fanin);
+	}
+
+	optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, vector<tt>& timeoutfuncs, 
+		const unsigned conflict_limit, timeout_behavior behavior) {
+		bool timeout_occurred = false;
+
+		logic_ntk ntk;
+
+		nodemap nodemap;
+		function_store fstore;
+
+		const auto& nodes = lut_ntk.nodes();
+		const auto total_nodes = lut_ntk.nnodes();
+		auto progress = 0u;
+		for (auto i = 0u; i < total_nodes; i++) {
+			const auto& node = nodes[i];
+			if (node.pi) {
+				nodemap[i] = make_pair(ntk.create_input(), false);
+				++progress;
+				continue;
+			}
+			auto decomp_cut = decompose_cut(ntk, node, nodemap, fstore, timeoutfuncs, conflict_limit, behavior);
+			if (decomp_cut) {
+				nodemap[i] = decomp_cut.get();
+			} else {
+				nodemap[i] = make_pair(0, false);
+				timeout_occurred = true;
+			}
+			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
+		}
+		cout << endl;
+		if (timeout_occurred) {
+			cout << "Timeout occurred" << endl;
+			return boost::none;
+		}
+
+		const auto& outputs = lut_ntk.outputs();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto np = nodemap[outputs[i]];
+			ntk.create_output(np.first);
+		}
+
+		const auto& innames = lut_ntk.innames();
+		for (const auto& name : innames) {
+			ntk.add_inname(name);
+		}
+
+		const auto& outnames = lut_ntk.outnames();
+		for (const auto& name : outnames) {
+			ntk.add_outname(name);
+		}
+
+		optional<logic_ntk> res(move(ntk));
+		return res;
+	}
+
+
+
     /*
 	// NPN canonization function from ABC
 	tt jake_canon(const tt& ttf, unsigned* uCanonPhase, char* pCanonPerm, unsigned num_vars) {

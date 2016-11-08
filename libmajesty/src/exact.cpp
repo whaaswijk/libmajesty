@@ -288,7 +288,6 @@ namespace majesty {
 					for (auto i = 0u; i < spec->nr_gates; i++) {
 						for (auto j = 0u; j < spec->nr_vars + i; j++) {
 							for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-								auto sel_var = selection_variable(spec, i, j, k);
 								add_selection_clause(solver, spec, t, i, j, k, 0, 0, 1);
 								add_selection_clause(solver, spec, t, i, j, k, 0, 1, 0);
 								add_selection_clause(solver, spec, t, i, j, k, 0, 1, 1);
@@ -310,13 +309,59 @@ namespace majesty {
 		return l_True;
 	}
 
+	static inline lbool cegar_solve_ns(const uint64_t func, sat_solver* solver, synth_spec* spec, Vec_Int_t* vlits) {
+		Vec_IntClear(vlits);
+
+		while (true) {
+			auto res = sat_solver_solve(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits), 0, 0, 0, 0);
+			if (res == l_False) {
+				return res;
+			}
+
+			// Extract the network, simulate it, and find the first bit where it's different from the specification
+			auto ntk = extract_fanin_2_ntk_ns(func, solver, spec);
+			auto ntk_func = ntk.simulate();
+
+			bool found_solution = true;
+			// Check if the solution found matches the specification
+			for (auto t = 0u; t < spec->tt_size; t++) {
+				const auto ntk_val = ntk_func[t + 1];
+				const bool spec_val = (func >> (t + 1)) & 1;
+				if (ntk_val != spec_val) {
+					// Constrain the solver further by adding an additional constraint for this truth table row
+					const auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
+					Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !spec_val));
+					for (auto i = 0u; i < spec->nr_gates; i++) {
+						for (auto j = 0u; j < spec->nr_vars + i; j++) {
+							for (auto k = j + 1; k < spec->nr_vars + i; k++) {
+								add_selection_clause_ns(solver, spec, t, i, j, k, 0, 0, 1);
+								add_selection_clause_ns(solver, spec, t, i, j, k, 0, 1, 0);
+								add_selection_clause_ns(solver, spec, t, i, j, k, 0, 1, 1);
+								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 0, 0);
+								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 0, 1);
+								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 1, 0);
+								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 1, 1);
+							}
+						}
+					}
+					found_solution = false;
+					break;
+				}
+			}
+			if (found_solution) {
+				break;
+			}
+		}
+		return l_True;
+	}
+
 	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver* solver, synth_spec* spec) {
 		static lit plits[3];
 		
 		create_variables(solver, spec);
 
 		// The gate's function constraint variables
-		if (spec->no_triv_ops) {
+		if (spec->use_no_triv_ops) {
 			for (auto i = 0u; i < spec->nr_gates; i++) {
 				const auto func_var0 = gate_variable(i, 0, spec);
 				const auto func_var1 = gate_variable(i, 1, spec);
@@ -362,7 +407,7 @@ namespace majesty {
 			}
 			sat_solver_addclause(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			// Allow at most one selection variable to be true at a time
-			if (spec->exact_nr_svars || spec->use_cegar) {
+			if (spec->use_exact_nr_svars || spec->use_cegar) {
 				for (auto u = 0u; u < Vec_IntSize(vlits) - 1; u++) {
 					auto svar1 = Abc_Lit2Var(Vec_IntEntry(vlits, u));
 					for (auto v = u + 1; v < Vec_IntSize(vlits); v++) {
@@ -377,7 +422,7 @@ namespace majesty {
 
 		// Check for co-lexicographic order: given gates i and i+1 with fanin (x, y) and (x', y') respectively,
 		// we require y < y' OR y = y' AND x <= x'. This only if i is not a fanin of i+1.
-		if (spec->colex_order) {
+		if (spec->use_colex_order) {
 			for (auto i = 0u; i < spec->nr_gates - 1; i++) {
 				for (auto j = 0u; j < spec->nr_vars + i; j++) {
 					for (auto k = j + 1; k < spec->nr_vars + i; k++) {
@@ -416,7 +461,7 @@ namespace majesty {
 		}
 
 		// Do not allow reapplication of operators
-		if (spec->no_reapplication) {
+		if (spec->use_no_reapplication) {
 			for (auto i = 0u; i < spec->nr_gates - 1; i++) {
 				for (auto ip = i + 1; ip < spec->nr_gates; ip++) {
 					for (auto j = 0u; j < spec->nr_vars + i; j++) {
@@ -461,7 +506,7 @@ namespace majesty {
 		create_variables_ns(solver, spec);
 
 		// The gate's function constraint variables
-		if (spec->no_triv_ops) {
+		if (spec->use_no_triv_ops) {
 			for (auto i = 0u; i < spec->nr_gates; i++) {
 				const auto func_var0 = gate_variable(i, 0, spec);
 				const auto func_var1 = gate_variable(i, 1, spec);
@@ -491,7 +536,7 @@ namespace majesty {
 			const auto n = spec->nr_vars + i;
 			// Exactly 2 selection vars should be true, since every gate has fanin 2
 			// We do this by first preventing more than k vars from being true by selecting n choose k+1 subsets
-			if (spec->exact_nr_svars || spec->use_cegar) {
+			if (spec->use_exact_nr_svars || spec->use_cegar) {
 				vector<bool> v(n);
 				std::fill(v.end() - (k + 1), v.end(), true);
 				do {
@@ -551,7 +596,7 @@ namespace majesty {
 
 		// Check for co-lexicographic order: given gates i and i+1 with fanin (x, y) and (x', y') respectively,
 		// we require y < y' OR y = y' AND x <= x'. This only if i is not a fanin of i+1.
-		if (spec->colex_order) {
+		if (spec->use_colex_order) {
 			for (auto i = 0u; i < spec->nr_gates - 1; i++) {
 				for (auto j = 0u; j < spec->nr_vars + i; j++) {
 					for (auto k = j + 1; k < spec->nr_vars + i; k++) {
@@ -576,7 +621,7 @@ namespace majesty {
 		}
 
 		// Do not allow reapplication of operators
-		if (spec->no_reapplication) {
+		if (spec->use_no_reapplication) {
 			for (auto i = 0u; i < spec->nr_gates - 1; i++) {
 				for (auto ip = i + 1; ip < spec->nr_gates; ip++) {
 					for (auto j = 0u; j < spec->nr_vars + i; j++) {
@@ -598,17 +643,22 @@ namespace majesty {
 				}
 			}
 		}
-
-		// The final gate's truth table should match the one from the specification
-		Vec_IntClear(vlits);
-		for (auto t = 0u; t < spec->tt_size; t++) {
-			auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
-			Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !((func >> (t + 1)) & 1)));
+		
+		if (spec->use_cegar) {
+			auto res = cegar_solve_ns(func, solver, spec, vlits);
+			Vec_IntFree(vlits);
+			return res;
+		} else {
+			// The final gate's truth table should match the one from the specification
+			Vec_IntClear(vlits);
+			for (auto t = 0u; t < spec->tt_size; t++) {
+				auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
+				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !((func >> (t + 1)) & 1)));
+			}
+			auto res = sat_solver_solve(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits), 0, 0, 0, 0);
+			Vec_IntFree(vlits);
+			return res;
 		}
-
-		auto res = sat_solver_solve(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits), 0, 0, 0, 0);
-		Vec_IntFree(vlits);
-		return res;
 	}
 	
     logic_ntk extract_fanin_2_ntk(const tt& func, sat_solver* solver, synth_spec* spec) {
@@ -743,7 +793,7 @@ namespace majesty {
 	}
 
 	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver* solver, synth_spec* spec) {
-		return extract_fanin_2_ntk(func, solver, spec, false);
+		return extract_fanin_2_ntk_ns(func, solver, spec, false);
 	}
 
 	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver* solver, synth_spec* spec, bool invert) {

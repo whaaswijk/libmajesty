@@ -92,17 +92,25 @@ TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 
 TEST_CASE("New Selection Variable Test", "[exact synthesis]") {
 	synth_spec spec;
-	spec.use_cegar = false;
-	spec.no_reapplication = true;
-	spec.colex_order = true;
 	spec.nr_vars = 3;
+	spec.verbose = false;
+	spec.use_cegar = true;
+	spec.use_all_gates = true;
+	spec.use_colex_order = true;
+	spec.use_no_triv_ops = true;
+	spec.use_exact_nr_svars = true;
+	spec.use_no_reapplication = true;
 	for (auto f = 0u; f < 256; f++) {
-		spec.verbose = false;
-		auto old_size = optimum_ntk_size(f, &spec);
-		auto new_size = optimum_ntk_size_ns(f, &spec);
+		auto old_ntk = size_optimum_ntk(f, &spec);
+		auto old_size = old_ntk.ninternal();
+		auto old_simvec = old_ntk.simulate();
+		auto new_ntk = size_optimum_ntk(f, &spec);
+		auto new_size = old_ntk.ninternal();
+		auto new_simvec = old_ntk.simulate();
 		if (old_size != new_size) {
 			std::cout << "hur" << std::endl;
 		}
+		REQUIRE(old_simvec == new_simvec);
 		REQUIRE(old_size == new_size);
 	}
 }
