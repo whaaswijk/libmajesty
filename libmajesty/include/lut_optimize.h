@@ -19,7 +19,7 @@ namespace majesty {
 
 	xmg* ptr_lut_area_strategy(const xmg&, unsigned, unsigned);
    	xmg lut_area_strategy(const xmg&, const xmg_params*, unsigned);
-
+   	logic_ntk lut_area_strategy(const logic_ntk&, unsigned);
 
 	xmg* ptr_lut_area_timeout_strategy(const xmg&, unsigned lut_size, unsigned timeout, unsigned nr_backtracks);
 	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, unsigned, unsigned, timeout_behavior);
@@ -34,6 +34,11 @@ namespace majesty {
 	xmg xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
+
+	xmg logic_ntk_from_luts(const logic_ntk& lut_ntk);
+	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<cirkit::tt>&, unsigned);
+	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
+
 	void mine_functions(const xmg&, const xmg_params*, unsigned);
 	cirkit::tt jake_canon(const cirkit::tt&, unsigned* uCanonPhase, char* pCanonPerm, unsigned num_vars);
 

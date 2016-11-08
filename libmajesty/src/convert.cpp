@@ -487,16 +487,11 @@ namespace majesty {
 
 		unordered_map<nodeid, nodeid> nodemap;
 
-		const auto& innames = xmg.innames();
-		for (auto i = 0u; i < innames.size(); i++) {
-            const auto& name = innames[i];
-            // Add one because we don't use the constant input
-            nodemap[i+1] = ntk.create_input();
-		}
 		const auto& nodes = xmg.nodes();
-		for (auto i = 0u; i < nodes.size(); i++) {
+		for (auto i = 1u; i < nodes.size(); i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
+				nodemap[i] = ntk.create_input();
 				continue;
 			}
             vector<nodeid> fanin;
@@ -519,6 +514,15 @@ namespace majesty {
 		const auto& outcompl = xmg.outcompl();
 		for (auto i = 0u; i < outputs.size(); i++) {
 			ntk.create_output(nodemap[outputs[i]], outcompl[i]);
+		}
+
+		const auto& innames = xmg.innames();
+		for (const auto& name : innames) {
+			ntk.add_inname(name);
+		}
+		const auto& outnames = xmg.outnames();
+		for (const auto& name : outnames) {
+			ntk.add_outname(name);
 		}
 		
 		return ntk;
