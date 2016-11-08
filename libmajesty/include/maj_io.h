@@ -19,4 +19,6 @@ namespace majesty {
 	void lut_map_area(const majesty::xmg&, const std::string&);
 
 	void write_blif(const logic_ntk&, const std::string&);
+	
+	unsigned int writeVerilogMIGreduced(FILE *file, MIG *net);
 }

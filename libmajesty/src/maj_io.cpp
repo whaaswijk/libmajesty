@@ -42,6 +42,11 @@ namespace majesty {
 			throw runtime_error("Unable to open input file");
 		}
 		parse_verilog(fp, &mig);
+		fclose(fp);
+		{
+			fp = fopen("test.v", "w");
+			writeVerilogMIGreduced(fp, mig);
+		}
 		xmg res(mig);
 		freemig(mig);
 		return res;
@@ -367,6 +372,302 @@ namespace majesty {
 		}
 
 		f << ".end";
+	}
+
+	unsigned int writeVerilogMIGreduced(FILE *file, MIG *net) {
+		unsigned int ret, i;
+		ret = 1;
+
+		time_t now;
+
+		time(&now);
+
+		fprintf(file, "//Written by the Majority Logic Package %s", ctime(&now));
+		fprintf(file, "module top (\n");
+		fprintf(file, "            ");
+		for (i = 0;i < net->Nin;i++) {
+			fprintf(file, "%s , ", net->innames[i]);
+		}
+		fprintf(file, "\n            ");
+		for (i = 0;i < net->Nout - 1;i++) {
+			fprintf(file, "%s , ", net->outnames[i]);
+		}
+		fprintf(file, "%s ) ;\n", net->outnames[net->Nout - 1]);
+
+		fprintf(file, "input ");
+		for (i = 0;i < net->Nin - 1;i++) {//---
+			fprintf(file, "%s , ", net->innames[i]);
+		}
+		fprintf(file, "%s ;\n", net->innames[net->Nin - 1]);
+
+		fprintf(file, "output ");
+		for (i = 0;i < net->Nout - 1;i++) {
+			fprintf(file, "%s , ", net->outnames[i]);
+		}
+		fprintf(file, "%s ;\n", net->outnames[net->Nout - 1]);
+
+		fprintf(file, "wire one");
+		for (i = 0u;i < net->Nnodes;i++) {
+			fprintf(file, " , w%u", net->nodes[i]->label);
+		}
+		fprintf(file, " ;\n");
+
+		for (i = 0;i < net->Nnodes;i++) {
+			if ((net->nodes[i]->in1 == net->one) || (net->nodes[i]->in2 == net->one) || (net->nodes[i]->in3 == net->one)) {
+				if (net->nodes[i]->in1 == net->one) {
+					if (net->nodes[i]->compl1 == 1) {//AND
+						fprintf(file, "assign w%u = ", net->nodes[i]->label);
+						if (net->nodes[i]->compl2 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in2 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in2->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in2->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in2->label);
+						}
+						fprintf(file, " & ");
+						if (net->nodes[i]->compl3 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in3 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in3->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in3->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in3->label);
+						}
+						fprintf(file, " ;\n");
+					} else {//OR
+						fprintf(file, "assign w%u = ", net->nodes[i]->label);
+						if (net->nodes[i]->compl2 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in2 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in2->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in2->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in2->label);
+						}
+						fprintf(file, " | ");
+						if (net->nodes[i]->compl3 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in3 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in3->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in3->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in3->label);
+						}
+						fprintf(file, " ;\n");
+					}
+				} else if (net->nodes[i]->in2 == net->one) {
+					if (net->nodes[i]->compl2 == 1) {//AND
+						fprintf(file, "assign w%u = ", net->nodes[i]->label);
+						if (net->nodes[i]->compl1 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in1 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in1->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in1->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in1->label);
+						}
+						fprintf(file, " & ");
+						if (net->nodes[i]->compl3 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in3 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in3->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in3->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in3->label);
+						}
+						fprintf(file, " ;\n");
+					} else {//OR
+						fprintf(file, "assign w%u = ", net->nodes[i]->label);
+						if (net->nodes[i]->compl1 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in1 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in1->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in1->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in1->label);
+						}
+						fprintf(file, " | ");
+						if (net->nodes[i]->compl3 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in3 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in3->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in3->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in3->label);
+						}
+						fprintf(file, " ;\n");
+					}
+				} else if (net->nodes[i]->in3 == net->one) {
+					if (net->nodes[i]->compl3 == 1) {//AND
+						fprintf(file, "assign w%u = ", net->nodes[i]->label);
+						if (net->nodes[i]->compl2 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in2 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in2->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in2->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in2->label);
+						}
+						fprintf(file, " & ");
+						if (net->nodes[i]->compl1 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in1 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in1->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in1->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in1->label);
+						}
+						fprintf(file, " ;\n");
+					} else {//OR
+						fprintf(file, "assign w%u = ", net->nodes[i]->label);
+						if (net->nodes[i]->compl2 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in2 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in2->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in2->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in2->label);
+						}
+						fprintf(file, " | ");
+						if (net->nodes[i]->compl1 == 1) {
+							fprintf(file, "~");
+						}
+						if (net->nodes[i]->in1 == net->one) {
+							fprintf(file, "one");
+						} else if (net->nodes[i]->in1->PI == 1) {
+							fprintf(file, "%s", net->innames[net->nodes[i]->in1->label]);
+						} else {
+							fprintf(file, "w%u", net->nodes[i]->in1->label);
+						}
+						fprintf(file, " ;\n");
+					}
+				} else {
+					printf("error in MIG writing");
+				}
+			} else {
+				fprintf(file, "assign w%u = ", net->nodes[i]->label);
+				fprintf(file, "(");
+				if (net->nodes[i]->compl1 == 1) {
+					fprintf(file, "~");
+				}
+				if (net->nodes[i]->in1 == net->one) {
+					fprintf(file, "one");
+				} else if (net->nodes[i]->in1->PI == 1) {
+					fprintf(file, "%s", net->innames[net->nodes[i]->in1->label]);
+				} else {
+					fprintf(file, "w%u", net->nodes[i]->in1->label);
+				}
+				fprintf(file, " & ");
+				if (net->nodes[i]->compl2 == 1) {
+					fprintf(file, "~");
+				}
+				if (net->nodes[i]->in2 == net->one) {
+					fprintf(file, "one");
+				} else if (net->nodes[i]->in2->PI == 1) {
+					fprintf(file, "%s", net->innames[net->nodes[i]->in2->label]);
+				} else {
+					fprintf(file, "w%u", net->nodes[i]->in2->label);
+				}
+				fprintf(file, ") | ");
+				fprintf(file, "(");
+				if (net->nodes[i]->compl1 == 1) {
+					fprintf(file, "~");
+				}
+				if (net->nodes[i]->in1 == net->one) {
+					fprintf(file, "one");
+				} else if (net->nodes[i]->in1->PI == 1) {
+					fprintf(file, "%s", net->innames[net->nodes[i]->in1->label]);
+				} else {
+					fprintf(file, "w%u", net->nodes[i]->in1->label);
+				}
+				fprintf(file, " & ");
+				if (net->nodes[i]->compl3 == 1) {
+					fprintf(file, "~");
+				}
+				if (net->nodes[i]->in3 == net->one) {
+					fprintf(file, "one");
+				} else if (net->nodes[i]->in3->PI == 1) {
+					fprintf(file, "%s", net->innames[net->nodes[i]->in3->label]);
+				} else {
+					fprintf(file, "w%u", net->nodes[i]->in3->label);
+				}
+				fprintf(file, ") | ");
+				fprintf(file, "(");
+				if (net->nodes[i]->compl2 == 1) {
+					fprintf(file, "~");
+				}
+				if (net->nodes[i]->in2 == net->one) {
+					fprintf(file, "one");
+				} else if (net->nodes[i]->in2->PI == 1) {
+					fprintf(file, "%s", net->innames[net->nodes[i]->in2->label]);
+				} else {
+					fprintf(file, "w%u", net->nodes[i]->in2->label);
+				}
+				fprintf(file, " & ");
+				if (net->nodes[i]->compl3 == 1) {
+					fprintf(file, "~");
+				}
+				if (net->nodes[i]->in3 == net->one) {
+					fprintf(file, "one");
+				} else if (net->nodes[i]->in3->PI == 1) {
+					fprintf(file, "%s", net->innames[net->nodes[i]->in3->label]);
+				} else {
+					fprintf(file, "w%u", net->nodes[i]->in3->label);
+				}
+				fprintf(file, ") ;\n");
+			}
+		}
+
+		fprintf(file, "assign one = 1;\n");
+
+		for (i = 0;i < net->Nout;i++) {
+			if (net->outcompl[i] == 1) {
+				if (net->out[i] == net->one) {
+					fprintf(file, "assign %s = ~one ;// level 0\n", net->outnames[i]);
+				} else if (net->out[i]->PI == 1) {
+					fprintf(file, "assign %s = ~%s ;// level 0\n", net->outnames[i], net->innames[net->out[i]->label]);
+				} else {
+					fprintf(file, "assign %s = ~w%u ;// level %u\n", net->outnames[i], net->out[i]->label, net->out[i]->level);
+				}
+			} else {
+				if (net->out[i] == net->one) {
+					fprintf(file, "assign %s = one ;// level 0\n", net->outnames[i]);
+				} else if (net->out[i]->PI == 1) {
+					fprintf(file, "assign %s = %s ;// level 0\n", net->outnames[i], net->innames[net->out[i]->label]);
+				} else {
+					fprintf(file, "assign %s = w%u ;// level %u\n", net->outnames[i], net->out[i]->label, net->out[i]->level);
+				}
+			}
+		}
+
+
+		fprintf(file, "endmodule\n");
+
+
+		return ret;
 	}
 
 }
