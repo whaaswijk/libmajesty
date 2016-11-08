@@ -43,10 +43,6 @@ namespace majesty {
 		}
 		parse_verilog(fp, &mig);
 		fclose(fp);
-		{
-			fp = fopen("test.v", "w");
-			writeVerilogMIGreduced(fp, mig);
-		}
 		xmg res(mig);
 		freemig(mig);
 		return res;
