@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(libmajesty)
+project(majesty)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wall -Wextra -std=c++11")
 
