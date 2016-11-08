@@ -6,6 +6,13 @@ using namespace cirkit;
 
 namespace majesty {
 
+	logic_ntk::logic_ntk(const logic_ntk& ntk) {
+		_nodes = ntk._nodes;
+		_outputs = ntk._outputs;
+		_innames = ntk._innames;
+		_outnames = ntk._outnames;
+	}
+
 	logic_ntk::logic_ntk(logic_ntk&& ntk) {
 		_nodes = std::move(ntk._nodes);
 		_outputs = std::move(ntk._outputs);

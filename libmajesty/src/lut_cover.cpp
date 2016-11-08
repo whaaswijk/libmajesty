@@ -219,6 +219,35 @@ namespace majesty {
 		return best;
 	}
 
+	bestmap eval_matches_area_timeout(const logic_ntk& m, const cutmap& cut_map, const funcmap& fm, const vector<tt>& timeoutfuncs) {
+		cout << "Evaluating matches area..." << endl;
+		bestmap best(m.nnodes());
+		nintmap area_flows(m.nnodes());
+		auto nodes = m.nodes();
+		vector<cut*> eval_cuts;
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes.at(i);
+			if (node.pi) {
+				best[i] = cut_map.at(i)[0].get();
+				area_flows[i] = 0;
+			} else {
+				const auto& cuts = cut_map.at(i);
+				eval_cuts.clear();
+				for (const auto& cut : cuts) {
+					const auto& cutfunction = *fm.at(cut.get());
+					if (find(timeoutfuncs.begin(), timeoutfuncs.end(), cutfunction) == timeoutfuncs.end()) {
+						eval_cuts.push_back(cut.get());
+					}
+				}
+				auto area_eval = best_cut_area(i, eval_cuts, area_flows);
+				best[i] = get<0>(area_eval);
+				area_flows[i] = get<1>(area_eval);
+			}
+		}
+
+		return best;
+	}
+
 	bestmap eval_matches_af_recover(const xmg& m, const cutmap& cut_map, 
 			const reqmap& req, const nintmap& nref) {
 		cout << "Evaluating matches area flow (recover)..." << endl;
@@ -455,6 +484,46 @@ namespace majesty {
 		}
 	}
 
+	void improve_cover_exact_area_timeout(const logic_ntk& m, const cutmap& cm,
+			bestmap& best, nintmap& nref, const funcmap& fm, const vector<tt>& timeoutfuncs) {
+		cout << "Running exact area improvements..." << endl;
+		auto nodes = m.nodes();
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes[i];
+			if (node.pi) {
+				continue;
+			}
+			if (nref.at(i) != 0) {
+				recursive_deselect(i, nodes, best, nref);
+			}
+			auto best_area = numeric_limits<unsigned int>::max();
+			cut* best_cut = NULL;
+			const auto& cuts = cm.at(i);
+			for (const auto& cut : cuts) {
+				if (cut->size() == 1 && cut->nodes()[0] == i) { // Trivial cut
+					continue;
+				}
+				const auto& cutfunction = *fm.at(cut.get());
+				if (find(timeoutfuncs.begin(), timeoutfuncs.end(), cutfunction) != timeoutfuncs.end()) {
+					// Don't select this function as exact synthesis will timeout on it
+					continue;
+				}
+				best[i] = cut.get();
+				auto area1 = recursive_select(i, nodes, best, nref);
+				auto area2 = recursive_deselect(i, nodes, best, nref);
+				assert(area1 == area2);
+				if (area1 < best_area) {
+					best_area = area1;
+					best_cut = cut.get();
+				}
+			}
+			best[i] = best_cut;
+			if (nref.at(i) != 0) {
+				recursive_select(i, nodes, best, nref);
+			}
+		}
+	}
+
 	void improve_cover_exact_area(const xmg& m, const cutmap& cm, 
 			bestmap& best, nintmap& nref) {
 		cout << "Running exact area improvements..." << endl;
@@ -631,6 +700,20 @@ namespace majesty {
 	}
 	
 	void it_exact_cover_timeout(const xmg& m, cover& cover, const cutmap& cm, bestmap& best, 
+		const funcmap& fm, const vector<tt>& timeoutfuncs) {
+		auto csize = cover_size(m, cover);
+		while (true) {
+			improve_cover_exact_area_timeout(m, cm, best, cover, fm, timeoutfuncs);
+			auto nsize = cover_size(m, cover);
+			if (nsize < csize) {
+				csize = nsize;
+			} else {
+				break;
+			}
+		}
+	}
+
+	void it_exact_cover_timeout(const logic_ntk& m, cover& cover, const cutmap& cm, bestmap& best,
 		const funcmap& fm, const vector<tt>& timeoutfuncs) {
 		auto csize = cover_size(m, cover);
 		while (true) {

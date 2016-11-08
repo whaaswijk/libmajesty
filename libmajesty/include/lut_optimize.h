@@ -26,16 +26,14 @@ namespace majesty {
 	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, unsigned, unsigned);
 	boost::optional<xmg> lut_area_timeout_strategy(const xmg&, const xmg_params*, unsigned, unsigned, timeout_behavior);
 
-
-	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned, unsigned, timeout_behavior);
-	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned, unsigned);
-	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned, unsigned, timeout_behavior);
+	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned lut_size, unsigned backtrack_limit);
+	boost::optional<logic_ntk> lut_area_timeout_strategy(const logic_ntk&, unsigned lut_size, unsigned backtrack_limit, timeout_behavior);
 
 	xmg xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
 
-	xmg logic_ntk_from_luts(const logic_ntk& lut_ntk);
+	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk);
 	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<cirkit::tt>&, unsigned);
 	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
 

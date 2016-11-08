@@ -27,7 +27,7 @@ namespace majesty {
 			
 		public:
 			logic_ntk() {  }
-			logic_ntk(const logic_ntk&) = delete;
+			logic_ntk(const logic_ntk&);
 			logic_ntk(logic_ntk&&);
 			logic_ntk& operator=(logic_ntk&) = delete;
 			logic_ntk& operator=(logic_ntk&&);

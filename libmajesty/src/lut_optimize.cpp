@@ -21,6 +21,10 @@ namespace majesty {
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
         return lut_area_timeout_strategy(m, frparams, lut_size, 0, rebuild_cover).value();
 	}
+   	
+	logic_ntk lut_area_strategy(const logic_ntk& ntk, unsigned lut_size) {
+		return lut_area_timeout_strategy(ntk, lut_size, 0).value();
+	}
 
 	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
@@ -41,6 +45,46 @@ namespace majesty {
 	optional<xmg> lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, timeout_behavior behavior) {
 		auto frparams = default_xmg_params();
 		return lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout, behavior);
+	}
+	
+	boost::optional<logic_ntk> 
+		lut_area_timeout_strategy(const logic_ntk& ntk, unsigned lut_size, unsigned backtrack_limit) {
+		return lut_area_timeout_strategy(ntk, lut_size, backtrack_limit, rebuild_cover);
+	}
+
+	boost::optional<logic_ntk> 
+		lut_area_timeout_strategy(const logic_ntk& ntk, unsigned lut_size, unsigned backtrack_limit, timeout_behavior tb) {
+		auto cut_params = default_cut_params();
+		cut_params->klut_size = lut_size;
+		vector<tt> timeoutfuncs;
+	
+		bool timeout_occurred = false;
+		auto oldsize = ntk.nnodes();
+		funcmap fm;
+		const auto cut_map = enumerate_cuts_eval_funcs(ntk, cut_params.get(), fm);
+		logic_ntk cntk(ntk);
+		do {
+			timeout_occurred = false;
+			auto best_area = eval_matches_area_timeout(cntk, cut_map, fm, timeoutfuncs);
+			auto area_cover = build_cover(cntk, best_area);
+			it_exact_cover_timeout(cntk, area_cover, cut_map, best_area, fm, timeoutfuncs);
+			auto lut_ntk = ntk_cover_to_logic_ntk(cntk, area_cover, best_area, fm);
+			auto decomp_ntk = logic_ntk_from_luts(lut_ntk, timeoutfuncs, backtrack_limit, tb);
+			if (decomp_ntk) {
+				auto newsize = decomp_ntk.get_ptr()->nnodes();
+				if (newsize < oldsize) {
+					cntk = std::move(decomp_ntk.value());
+					continue;
+				} else {
+					break;
+				}
+			} else {
+				cerr << "timeout occurred" << endl;
+				timeout_occurred = true;
+			}
+		} while (timeout_occurred);
+
+		return std::move(cntk);
 	}
 
 	optional<xmg> 
@@ -396,6 +440,11 @@ namespace majesty {
 		*/
 
 		return parse_into_logic_ntk(ntk, opt_ntk, node.fanin);
+	}
+	
+	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk) {
+		vector<tt> timeoutfuncs;
+		return logic_ntk_from_luts(lut_ntk, timeoutfuncs, 0).value();
 	}
 
 	optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, vector<tt>& timeoutfuncs, 

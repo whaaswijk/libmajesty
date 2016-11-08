@@ -83,6 +83,7 @@ namespace majesty {
 	cutmap enumerate_cuts(const xmg&, const cut_params*);
 	cutmap enumerate_cuts(const logic_ntk&, const cut_params*);
 	cutmap enumerate_cuts_eval_funcs(const xmg&, const cut_params*, funcmap&);
+	cutmap enumerate_cuts_eval_funcs(const logic_ntk&, const cut_params*, funcmap&);
 }
 
 

@@ -461,6 +461,38 @@ namespace majesty {
 
 		return cut_map;
 	}
+
+	cutmap enumerate_cuts_eval_funcs(const logic_ntk& m, const cut_params *p, funcmap& fm) {
+		cout << "Enumerating cuts..." << endl;
+		cutmap cut_map(m.nnodes());
+		fm.clear();
+
+		// We assume that the nodes are stored in topological order
+		auto nodes = m.nodes();
+		auto total_nodes = nodes.size();
+		auto processed_nodes = 0u;
+		for (auto i = 0u; i < total_nodes; i++) {
+			cutvec res;
+			const auto& n = nodes[i];
+			if (!n.pi) {
+				res = node_cuts(n, i, cut_map, p);
+				for (auto& cut : res) {
+					cut->computefunction(i, nodes, fm);
+				}
+			}
+			// Always add the trivial cut
+			unique_ptr<cut> c(new cut(i));
+			unique_ptr<tt> f(new tt(tt_nth_var(0)));
+			fm[c.get()] = std::move(f);
+			res.push_back(move(c));
+			cut_map[i] = move(res);
+			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
+			cout << ")\r";
+		}
+		cout << endl;
+
+		return cut_map;
+	}
 	
 	void cut::computefunction(const node& node, funcmap& fm) { 
 		if (_nodes.size() == 1) {
