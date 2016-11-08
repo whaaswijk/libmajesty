@@ -2,29 +2,15 @@
 #include <truth_table_utils.hpp>
 #include <exact.h>
 #include <mig_interface.h>
-//#include <maj_io.h>
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 #include <iostream>
 #include <convert.h>
 
 using namespace majesty;
-/*
-using Minisat::Solver;
-using Minisat::lbool;
-using Minisat::Var;
-*/
 using cirkit::tt;
 
-
-//static inline Var gate_variable(int tt_size, int gate_i, int t);
-
-//static inline Var function_variable(int gate_func_size, int f, int idx, int nr_gate_vars);
-
-	// Tests a primary input's truth table (nonzero) at the specified index
-//static inline bool pi_value(const int pi_num, const int tt_idx);
-
-TEST_CASE("Exact Synthesis Utility Functions Test", "[exact synthesis]") {
+TEST_CASE("Exact Synthesis Utility Functions", "[exact synthesis]") {
 	REQUIRE(pi_value(0, 0) == false);
 	REQUIRE(pi_value(0, 1) == true);
 	REQUIRE(pi_value(0, 2) == false);
@@ -32,7 +18,7 @@ TEST_CASE("Exact Synthesis Utility Functions Test", "[exact synthesis]") {
 	REQUIRE(pi_value(5, 32) == true);
 }
 
-TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
+TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 	auto pi1 = cirkit::tt_nth_var(0);
 	auto pi2 = cirkit::tt_nth_var(1);
 	auto pi3 = cirkit::tt_nth_var(2);
@@ -85,12 +71,11 @@ TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 		spec.nr_vars = 3;
 		auto ntk = size_optimum_ntk(2, &spec);
 		REQUIRE(ntk.ninternal() == 2);
-		//print_fanin_2_solution(2, solver, 3, 2);
 	}
 
 }
 
-TEST_CASE("New Selection Variable Test", "[exact synthesis]") {
+TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	synth_spec spec;
 	spec.nr_vars = 3;
 	spec.verbose = false;
@@ -121,13 +106,14 @@ TEST_CASE("New Selection Variable Test", "[exact synthesis]") {
 #include <lut_cover.h>
 #include <lut_optimize.h>
 
-TEST_CASE("XMG to Logic Network Test", "[conversion]") {
+TEST_CASE("XMG to Logic Network", "[conversion]") {
     auto xmg = read_verilog("../assets/adder.v");
     auto ntk = xmg_to_logic_ntk(xmg);
     write_blif(ntk, "adder_converted.blif");
 }
 
-TEST_CASE("LUT Mapping Test", "[techmapping]") {
+/*
+TEST_CASE("LUT Mapping", "[techmapping]") {
     auto xmg = read_verilog("../assets/adder.v");
     auto ntk = xmg_to_logic_ntk(xmg);
 
@@ -144,10 +130,20 @@ TEST_CASE("LUT Mapping Test", "[techmapping]") {
 
     xmg = read_verilog("../assets/div.v");
     ntk = xmg_to_logic_ntk(xmg);
-    write_blif(ntk, "div_ntk.blif");
 
     lut_ntk = lut_map_area(ntk, cut_params.get());
     write_blif(lut_ntk, "div.blif");
+}
+*/
+
+TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
+    auto xmg = read_verilog("../assets/adder.v");
+    auto ntk = xmg_to_logic_ntk(xmg);
+    auto cut_params = default_cut_params();
+    cut_params->klut_size = 4;
+    auto lut_ntk = lut_map_area(ntk, cut_params.get());
+    auto opt_ntk = logic_ntk_from_luts(lut_ntk);
+    write_blif(opt_ntk, "decomp_adder.blif");
 }
 
 TEST_CASE("XMG String Serialization", "[serialization]") {
