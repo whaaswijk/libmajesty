@@ -34,7 +34,6 @@ namespace majesty {
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
 
 	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk);
-	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<cirkit::tt>&, unsigned);
 	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
 
 	void mine_functions(const xmg&, const xmg_params*, unsigned);

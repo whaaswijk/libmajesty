@@ -445,7 +445,7 @@ namespace majesty {
 	
 	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk) {
 		vector<tt> timeoutfuncs;
-		return logic_ntk_from_luts(lut_ntk, timeoutfuncs, 0).value();
+		return logic_ntk_from_luts(lut_ntk, timeoutfuncs, 0, rebuild_cover).value();
 	}
 
 	optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, vector<tt>& timeoutfuncs, 
