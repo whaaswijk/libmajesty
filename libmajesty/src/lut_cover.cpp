@@ -745,7 +745,18 @@ namespace majesty {
 		auto area_cover = build_cover(m, best_area);
 		it_exact_cover(m, area_cover, cut_map, best_area);
 		auto functionmap = compute_functions(m, area_cover, best_area, cut_map);
-		return xmg_cover_to_logic_ntk(m, area_cover, best_area, functionmap);
+		auto lut_ntk = xmg_cover_to_logic_ntk(m, area_cover, best_area, functionmap);
+		
+		const auto& innames = m.innames();
+		for (const auto& name : innames) {
+			lut_ntk.add_inname(name);
+		}
+		const auto& outnames = m.outnames();
+		for (const auto& name : outnames) {
+			lut_ntk.add_outname(name);
+		}
+
+		return lut_ntk;
 	}
 
 	logic_ntk lut_map_area(const logic_ntk& m, const cut_params* params) {
@@ -754,7 +765,18 @@ namespace majesty {
 		auto area_cover = build_cover(m, best_area);
 		it_exact_cover(m, area_cover, cut_map, best_area);
 		auto functionmap = compute_functions(m, area_cover, best_area, cut_map);
-		return ntk_cover_to_logic_ntk(m, area_cover, best_area, functionmap);
+		auto lut_ntk = ntk_cover_to_logic_ntk(m, area_cover, best_area, functionmap);
+
+		const auto& innames = m.innames();
+		for (const auto& name : innames) {
+			lut_ntk.add_inname(name);
+		}
+		const auto& outnames = m.outnames();
+		for (const auto& name : outnames) {
+			lut_ntk.add_outname(name);
+		}
+		
+		return lut_ntk;
 	}
 
 }
