@@ -127,14 +127,27 @@ TEST_CASE("XMG to Logic Network Test", "[conversion]") {
     write_blif(ntk, "adder_converted.blif");
 }
 
-TEST_CASE("Exact Synthesis Optimization Test", "[optimization]") {
+TEST_CASE("LUT Mapping Test", "[techmapping]") {
     auto xmg = read_verilog("../assets/adder.v");
     auto ntk = xmg_to_logic_ntk(xmg);
 
     auto cut_params = default_cut_params();
     cut_params->klut_size = 4;
-    auto lut_ntk = lut_map_area(xmg, cut_params.get());
+    auto lut_ntk = lut_map_area(ntk, cut_params.get());
     write_blif(lut_ntk, "adder.blif");
+
+    xmg = read_verilog("../assets/multiplier.v");
+    ntk = xmg_to_logic_ntk(xmg);
+
+    lut_ntk = lut_map_area(ntk, cut_params.get());
+    write_blif(lut_ntk, "multiplier.blif");
+
+    xmg = read_verilog("../assets/div.v");
+    ntk = xmg_to_logic_ntk(xmg);
+    write_blif(ntk, "div_ntk.blif");
+
+    lut_ntk = lut_map_area(ntk, cut_params.get());
+    write_blif(lut_ntk, "div.blif");
 }
 
 TEST_CASE("XMG String Serialization", "[serialization]") {

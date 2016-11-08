@@ -566,6 +566,16 @@ namespace majesty {
 			ntk.create_output(nodemap[outputs[i]], outcompl[i]);
 		}
 
+        const auto& innames = xmg.innames();
+		for (const auto& name : innames) {
+			ntk.add_inname(name);
+		}
+		
+		const auto& outnames = xmg.outnames();
+		for (const auto& name : outnames) {
+			ntk.add_inname(name);
+		}
+
 		return ntk;
 	}
 
@@ -577,7 +587,7 @@ namespace majesty {
 		for (auto i = 0u; i < nodes.size(); i++) {
 			const auto& node = nodes[i];
 			if (node.pi) {
-				ntk.create_input();
+				nodemap[i] = ntk.create_input();
 				continue;
 			}
 			if (!contains(cover, i)) {
