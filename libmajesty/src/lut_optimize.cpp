@@ -387,6 +387,7 @@ namespace majesty {
 		*/
 
 		synth_spec spec;
+		spec.nr_vars = node.fanin.size();
 		spec.verbose = false;
 		spec.use_cegar = false;
 		spec.use_all_gates = true;

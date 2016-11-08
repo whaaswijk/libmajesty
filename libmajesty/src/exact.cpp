@@ -157,10 +157,8 @@ namespace majesty {
 		
 		return std::move(ntk);
 	}
-	
 
-	/*
-	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec* opt, const unsigned nr_vars, const unsigned gate_size) {
+	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec* spec) {
 		// TODO: Check if function is constant or variable. If so, return early.
 
 
@@ -171,24 +169,27 @@ namespace majesty {
 		}
 
 		// Else start by checking for networks with increasing nrs. of gates.
-		optional<logic_ntk> ntk;
-		auto nr_gates = 1u;
+		logic_ntk ntk;
+		spec->nr_gates = 1u;
+		spec->tt_size = (1 << spec->nr_vars) - 1;
+		auto solver = sat_solver_new();
 		while (true) {
-			Solver solver;
-			auto network_exists = exists_fanin_2_ntk_ns(func, solver, opt, nr_vars, nr_gates);
+			sat_solver_restart(solver);
+			auto network_exists = exists_fanin_2_ntk_ns(func, solver, spec);
 			if (network_exists == l_True) {
-				ntk = extract_fanin_2_ntk_ns(func, solver, nr_vars, nr_gates, invert);
-				if (opt->verbose) {
-					print_fanin_2_solution_ns(func, solver, nr_vars, nr_gates);
+				ntk = extract_fanin_2_ntk_ns(func, solver, spec, invert);
+				if (spec->verbose) {
+					print_fanin_2_solution(func, solver, spec);
 				}
 				break;
 			}
-			++nr_gates;
+			++spec->nr_gates;
 		}
+		sat_solver_delete(solver);
 		
-		return std::move(*ntk);
+		return std::move(ntk);
 	}
-	*/
+	
 
 	static inline void add_selection_clause(sat_solver* solver, synth_spec* spec,
 		int t, int i, int j, int k, bool a, bool b, bool c) {
