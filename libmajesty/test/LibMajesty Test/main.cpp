@@ -117,43 +117,6 @@ TEST_CASE("New Selection Variable Test", "[exact synthesis]") {
 
 #ifndef _WIN32
 #include <maj_io.h>
-TEST_CASE("Exact Synthesis Extraction Test", "[exact synthesis]") {
-	auto pi1 = cirkit::tt_nth_var(0);
-	auto pi2 = cirkit::tt_nth_var(1);
-	auto pi3 = cirkit::tt_nth_var(2);
-
-	auto andfunc = pi1 & pi2;
-	auto orfunc = andfunc | pi3;
-	auto invorfunc = andfunc | ~pi3; 
-	cirkit::tt_to_minbase(andfunc);
-	auto andfuncstr = cirkit::to_string(andfunc);
-	cirkit::tt_to_minbase(orfunc);
-	auto orfuncstr = cirkit::to_string(orfunc);
-	cirkit::tt_to_minbase(invorfunc);
-	invorfunc = ~invorfunc;
-	auto invorfuncstr = cirkit::to_string(invorfunc);
-	{
-		Solver solver;
-		exists_fanin_2_ntk(andfunc, solver, 1);
-		auto ntk = extract_fanin_2_ntk(andfunc, solver, 1);
-		ntk.create_dummy_names();
-		write_blif(ntk, "andfunc.blif");
-	}
-	{
-		Solver solver;
-		exists_fanin_2_ntk(orfunc, solver, 2);
-		auto ntk = extract_fanin_2_ntk(orfunc, solver, 2);
-		ntk.create_dummy_names();
-		write_blif(ntk, "orfunc.blif");
-	}
-    {
-		Solver solver;
-		exists_fanin_2_ntk(invorfunc, solver, 2);
-		auto ntk = extract_fanin_2_ntk(invorfunc, solver, 2, true);
-		ntk.create_dummy_names();
-		write_blif(ntk, "invorfunc.blif");
-	}
-}
 
 TEST_CASE("XMG String Serialization", "[serialization]") {
     // Get a MIG and use it to test on
