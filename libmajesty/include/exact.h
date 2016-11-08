@@ -98,12 +98,13 @@ namespace majesty {
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
 					if (i == gate_i && j == fanin_j && k == fanin_k) {
-						return spec->selection_var_offset + ctr;
+						break;
 					}
 					++ctr;
 				}
 			}
 		}
+		return spec->selection_var_offset + ctr;
 	}
 
 	static inline int selection_variable_ns(const synth_spec* spec, unsigned gate_i, unsigned fanin_j) {
