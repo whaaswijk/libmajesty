@@ -386,7 +386,7 @@ namespace majesty {
         npn.resize(node.function.size());
 		*/
 
-		auto spec = default_synth_spec();
+		synth_spec spec;
 		spec.nr_vars = node.fanin.size();
 		auto opt_ntk = size_optimum_ntk_ns(node.function.to_ulong(), &spec);
 

@@ -34,7 +34,7 @@ TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 	invorfunc = ~invorfunc;
 	auto invorfuncstr = cirkit::to_string(invorfunc);
 
-	auto spec = default_synth_spec();
+	synth_spec spec;
 	spec.verbose = true;
 	spec.use_cegar = true;
 		

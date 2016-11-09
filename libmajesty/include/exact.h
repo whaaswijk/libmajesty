@@ -33,23 +33,12 @@ namespace majesty {
 		unsigned nr_gate_vars;
 		unsigned simulation_var_offset;
 		unsigned nr_simulation_vars;
+
+		synth_spec() : verbose(false), use_cegar(false), use_colex_order(true),
+			use_no_triv_ops(true), use_all_gates(true), use_exact_nr_svars(true),
+			use_no_reapplication(true), use_colex_functions(true) {}
 	};
 
-	synth_spec default_synth_spec() {
-		synth_spec spec;
-
-		spec.verbose = false;
-		spec.use_cegar = false;
-		spec.use_colex_order = true;
-		spec.use_no_triv_ops = true;
-		spec.use_all_gates = true;
-		spec.use_exact_nr_svars = true;
-		spec.use_no_reapplication = true;
-		spec.use_colex_functions = true;
-
-		return spec;
-	}
-	
 	logic_ntk size_optimum_ntk(cirkit::tt& func, synth_spec*);
 	logic_ntk size_optimum_ntk(uint64_t func, synth_spec*);
 	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec*);
