@@ -142,6 +142,9 @@ namespace majesty {
 		spec->tt_size = (1 << spec->nr_vars) - 1;
 		auto solver = sat_solver_new();
 		while (true) {
+			if (spec->verbose) {
+				cout << "trying with " << spec->nr_gates << " gates\n";
+			}
 			sat_solver_restart(solver);
 			auto network_exists = exists_fanin_2_ntk(func, solver, spec);
 			if (network_exists == l_True) {
@@ -174,6 +177,9 @@ namespace majesty {
 		spec->tt_size = (1 << spec->nr_vars) - 1;
 		auto solver = sat_solver_new();
 		while (true) {
+			if (spec->verbose) {
+				cout << "trying with " << spec->nr_gates << " gates\n";
+			}
 			sat_solver_restart(solver);
 			auto network_exists = exists_fanin_2_ntk_ns(func, solver, spec);
 			if (network_exists == l_True) {
