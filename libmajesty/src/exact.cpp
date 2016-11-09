@@ -537,9 +537,10 @@ namespace majesty {
 			const auto n = spec->nr_vars + i;
 			// Exactly 2 selection vars should be true, since every gate has fanin 2
 			// We do this by first preventing more than k vars from being true by selecting n choose k+1 subsets
-			if (spec->use_exact_nr_svars || spec->use_cegar) {
+			if (n > 2 && (spec->use_exact_nr_svars || spec->use_cegar)) {
 				vector<bool> v(n);
 				std::fill(v.end() - (k + 1), v.end(), true);
+				//cout << "nr spec vars: " << spec->nr_vars << ", i: " << i << endl;
 				do {
 					Vec_IntClear(vlits);
 					for (int j = 0; j < n; j++) {

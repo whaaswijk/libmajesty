@@ -89,9 +89,9 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 		auto old_ntk = size_optimum_ntk(f, &spec);
 		auto old_size = old_ntk.ninternal();
 		auto old_simvec = old_ntk.simulate();
-		auto new_ntk = size_optimum_ntk(f, &spec);
-		auto new_size = old_ntk.ninternal();
-		auto new_simvec = old_ntk.simulate();
+		auto new_ntk = size_optimum_ntk_ns(f, &spec);
+		auto new_size = new_ntk.ninternal();
+		auto new_simvec = new_ntk.simulate();
 		if (old_size != new_size) {
 			std::cout << "hur" << std::endl;
 		}

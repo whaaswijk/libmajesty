@@ -5,6 +5,10 @@
 extern "C" int yylex(void);
 extern "C" void scan_string(const char*); 
 extern "C" void delete_buffer(void);
+extern "C" void init_parser(void);
+extern "C" void destroy_parser(void);
+extern void yy_flush_buffer(YY_BUFFER_STATE buffer);
+
 using namespace std;
 
 #define handle_literal() { return *yytext; } 
@@ -79,4 +83,12 @@ void scan_string(const char* str) {
 
 void delete_buffer() {
     yy_delete_buffer(buf);
+}
+
+void init_parser() {
+}
+
+void destroy_parser() {
+    yy_flush_buffer(YY_CURRENT_BUFFER);
+    //yy_delete_buffer(YY_CURRENT_BUFFER);
 }
