@@ -356,14 +356,14 @@ namespace majesty {
 		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
 
-	pair<nodeid, bool> parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& cut_fanin) {
+	pair<nodeid, bool> parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& cut_fanin, const nodemap& nodemap) {
 		const auto& opt_nodes = opt_ntk.nodes();
 		vector<nodeid> nids(opt_nodes.size());
 		vector<nodeid> ntk_fanin(2);
 		for (auto i = 0u; i < opt_nodes.size(); i++) {
 			const auto& node = opt_nodes[i];
 			if (node.pi) {
-				nids[i] = cut_fanin[i];
+				nids[i] = nodemap.at(cut_fanin[i]).first;
 			} else {
 				ntk_fanin[0] = nids[node.fanin[0]];
 				ntk_fanin[1] = nids[node.fanin[1]];
@@ -432,7 +432,7 @@ namespace majesty {
 		}
 		*/
 
-		return parse_into_logic_ntk(ntk, opt_ntk, node.fanin);
+		return parse_into_logic_ntk(ntk, opt_ntk, node.fanin, nodemap);
 	}
 	
 	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk) {
