@@ -18,4 +18,4 @@ link_directories(${LINK_DIRECTORIES} $ENV{HIREDIS_HOME})
 set(SOURCE_FILES main.cpp)
 
 add_executable(majesty_test ${SOURCE_FILES})
-target_link_libraries(majesty_test LINK_PUBLIC libmajesty.a MiniSat libabc.a readline dl libhiredis.a ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(majesty_test LINK_PUBLIC libmajesty.a MiniSat libabc.a readline dl libhiredis.a cryptominisat5.so ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

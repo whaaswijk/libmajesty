@@ -18,6 +18,7 @@ TEST_CASE("Exact Synthesis Utility Functions", "[exact synthesis]") {
 	REQUIRE(pi_value(5, 32) == true);
 }
 
+/*
 TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 	auto pi1 = cirkit::tt_nth_var(0);
 	auto pi2 = cirkit::tt_nth_var(1);
@@ -72,7 +73,37 @@ TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 		auto ntk = size_optimum_ntk<sat_solver>(2, &spec);
 		REQUIRE(ntk.ninternal() == 2);
 	}
+}
+*/
 
+TEST_CASE("CryptoMiniSaat Trivial Exact Synthesis", "[exact synthesis]") {
+	auto pi1 = cirkit::tt_nth_var(0);
+	auto pi2 = cirkit::tt_nth_var(1);
+	auto pi3 = cirkit::tt_nth_var(2);
+
+	auto andfunc = pi1 & pi2;
+	auto orfunc = andfunc | pi3;
+	auto invorfunc = andfunc | ~pi3; 
+	cirkit::tt_to_minbase(andfunc);
+	auto andfuncstr = cirkit::to_string(andfunc);
+	cirkit::tt_to_minbase(orfunc);
+	auto orfuncstr = cirkit::to_string(orfunc);
+	cirkit::tt_to_minbase(invorfunc);
+	invorfunc = ~invorfunc;
+	auto invorfuncstr = cirkit::to_string(invorfunc);
+
+	synth_spec spec;
+	spec.verbose = true;
+	spec.use_cegar = true;
+		
+	uint64_t andfuncint = andfunc.to_ulong();
+	uint64_t orfuncint = orfunc.to_ulong();
+	uint64_t invorfuncint = invorfunc.to_ulong();
+	{
+		spec.nr_vars = 2;
+		auto ntk = size_optimum_ntk<CMSat::SATSolver>(andfuncint, &spec);
+		REQUIRE(ntk.ninternal() == 1);
+	}
 }
 
 TEST_CASE("New Selection Variable", "[exact synthesis]") {
@@ -159,7 +190,6 @@ TEST_CASE("LUT Mapping", "[techmapping]") {
     lut_ntk = lut_map_area(ntk, cut_params.get());
     write_blif(lut_ntk, "div.blif");
 }
-*/
 
 TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     auto xmg = read_verilog("../assets/adder.v");
@@ -170,6 +200,7 @@ TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     auto opt_ntk = logic_ntk_from_luts(lut_ntk);
     write_blif(opt_ntk, "decomp_adder.blif");
 }
+*/
 
 TEST_CASE("XMG String Serialization", "[serialization]") {
     // Get a MIG and use it to test on

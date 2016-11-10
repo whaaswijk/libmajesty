@@ -80,20 +80,24 @@ namespace majesty {
 	}
 
 
-	CMSat::SATSolver cms_solver;
+	static CMSat::SATSolver* cms_solver = nullptr;
 	template<>
 	inline void init_solver<CMSat::SATSolver>() {
+		assert(cms_solver == nullptr);
+		cms_solver = new CMSat::SATSolver;
 	}
 
 	template<>
 	inline void restart_solver<CMSat::SATSolver>() {
-		cms_solver = CMSat::SATSolver();
+		assert(cms_solver != nullptr);
+		delete cms_solver;
+		cms_solver = new CMSat::SATSolver;
 		//cms_solver.set_num_threads(4);
 	}
 
 	template<>
 	inline void set_nr_vars<CMSat::SATSolver>(unsigned nr_vars) {
-		cms_solver.new_vars(nr_vars);
+		cms_solver->new_vars(nr_vars);
 	}
 
 	template<>
@@ -103,12 +107,12 @@ namespace majesty {
 		for (auto i = begin; i < end; i++) {
 			clause.push_back(CMSat::Lit(Abc_Lit2Var(*i), Abc_LitIsCompl(*i)));
 		}
-		cms_solver.add_clause(clause);
+		cms_solver->add_clause(clause);
 	}
 
 	template<>
 	inline int var_value<CMSat::SATSolver>(int var) {
-		return cms_solver.get_model()[var] == CMSat::boolToLBool(true);
+		return cms_solver->get_model()[var] == CMSat::boolToLBool(true);
 	}
 
 	template<>
@@ -118,7 +122,7 @@ namespace majesty {
 		for (auto i = begin; i < end; i++) {
 			assumps.push_back(CMSat::Lit(Abc_Lit2Var(*i), Abc_LitIsCompl(*i)));
 		}
-		auto res = cms_solver.solve(&assumps);
+		auto res = cms_solver->solve(&assumps);
 //#define l_True  lbool((uint8_t)0) // gcc does not do constant propagation if these are real constants.
 //#define l_False lbool((uint8_t)1)
 //#define l_Undef lbool((uint8_t)2)
@@ -133,6 +137,9 @@ namespace majesty {
 
 	template<>
 	inline void destroy_solver<CMSat::SATSolver>() {
+		assert(cms_solver != nullptr);
+		delete cms_solver;
+		cms_solver = nullptr;
 	}
 }
 
