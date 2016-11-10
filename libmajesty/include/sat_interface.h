@@ -85,11 +85,9 @@ namespace majesty {
 	inline void init_solver<CMSat::SATSolver>() {
 		assert(cms_solver == nullptr);
 		cms_solver = new CMSat::SATSolver;
-#ifndef _WIN32
-		auto nr_threads = std::thread::hardware_concurency();
-		//cout << "cms using " << nr_threads << " threads" << endl;
+		auto nr_threads = std::thread::hardware_concurrency();
+		//std::cout << "cms using " << nr_threads << " threads" << std::endl;
 		cms_solver->set_num_threads(nr_threads);
-#endif
 	}
 
 	template<>
@@ -97,11 +95,9 @@ namespace majesty {
 		assert(cms_solver != nullptr);
 		delete cms_solver;
 		cms_solver = new CMSat::SATSolver;
-#ifndef _WIN32
-		auto nr_threads = std::thread::hardware_concurency();
+		auto nr_threads = std::thread::hardware_concurrency();
 		//cout << "cms using " << nr_threads << " threads" << endl;
 		cms_solver->set_num_threads(nr_threads);
-#endif
 	}
 
 	template<>

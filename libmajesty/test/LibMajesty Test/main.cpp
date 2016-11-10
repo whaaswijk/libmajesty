@@ -76,35 +76,7 @@ TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 }
 */
 
-TEST_CASE("CryptoMiniSaat Trivial Exact Synthesis", "[exact synthesis]") {
-	auto pi1 = cirkit::tt_nth_var(0);
-	auto pi2 = cirkit::tt_nth_var(1);
-	auto pi3 = cirkit::tt_nth_var(2);
 
-	auto andfunc = pi1 & pi2;
-	auto orfunc = andfunc | pi3;
-	auto invorfunc = andfunc | ~pi3; 
-	cirkit::tt_to_minbase(andfunc);
-	auto andfuncstr = cirkit::to_string(andfunc);
-	cirkit::tt_to_minbase(orfunc);
-	auto orfuncstr = cirkit::to_string(orfunc);
-	cirkit::tt_to_minbase(invorfunc);
-	invorfunc = ~invorfunc;
-	auto invorfuncstr = cirkit::to_string(invorfunc);
-
-	synth_spec spec;
-	spec.verbose = true;
-	spec.use_cegar = true;
-		
-	uint64_t andfuncint = andfunc.to_ulong();
-	uint64_t orfuncint = orfunc.to_ulong();
-	uint64_t invorfuncint = invorfunc.to_ulong();
-	{
-		spec.nr_vars = 2;
-		auto ntk = size_optimum_ntk<CMSat::SATSolver>(andfuncint, &spec);
-		REQUIRE(ntk.ninternal() == 1);
-	}
-}
 
 TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	synth_spec spec;
@@ -136,6 +108,36 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 #include <convert.h>
 #include <lut_cover.h>
 #include <lut_optimize.h>
+
+TEST_CASE("CryptoMiniSaat Trivial Exact Synthesis", "[exact synthesis]") {
+	auto pi1 = cirkit::tt_nth_var(0);
+	auto pi2 = cirkit::tt_nth_var(1);
+	auto pi3 = cirkit::tt_nth_var(2);
+
+	auto andfunc = pi1 & pi2;
+	auto orfunc = andfunc | pi3;
+	auto invorfunc = andfunc | ~pi3; 
+	cirkit::tt_to_minbase(andfunc);
+	auto andfuncstr = cirkit::to_string(andfunc);
+	cirkit::tt_to_minbase(orfunc);
+	auto orfuncstr = cirkit::to_string(orfunc);
+	cirkit::tt_to_minbase(invorfunc);
+	invorfunc = ~invorfunc;
+	auto invorfuncstr = cirkit::to_string(invorfunc);
+
+	synth_spec spec;
+	spec.verbose = true;
+	spec.use_cegar = true;
+		
+	uint64_t andfuncint = andfunc.to_ulong();
+	uint64_t orfuncint = orfunc.to_ulong();
+	uint64_t invorfuncint = invorfunc.to_ulong();
+	{
+		spec.nr_vars = 2;
+		auto ntk = size_optimum_ntk<CMSat::SATSolver>(andfuncint, &spec);
+		REQUIRE(ntk.ninternal() == 1);
+	}
+}
 
 TEST_CASE("CryptoMiniSat", "[exact synthesis]") {
 	synth_spec spec;
