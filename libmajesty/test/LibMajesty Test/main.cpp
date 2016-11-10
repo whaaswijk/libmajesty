@@ -43,33 +43,33 @@ TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 	uint64_t invorfuncint = invorfunc.to_ulong();
 	{
 		spec.nr_vars = 2;
-		auto ntk = size_optimum_ntk(andfuncint, &spec);
+		auto ntk = size_optimum_ntk<sat_solver>(andfuncint, &spec);
 		REQUIRE(ntk.ninternal() == 1);
 	}
 	{
 		spec.nr_vars = 3;
-		auto ntk = size_optimum_ntk(orfuncint, &spec);
+		auto ntk = size_optimum_ntk<sat_solver>(orfuncint, &spec);
 		REQUIRE(ntk.ninternal() != 1);
 	}
 	{
 		spec.nr_vars = 3;
-		auto ntk = size_optimum_ntk(orfuncint, &spec);
+		auto ntk = size_optimum_ntk<sat_solver>(orfuncint, &spec);
 		REQUIRE(ntk.ninternal() == 2);
 	}
 	{
 		spec.nr_vars = 3;
-		auto ntk = size_optimum_ntk(invorfuncint, &spec);
+		auto ntk = size_optimum_ntk<sat_solver>(invorfuncint, &spec);
 		REQUIRE(ntk.ninternal() != 1);
 	}
 	{
 		spec.nr_vars = 3;
-		auto ntk = size_optimum_ntk(invorfuncint, &spec);
+		auto ntk = size_optimum_ntk<sat_solver>(invorfuncint, &spec);
 		auto ninternal = ntk.ninternal();
 		REQUIRE(ninternal == 2);
 	}
 	{
 		spec.nr_vars = 3;
-		auto ntk = size_optimum_ntk(2, &spec);
+		auto ntk = size_optimum_ntk<sat_solver>(2, &spec);
 		REQUIRE(ntk.ninternal() == 2);
 	}
 
@@ -86,10 +86,10 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	spec.use_exact_nr_svars = true;
 	spec.use_no_reapplication = true;
 	for (auto f = 0u; f < 256; f++) {
-		auto old_ntk = size_optimum_ntk(f, &spec);
+		auto old_ntk = size_optimum_ntk<sat_solver>(f, &spec);
 		auto old_size = old_ntk.ninternal();
 		auto old_simvec = old_ntk.simulate();
-		auto new_ntk = size_optimum_ntk_ns(f, &spec);
+		auto new_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
 		auto new_size = new_ntk.ninternal();
 		auto new_simvec = new_ntk.simulate();
 		if (old_size != new_size) {

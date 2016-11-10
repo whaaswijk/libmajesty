@@ -136,6 +136,7 @@
     <ClCompile Include="src\mlputil.c" />
     <ClCompile Include="src\npn_canonization.cpp" />
     <ClCompile Include="src\range_utils.cpp" />
+    <ClCompile Include="src\sat_interface.cpp" />
     <ClCompile Include="src\strashmap.cpp" />
     <ClCompile Include="src\truth_table_utils.cpp" />
     <ClCompile Include="src\xmg.cpp" />
@@ -146,6 +147,7 @@
     <ClInclude Include="include\logic_network.h" />
     <ClInclude Include="include\maj_io.h" />
     <ClInclude Include="include\mig_interface.h" />
+    <ClInclude Include="include\sat_interface.h" />
     <ClInclude Include="include\xmg.h" />
     <ClInclude Include="include\bitset_utils.hpp" />
     <ClInclude Include="src\conversion_utils.hpp" />

@@ -4,14 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <map>
-
-/*
-using Minisat::Solver;
-using Minisat::Var;
-using Minisat::Lit;
-using Minisat::mkLit;
-using Minisat::lbool;
-*/
+#include <sat_interface.h>
 
 using namespace cirkit;
 using namespace boost;
@@ -19,7 +12,8 @@ using namespace std;
 
 namespace majesty {
 
-	static inline void create_variables(sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	static inline void create_variables(synth_spec* spec) {
 		auto var_ctr = 0u;
 
 		spec->selection_var_offset = var_ctr;
@@ -44,10 +38,11 @@ namespace majesty {
 		spec->nr_simulation_vars = nr_simulation_vars;
 		var_ctr += nr_simulation_vars;
 		
-		sat_solver_setnvars(solver, var_ctr);
+		set_nr_vars<S>(var_ctr);
 	}
 
-	static inline void create_variables_ns(sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	static inline void create_variables_ns(synth_spec* spec) {
 		auto var_ctr = 0u;
 
 		spec->selection_var_offset = var_ctr;
@@ -65,9 +60,11 @@ namespace majesty {
 		spec->nr_simulation_vars = nr_simulation_vars;
 		var_ctr += nr_simulation_vars;
 		
-		sat_solver_setnvars(solver, var_ctr);
+		set_nr_vars<S>(var_ctr);
 	}
 
+
+	template<typename S>
 	unsigned optimum_ntk_size(uint64_t func, synth_spec* spec) {
 		// TODO: Check if function is constant or variable. If so, return early.
 
@@ -80,23 +77,24 @@ namespace majesty {
 		// Else start by checking for networks with increasing nrs. of gates.
 		spec->nr_gates = 1u;
 		spec->tt_size = (1 << spec->nr_vars) - 1;
-		auto solver = sat_solver_new();
+		init_solver<S>();
 		while (true) {
-			sat_solver_restart(solver);
-			auto network_exists = exists_fanin_2_ntk(func, solver, spec);
+			restart_solver();
+			auto network_exists = exists_fanin_2_ntk<S>(func, spec);
 			if (network_exists == l_True) {
 				if (spec->verbose) {
-					print_fanin_2_solution(func, solver, spec);
+					print_fanin_2_solution<S>(func, spec);
 				}
 				break;
 			}
 			++spec->nr_gates;
 		}
-		sat_solver_delete(solver);
+		destroy_solver();
 		
 		return spec->nr_gates;
 	}
 
+	template<typename S>
 	unsigned optimum_ntk_size_ns(uint64_t func, synth_spec* spec) {
 		// TODO: Check if function is constant or variable. If so, return early.
 
@@ -109,23 +107,24 @@ namespace majesty {
 		// Else start by checking for networks with increasing nrs. of gates.
 		spec->nr_gates = 1u;
 		spec->tt_size = (1 << spec->nr_vars) - 1;
-		auto solver = sat_solver_new();
+		init_solver();
 		while (true) {
-			sat_solver_restart(solver);
-			auto network_exists = exists_fanin_2_ntk_ns(func, solver, spec);
+			restart_solver();
+			auto network_exists = exists_fanin_2_ntk_ns<S>(func, spec);
 			if (network_exists == l_True) {
 				if (spec->verbose) {
-					print_fanin_2_solution_ns(func, solver, spec);
+					print_fanin_2_solution_ns<S>(func, spec);
 				}
 				break;
 			}
 			++spec->nr_gates;
 		}
-		sat_solver_delete(solver);
+		destroy_solver();
 		
 		return spec->nr_gates;
 	}
 
+	template<typename S>
 	logic_ntk size_optimum_ntk(uint64_t func, synth_spec* spec) {
 		// TODO: Check if function is constant or variable. If so, return early.
 
@@ -140,27 +139,28 @@ namespace majesty {
 		logic_ntk ntk;
 		spec->nr_gates = 1u;
 		spec->tt_size = (1 << spec->nr_vars) - 1;
-		auto solver = sat_solver_new();
+		init_solver();
 		while (true) {
 			if (spec->verbose) {
 				cout << "trying with " << spec->nr_gates << " gates\n";
 			}
-			sat_solver_restart(solver);
-			auto network_exists = exists_fanin_2_ntk(func, solver, spec);
+			restart_solver();
+			auto network_exists = exists_fanin_2_ntk<S>(func, spec);
 			if (network_exists == l_True) {
-				ntk = extract_fanin_2_ntk(func, solver, spec, invert);
+				ntk = extract_fanin_2_ntk(func, spec, invert);
 				if (spec->verbose) {
-					print_fanin_2_solution(func, solver, spec);
+					print_fanin_2_solution(func, spec);
 				}
 				break;
 			}
 			++spec->nr_gates;
 		}
-		sat_solver_delete(solver);
+		destroy_solver();
 		
 		return std::move(ntk);
 	}
 
+	template<typename S>
 	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec* spec) {
 		// TODO: Check if function is constant or variable. If so, return early.
 
@@ -175,29 +175,30 @@ namespace majesty {
 		logic_ntk ntk;
 		spec->nr_gates = 1u;
 		spec->tt_size = (1 << spec->nr_vars) - 1;
-		auto solver = sat_solver_new();
+		init_solver();
 		while (true) {
 			if (spec->verbose) {
 				cout << "trying with " << spec->nr_gates << " gates\n";
 			}
-			sat_solver_restart(solver);
-			auto network_exists = exists_fanin_2_ntk_ns(func, solver, spec);
+			restart_solver();
+			auto network_exists = exists_fanin_2_ntk_ns<S>(func, spec);
 			if (network_exists == l_True) {
-				ntk = extract_fanin_2_ntk_ns(func, solver, spec, invert);
+				ntk = extract_fanin_2_ntk_ns(func, spec, invert);
 				if (spec->verbose) {
-					print_fanin_2_solution(func, solver, spec);
+					print_fanin_2_solution(func, spec);
 				}
 				break;
 			}
 			++spec->nr_gates;
 		}
-		sat_solver_delete(solver);
+		destroy_solver();
 		
 		return std::move(ntk);
 	}
 	
 
-	static inline void add_selection_clause(sat_solver* solver, synth_spec* spec,
+	template<typename S>
+	static inline void add_selection_clause(synth_spec* spec,
 		int t, int i, int j, int k, bool a, bool b, bool c) {
 		static lit plits[5];
 		unsigned ctr = 0u;
@@ -229,10 +230,11 @@ namespace majesty {
 		if (b | c) {
 			plits[ctr++] = Abc_Var2Lit(gate_variable(i, ((c << 1) | b) - 1, spec), !a);
 		}
-		sat_solver_addclause(solver, plits, plits + ctr);
+		add_clause(plits, plits + ctr);
 	}
 
-	static inline void add_selection_clause_ns(sat_solver* solver, synth_spec* spec, 
+	template<typename S>
+	static inline void add_selection_clause_ns(synth_spec* spec, 
 		int t, int i, int j, int k, bool a, bool b, bool c) {
 		static lit plits[6];
 		unsigned ctr = 0u;
@@ -267,20 +269,21 @@ namespace majesty {
 		if (b | c) {
 			plits[ctr++] = Abc_Var2Lit(gate_variable(i, ((c << 1) | b) - 1, spec), !a);
 		}
-		sat_solver_addclause(solver, plits, plits + ctr);
+		add_clause(plits, plits + ctr);
 	}
 
-	static inline lbool cegar_solve(const uint64_t func, sat_solver* solver, synth_spec* spec, Vec_Int_t* vlits) {
+	template<typename S>
+	static inline lbool cegar_solve(const uint64_t func, synth_spec* spec, Vec_Int_t* vlits) {
 		Vec_IntClear(vlits);
 
 		while (true) {
-			auto res = sat_solver_solve(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits), 0, 0, 0, 0);
+			auto res = solve<S>(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			if (res == l_False) {
 				return res;
 			}
 
 			// Extract the network, simulate it, and find the first bit where it's different from the specification
-			auto ntk = extract_fanin_2_ntk(func, solver, spec);
+			auto ntk = extract_fanin_2_ntk<S>(func, spec);
 			auto ntk_func = ntk.simulate();
 
 			bool found_solution = true;
@@ -295,13 +298,13 @@ namespace majesty {
 					for (auto i = 0u; i < spec->nr_gates; i++) {
 						for (auto j = 0u; j < spec->nr_vars + i; j++) {
 							for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-								add_selection_clause(solver, spec, t, i, j, k, 0, 0, 1);
-								add_selection_clause(solver, spec, t, i, j, k, 0, 1, 0);
-								add_selection_clause(solver, spec, t, i, j, k, 0, 1, 1);
-								add_selection_clause(solver, spec, t, i, j, k, 1, 0, 0);
-								add_selection_clause(solver, spec, t, i, j, k, 1, 0, 1);
-								add_selection_clause(solver, spec, t, i, j, k, 1, 1, 0);
-								add_selection_clause(solver, spec, t, i, j, k, 1, 1, 1);
+								add_selection_clause(spec, t, i, j, k, 0, 0, 1);
+								add_selection_clause(spec, t, i, j, k, 0, 1, 0);
+								add_selection_clause(spec, t, i, j, k, 0, 1, 1);
+								add_selection_clause(spec, t, i, j, k, 1, 0, 0);
+								add_selection_clause(spec, t, i, j, k, 1, 0, 1);
+								add_selection_clause(spec, t, i, j, k, 1, 1, 0);
+								add_selection_clause(spec, t, i, j, k, 1, 1, 1);
 							}
 						}
 					}
@@ -316,17 +319,18 @@ namespace majesty {
 		return l_True;
 	}
 
-	static inline lbool cegar_solve_ns(const uint64_t func, sat_solver* solver, synth_spec* spec, Vec_Int_t* vlits) {
+	template<typename S>
+	static inline lbool cegar_solve_ns(const uint64_t func, synth_spec* spec, Vec_Int_t* vlits) {
 		Vec_IntClear(vlits);
 
 		while (true) {
-			auto res = sat_solver_solve(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits), 0, 0, 0, 0);
+			auto res = solve<S>(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			if (res == l_False) {
 				return res;
 			}
 
 			// Extract the network, simulate it, and find the first bit where it's different from the specification
-			auto ntk = extract_fanin_2_ntk_ns(func, solver, spec);
+			auto ntk = extract_fanin_2_ntk_ns<S>(func, spec);
 			auto ntk_func = ntk.simulate();
 
 			bool found_solution = true;
@@ -341,13 +345,13 @@ namespace majesty {
 					for (auto i = 0u; i < spec->nr_gates; i++) {
 						for (auto j = 0u; j < spec->nr_vars + i; j++) {
 							for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-								add_selection_clause_ns(solver, spec, t, i, j, k, 0, 0, 1);
-								add_selection_clause_ns(solver, spec, t, i, j, k, 0, 1, 0);
-								add_selection_clause_ns(solver, spec, t, i, j, k, 0, 1, 1);
-								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 0, 0);
-								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 0, 1);
-								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 1, 0);
-								add_selection_clause_ns(solver, spec, t, i, j, k, 1, 1, 1);
+								add_selection_clause_ns(spec, t, i, j, k, 0, 0, 1);
+								add_selection_clause_ns(spec, t, i, j, k, 0, 1, 0);
+								add_selection_clause_ns(spec, t, i, j, k, 0, 1, 1);
+								add_selection_clause_ns(spec, t, i, j, k, 1, 0, 0);
+								add_selection_clause_ns(spec, t, i, j, k, 1, 0, 1);
+								add_selection_clause_ns(spec, t, i, j, k, 1, 1, 0);
+								add_selection_clause_ns(spec, t, i, j, k, 1, 1, 1);
 							}
 						}
 					}
@@ -362,10 +366,11 @@ namespace majesty {
 		return l_True;
 	}
 
-	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	lbool exists_fanin_2_ntk(const uint64_t func, synth_spec* spec) {
 		static lit plits[3];
 		
-		create_variables(solver, spec);
+		create_variables<S>(spec);
 
 		// The gate's function constraint variables
 		if (spec->use_no_triv_ops) {
@@ -377,17 +382,17 @@ namespace majesty {
 				plits[0] = Abc_Var2Lit(func_var0, 0);
 				plits[1] = Abc_Var2Lit(func_var1, 0);
 				plits[2] = Abc_Var2Lit(func_var2, 0);
-				sat_solver_addclause(solver, plits, plits + 3);
+				add_clause(plits, plits + 3);
 
 				plits[0] = Abc_Var2Lit(func_var0, 0);
 				plits[1] = Abc_Var2Lit(func_var1, 1);
 				plits[2] = Abc_Var2Lit(func_var2, 1);
-				sat_solver_addclause(solver, plits, plits + 3);
+				add_clause(plits, plits + 3);
 				
 				plits[0] = Abc_Var2Lit(func_var0, 1);
 				plits[1] = Abc_Var2Lit(func_var1, 0);
 				plits[2] = Abc_Var2Lit(func_var2, 1);
-				sat_solver_addclause(solver, plits, plits + 3);
+				add_clause(plits, plits + 3);
 			}
 		}
 
@@ -401,18 +406,18 @@ namespace majesty {
 					Vec_IntPush(vlits, Abc_Var2Lit(sel_var, false));
 					if (!spec->use_cegar) {
 						for (auto t = 0u; t < spec->tt_size; t++) {
-							add_selection_clause(solver, spec, t, i, j, k, 0, 0, 1);
-							add_selection_clause(solver, spec, t, i, j, k, 0, 1, 0);
-							add_selection_clause(solver, spec, t, i, j, k, 0, 1, 1);
-							add_selection_clause(solver, spec, t, i, j, k, 1, 0, 0);
-							add_selection_clause(solver, spec, t, i, j, k, 1, 0, 1);
-							add_selection_clause(solver, spec, t, i, j, k, 1, 1, 0);
-							add_selection_clause(solver, spec, t, i, j, k, 1, 1, 1);
+							add_selection_clause(spec, t, i, j, k, 0, 0, 1);
+							add_selection_clause(spec, t, i, j, k, 0, 1, 0);
+							add_selection_clause(spec, t, i, j, k, 0, 1, 1);
+							add_selection_clause(spec, t, i, j, k, 1, 0, 0);
+							add_selection_clause(spec, t, i, j, k, 1, 0, 1);
+							add_selection_clause(spec, t, i, j, k, 1, 1, 0);
+							add_selection_clause(spec, t, i, j, k, 1, 1, 1);
 						}
 					}
 				}
 			}
-			sat_solver_addclause(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits));
+			add_clause(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			// Allow at most one selection variable to be true at a time
 			if (spec->use_exact_nr_svars || spec->use_cegar) {
 				for (auto u = 0u; u < Vec_IntSize(vlits) - 1; u++) {
@@ -421,7 +426,7 @@ namespace majesty {
 						auto svar2 = Abc_Lit2Var(Vec_IntEntry(vlits, v));
 						plits[0] = Abc_Var2Lit(svar1, true);
 						plits[1] = Abc_Var2Lit(svar2, true);
-						sat_solver_addclause(solver, plits, plits + 2);
+						add_clause(plits, plits + 2);
 					}
 				}
 			}
@@ -440,7 +445,7 @@ namespace majesty {
 									auto sipvar = selection_variable(spec, i+1, jp, kp);
 									plits[0] = Abc_Var2Lit(sivar, true);
 									plits[1] = Abc_Var2Lit(sipvar, true);
-									sat_solver_addclause(solver, plits, plits + 2);
+									add_clause(plits, plits + 2);
 								}
 							}
 						}
@@ -463,7 +468,7 @@ namespace majesty {
 						Vec_IntPush(vlits, Abc_Var2Lit(sel_var, false));
 					}
 				}
-				sat_solver_addclause(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits));
+				add_clause(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			}
 		}
 
@@ -477,10 +482,10 @@ namespace majesty {
 							plits[0] = Abc_Var2Lit(sivar, true);
 							auto sipvar = selection_variable(spec, i + 1, j, i + spec->nr_vars);
 							plits[1] = Abc_Var2Lit(sipvar, true);
-							sat_solver_addclause(solver, plits, plits + 2);
+							add_clause(plits, plits + 2);
 							sipvar = selection_variable(spec, i + 1, k, i + spec->nr_vars);
 							plits[1] = Abc_Var2Lit(sipvar, true);
-							sat_solver_addclause(solver, plits, plits + 2);
+							add_clause(plits, plits + 2);
 						}
 					}
 				}
@@ -489,7 +494,7 @@ namespace majesty {
 
 
 		if (spec->use_cegar) {
-			auto res = cegar_solve(func, solver, spec, vlits);
+			auto res = cegar_solve(func, spec, vlits);
 			Vec_IntFree(vlits);
 			return res;
 		} else {
@@ -500,17 +505,18 @@ namespace majesty {
 				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !((func >> (t + 1)) & 1)));
 			}
 
-			auto res = sat_solver_solve(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits), 0, 0, 0, 0);
+			auto res = solve(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			Vec_IntFree(vlits);
 			return res;
 		}
 	}
 	
 	// Tries to find a network using the new selection variable implementation
-	lbool exists_fanin_2_ntk_ns(const uint64_t func, sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	lbool exists_fanin_2_ntk_ns(const uint64_t func, synth_spec* spec) {
 		static lit plits[4];
 		
-		create_variables_ns(solver, spec);
+		create_variables_ns(spec);
 
 		// The gate's function constraint variables
 		if (spec->use_no_triv_ops) {
@@ -522,17 +528,17 @@ namespace majesty {
 				plits[0] = Abc_Var2Lit(func_var0, 0);
 				plits[1] = Abc_Var2Lit(func_var1, 0);
 				plits[2] = Abc_Var2Lit(func_var2, 0);
-				sat_solver_addclause(solver, plits, plits + 3);
+				add_clause<S>(plits, plits + 3);
 
 				plits[0] = Abc_Var2Lit(func_var0, 0);
 				plits[1] = Abc_Var2Lit(func_var1, 1);
 				plits[2] = Abc_Var2Lit(func_var2, 1);
-				sat_solver_addclause(solver, plits, plits + 3);
+				add_clause<S>(plits, plits + 3);
 				
 				plits[0] = Abc_Var2Lit(func_var0, 1);
 				plits[1] = Abc_Var2Lit(func_var1, 0);
 				plits[2] = Abc_Var2Lit(func_var2, 1);
-				sat_solver_addclause(solver, plits, plits + 3);
+				add_clause<S>(plits, plits + 3);
 			}
 		}
 
@@ -554,7 +560,7 @@ namespace majesty {
 							Vec_IntPush(vlits,  Abc_Var2Lit(selection_variable_ns(spec, i, j), true));
 						}
 					}
-					sat_solver_addclause(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits));
+					add_clause(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 				} while (std::next_permutation(v.begin(), v.end()));
 			}
 			// Next we prevent more than n-k vars from being false by selecting n choose n-k+1 subsets
@@ -568,7 +574,7 @@ namespace majesty {
 							Vec_IntPush(vlits,  Abc_Var2Lit(selection_variable_ns(spec, i, j), false));
 						}
 					}
-					sat_solver_addclause(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits));
+					add_clause(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 				} while (std::next_permutation(v.begin(), v.end()));
 			}
 
@@ -577,13 +583,13 @@ namespace majesty {
 				for (auto j = 0; j < spec->nr_vars + i; j++) {
 					for (auto k = j + 1; k < spec->nr_vars + i; k++) {
 						for (auto t = 0u; t < spec->tt_size; t++) {
-							add_selection_clause_ns(solver, spec, t, i, j, k, 0, 0, 1);
-							add_selection_clause_ns(solver, spec, t, i, j, k, 0, 1, 0);
-							add_selection_clause_ns(solver, spec, t, i, j, k, 0, 1, 1);
-							add_selection_clause_ns(solver, spec, t, i, j, k, 1, 0, 0);
-							add_selection_clause_ns(solver, spec, t, i, j, k, 1, 0, 1);
-							add_selection_clause_ns(solver, spec, t, i, j, k, 1, 1, 0);
-							add_selection_clause_ns(solver, spec, t, i, j, k, 1, 1, 1);
+							add_selection_clause_ns(spec, t, i, j, k, 0, 0, 1);
+							add_selection_clause_ns(spec, t, i, j, k, 0, 1, 0);
+							add_selection_clause_ns(spec, t, i, j, k, 0, 1, 1);
+							add_selection_clause_ns(spec, t, i, j, k, 1, 0, 0);
+							add_selection_clause_ns(spec, t, i, j, k, 1, 0, 1);
+							add_selection_clause_ns(spec, t, i, j, k, 1, 1, 0);
+							add_selection_clause_ns(spec, t, i, j, k, 1, 1, 1);
 						}
 					}
 				}
@@ -598,7 +604,7 @@ namespace majesty {
 					auto sel_var = selection_variable_ns(spec, ip, i + spec->nr_vars);
 					Vec_IntPush(vlits, Abc_Var2Lit(sel_var, false));
 				}
-				sat_solver_addclause(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits));
+				add_clause(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			}
 		}
 
@@ -619,7 +625,7 @@ namespace majesty {
 									plits[1] = Abc_Var2Lit(sivar2, true);
 									plits[2] = Abc_Var2Lit(sipvar1, true);
 									plits[3] = Abc_Var2Lit(sipvar2, true);
-									sat_solver_addclause(solver, plits, plits + 4);
+									add_clause(plits, plits + 4);
 								}
 							}
 						}
@@ -642,10 +648,10 @@ namespace majesty {
 							auto sipvar2 = selection_variable_ns(spec, ip, j);
 							plits[2] = Abc_Var2Lit(sipvar1, true);
 							plits[3] = Abc_Var2Lit(sipvar2, true);
-							sat_solver_addclause(solver, plits, plits + 4);
+							add_clause(plits, plits + 4);
 							sipvar2 = selection_variable_ns(spec, ip, k);
 							plits[3] = Abc_Var2Lit(sipvar2, true);
-							sat_solver_addclause(solver, plits, plits + 4);
+							add_clause(plits, plits + 4);
 						}
 					}
 				}
@@ -653,7 +659,7 @@ namespace majesty {
 		}
 		
 		if (spec->use_cegar) {
-			auto res = cegar_solve_ns(func, solver, spec, vlits);
+			auto res = cegar_solve_ns(func, spec, vlits);
 			Vec_IntFree(vlits);
 			return res;
 		} else {
@@ -663,17 +669,19 @@ namespace majesty {
 				auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
 				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !((func >> (t + 1)) & 1)));
 			}
-			auto res = sat_solver_solve(solver, Vec_IntArray(vlits), Vec_IntLimit(vlits), 0, 0, 0, 0);
+			auto res = solve(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			Vec_IntFree(vlits);
 			return res;
 		}
 	}
 	
-    logic_ntk extract_fanin_2_ntk(const tt& func, sat_solver* solver, synth_spec* spec) {
-        return extract_fanin_2_ntk(func, solver, spec, false);
+	template<typename S>
+    logic_ntk extract_fanin_2_ntk(const tt& func, synth_spec* spec) {
+        return extract_fanin_2_ntk(func, spec, false);
     }
 
-	logic_ntk extract_fanin_2_ntk(const tt& func, sat_solver* solver, synth_spec* spec, bool invert) {
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk(const tt& func, synth_spec* spec, bool invert) {
 		logic_ntk ntk;
 
 		for (auto i = 0u; i < spec->nr_vars; i++) {
@@ -686,14 +694,14 @@ namespace majesty {
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-					if (sat_solver_var_value(solver, spec->selection_var_offset + sel_var_ctr)) {
+					if (var_value(spec->selection_var_offset + sel_var_ctr)) {
 						// Gate i has gates j and k as fanin
 						fanin[0] = j;
 						fanin[1] = k;
 						nodefunc.set(0, 0);
-						nodefunc.set(1, sat_solver_var_value(solver, gate_variable(i, 0, spec)));
-						nodefunc.set(2, sat_solver_var_value(solver, gate_variable(i, 1, spec)));
-						nodefunc.set(3, sat_solver_var_value(solver, gate_variable(i, 2, spec)));
+						nodefunc.set(1, var_value(gate_variable(i, 0, spec)));
+						nodefunc.set(2, var_value(gate_variable(i, 1, spec)));
+						nodefunc.set(3, var_value(gate_variable(i, 2, spec)));
 						ntk.create_node(fanin, nodefunc);
 					}
 				}
@@ -710,11 +718,13 @@ namespace majesty {
 		return ntk;
 	}
 	
-	logic_ntk extract_fanin_2_ntk(const uint64_t func, sat_solver* solver, synth_spec* spec) {
-		return extract_fanin_2_ntk(func, solver, spec, false);
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, synth_spec* spec) {
+		return extract_fanin_2_ntk(func, spec, false);
 	}
 
-	logic_ntk extract_fanin_2_ntk(const uint64_t func, sat_solver* solver, synth_spec* spec, bool invert) {
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, synth_spec* spec, bool invert) {
 		logic_ntk ntk;
 		
 		for (auto i = 0u; i < spec->nr_vars; i++) {
@@ -727,14 +737,14 @@ namespace majesty {
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-					if (sat_solver_var_value(solver, spec->selection_var_offset + selection_var_ctr++)) {
+					if (var_value(spec->selection_var_offset + selection_var_ctr++)) {
 						// Gate i has gates j and k as fanin
 						fanin[0] = j;
 						fanin[1] = k;
 						nodefunc.set(0, 0);
-						nodefunc.set(1, sat_solver_var_value(solver, gate_variable(i, 0, spec)));
-						nodefunc.set(2, sat_solver_var_value(solver, gate_variable(i, 1, spec)));
-						nodefunc.set(3, sat_solver_var_value(solver, gate_variable(i, 2, spec)));
+						nodefunc.set(1, var_value(gate_variable(i, 0, spec)));
+						nodefunc.set(2, var_value(gate_variable(i, 1, spec)));
+						nodefunc.set(3, var_value(gate_variable(i, 2, spec)));
 						ntk.create_node(fanin, nodefunc);
 					}
 				}
@@ -751,11 +761,13 @@ namespace majesty {
 		return ntk;
 	}
 
-	logic_ntk extract_fanin_2_ntk_ns(const tt& func, sat_solver* solver, synth_spec* spec) {
-		return extract_fanin_2_ntk_ns(func, solver, spec, false);
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const tt& func, synth_spec* spec) {
+		return extract_fanin_2_ntk_ns<S>(func, spec, false);
 	}
 
-	logic_ntk extract_fanin_2_ntk_ns(const tt& func, sat_solver* solver, synth_spec* spec, bool invert) {
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const tt& func, synth_spec* spec, bool invert) {
 		logic_ntk ntk;
 
 		for (auto i = 0u; i < spec->nr_vars; i++) {
@@ -770,7 +782,7 @@ namespace majesty {
 			auto in1 = 0u;
 			auto in2 = 0u;
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
-				if (sat_solver_var_value(solver, spec->selection_var_offset + selection_var_ctr++)) {
+				if (var_value<S>(spec->selection_var_offset + selection_var_ctr++)) {
 					if (inputs_found == 0u) {
 						in1 = j;
 					} else {
@@ -781,9 +793,9 @@ namespace majesty {
 						fanin[0] = in1;
 						fanin[1] = in2;
 						nodefunc.set(0, 0);
-						nodefunc.set(1, sat_solver_var_value(solver, gate_variable(i, 0, spec)));
-						nodefunc.set(2, sat_solver_var_value(solver, gate_variable(i, 1, spec)));
-						nodefunc.set(3, sat_solver_var_value(solver, gate_variable(i, 2, spec)));
+						nodefunc.set(1, var_value<S>(gate_variable(i, 0, spec)));
+						nodefunc.set(2, var_value<S>(gate_variable(i, 1, spec)));
+						nodefunc.set(3, var_value<S>(gate_variable(i, 2, spec)));
 						ntk.create_node(fanin, nodefunc);
 					}
 				}
@@ -800,11 +812,13 @@ namespace majesty {
 		return ntk;
 	}
 
-	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver* solver, synth_spec* spec) {
-		return extract_fanin_2_ntk_ns(func, solver, spec, false);
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, synth_spec* spec) {
+		return extract_fanin_2_ntk_ns<S>(func, spec, false);
 	}
 
-	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver* solver, synth_spec* spec, bool invert) {
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, synth_spec* spec, bool invert) {
 		logic_ntk ntk;
 		
 		for (auto i = 0u; i < spec->nr_vars; i++) {
@@ -819,7 +833,7 @@ namespace majesty {
 			auto in1 = 0u;
 			auto in2 = 0u;
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
-				if (sat_solver_var_value(solver, spec->selection_var_offset + selection_var_ctr++)) {
+				if (var_value<S>(spec->selection_var_offset + selection_var_ctr++)) {
 					if (inputs_found == 0u) {
 						in1 = j;
 					} else {
@@ -830,9 +844,9 @@ namespace majesty {
 						fanin[0] = in1;
 						fanin[1] = in2;
 						nodefunc.set(0, 0);
-						nodefunc.set(1, sat_solver_var_value(solver, gate_variable(i, 0, spec)));
-						nodefunc.set(2, sat_solver_var_value(solver, gate_variable(i, 1, spec)));
-						nodefunc.set(3, sat_solver_var_value(solver, gate_variable(i, 2, spec)));
+						nodefunc.set(1, var_value<S>(gate_variable(i, 0, spec)));
+						nodefunc.set(2, var_value<S>(gate_variable(i, 1, spec)));
+						nodefunc.set(3, var_value<S>(gate_variable(i, 2, spec)));
 						ntk.create_node(fanin, nodefunc);
 					}
 				}
@@ -849,23 +863,25 @@ namespace majesty {
 		return ntk;
 	}
 
-	void print_fanin_2_solution(const uint64_t func, sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	void print_fanin_2_solution(const uint64_t func, synth_spec* spec) {
 		tt functt((1u << spec->nr_vars), func);
-		print_fanin_2_solution(functt, solver, spec);
+		print_fanin_2_solution<S>(functt, spec);
 	}
 
-	void print_fanin_2_solution(const tt& func, sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	void print_fanin_2_solution(const tt& func, synth_spec* spec) {
 		cout << "Solution for function " << to_string(func) << endl;
 
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto t = 0u; t < spec->tt_size; t++) {
-				cout << "x_" << i << "_" << t << ": " << sat_solver_var_value(solver, simulation_variable(i, t, spec)) << endl;
+				cout << "x_" << i << "_" << t << ": " << var_value<S>(simulation_variable(i, t, spec)) << endl;
 			}
 		}
 
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto j = 0u; j < 3; j++) {
-				cout << "f_" << i << "_" << j << ": " << sat_solver_var_value(solver, gate_variable(i, j, spec)) << endl;
+				cout << "f_" << i << "_" << j << ": " << var_value(gate_variable(i, j, spec)) << endl;
 			}
 		}
 
@@ -874,34 +890,36 @@ namespace majesty {
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
 					cout << "s_" << i << "_" << j << "_" << k << ": " << 
-						sat_solver_var_value(solver, spec->selection_var_offset + selection_var_ctr++) << endl;
+						var_value<S>(spec->selection_var_offset + selection_var_ctr++) << endl;
 				}
 			}
 		}
 	}
 	
-	void print_fanin_2_solution_ns(const uint64_t func, sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	void print_fanin_2_solution_ns(const uint64_t func, synth_spec* spec) {
 		tt functt((1u << spec->nr_vars), func);
-		print_fanin_2_solution_ns(functt, solver, spec);
+		print_fanin_2_solution_ns<S>(functt, spec);
 	}
 
-	void print_fanin_2_solution_ns(const tt& func, sat_solver* solver, synth_spec* spec) {
+	template<typename S>
+	void print_fanin_2_solution_ns(const tt& func, synth_spec* spec) {
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto t = 0u; t < spec->tt_size; t++) {
-				cout << "x_" << i << "_" << t << ": " << sat_solver_var_value(solver, simulation_variable(i, t, spec)) << endl;
+				cout << "x_" << i << "_" << t << ": " << var_value<S>(simulation_variable(i, t, spec)) << endl;
 			}
 		}
 
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto j = 0u; j < 3; j++) {
-				cout << "f_" << i << "_" << j << ": " << sat_solver_var_value(solver, gate_variable(i, j, spec)) << endl;
+				cout << "f_" << i << "_" << j << ": " << var_value<S>(gate_variable(i, j, spec)) << endl;
 			}
 		}
 
 		auto selection_var_ctr = 0u;
 		for (auto i = 0u; i < spec->nr_gates; i++) {
 			for (auto j = 0u; j < spec->nr_vars + i; j++) {
-				cout << "s_" << i << "_" << j << ": " << sat_solver_var_value(solver, spec->selection_var_offset + selection_var_ctr++) << endl;
+				cout << "s_" << i << "_" << j << ": " << var_value<S>(spec->selection_var_offset + selection_var_ctr++) << endl;
 			}
 		}
 	}

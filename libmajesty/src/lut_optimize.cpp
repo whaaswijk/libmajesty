@@ -388,7 +388,7 @@ namespace majesty {
 
 		synth_spec spec;
 		spec.nr_vars = node.fanin.size();
-		auto opt_ntk = size_optimum_ntk_ns(node.function.to_ulong(), &spec);
+		auto opt_ntk = size_optimum_ntk_ns<sat_solver>(node.function.to_ulong(), &spec);
 
 		/*
 		auto min_xmg = fstore.min_size_xmg(npn, timeout);

@@ -4,14 +4,7 @@
 #include <truth_table_utils.hpp>
 #include <boost/optional.hpp>
 #include <tuple>
-//#include "minisat/Solver.h"
-//#include "minisat/SolverTypes.h"
-extern "C" {
-#include <base/abc/abc.h>
-#include <misc/vec/vecInt.h>
-#include <misc/vec/vecPtr.h>
-#include <sat/bsat/satSolver.h>
-}
+#include <sat_interface.h>
 	
 namespace majesty {
 
@@ -39,31 +32,65 @@ namespace majesty {
 			use_no_reapplication(true), use_colex_functions(true) {}
 	};
 
+	template<typename S>
 	logic_ntk size_optimum_ntk(cirkit::tt& func, synth_spec*);
+
+	template<typename S>
 	logic_ntk size_optimum_ntk(uint64_t func, synth_spec*);
+	
+	template<typename S>
 	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec*);
 
+	template<typename S>
 	unsigned optimum_ntk_size(uint64_t func, synth_spec*);
+	
+	template<typename S>
 	unsigned optimum_ntk_size_ns(uint64_t func, synth_spec*);
 
-	lbool exists_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*);
-	lbool exists_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*);
-	lbool exists_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*);
+	template<typename S>
+	lbool exists_fanin_2_ntk(const cirkit::tt& func, synth_spec*);
 
-	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*);
-	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, sat_solver*, synth_spec*, bool invert);
-	logic_ntk extract_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*);
-	logic_ntk extract_fanin_2_ntk(const uint64_t func, sat_solver*, synth_spec*, bool invert);
+	template<typename S>
+	lbool exists_fanin_2_ntk(const uint64_t func, synth_spec*);
+
+	template<typename S>
+	lbool exists_fanin_2_ntk_ns(const uint64_t func, synth_spec*);
+
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, synth_spec*);
+
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk(const cirkit::tt& func, synth_spec*, bool invert);
+
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, synth_spec*);
+
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk(const uint64_t func, synth_spec*, bool invert);
 	
-	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, sat_solver*, synth_spec*);
-	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, sat_solver*, synth_spec*, bool invert);
-	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*);
-	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, sat_solver*, synth_spec*, bool invert);
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, synth_spec*);
+
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const cirkit::tt& func, synth_spec*, bool invert);
+
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, synth_spec*);
+
+	template<typename S>
+	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, synth_spec*, bool invert);
 	
-	void print_fanin_2_solution(const cirkit::tt& func, sat_solver*, synth_spec*);
-	void print_fanin_2_solution(const uint64_t func, sat_solver*, synth_spec*);
-	void print_fanin_2_solution_ns(const cirkit::tt& func, sat_solver*, synth_spec*);
-	void print_fanin_2_solution_ns(const uint64_t func, sat_solver*, synth_spec*);
+	template<typename S>
+	void print_fanin_2_solution(const cirkit::tt& func, synth_spec*);
+
+	template<typename S>
+	void print_fanin_2_solution(const uint64_t func, synth_spec*);
+
+	template<typename S>
+	void print_fanin_2_solution_ns(const cirkit::tt& func, synth_spec*);
+
+	template<typename S>
+	void print_fanin_2_solution_ns(const uint64_t func, synth_spec*);
 
 	/*
 	Minisat::lbool exists_fanin_2_ntk(const cirkit::tt& func, Minisat::Solver&, synth_spec*, const unsigned nr_vars, const unsigned nr_gates);
