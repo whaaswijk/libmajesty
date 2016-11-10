@@ -131,6 +131,12 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	}
 }
 
+#ifndef _WIN32
+#include <maj_io.h>
+#include <convert.h>
+#include <lut_cover.h>
+#include <lut_optimize.h>
+
 TEST_CASE("CryptoMiniSat", "[exact synthesis]") {
 	synth_spec spec;
 	spec.nr_vars = 3;
@@ -155,12 +161,6 @@ TEST_CASE("CryptoMiniSat", "[exact synthesis]") {
 		REQUIRE(old_size == new_size);
 	}
 }
-
-#ifndef _WIN32
-#include <maj_io.h>
-#include <convert.h>
-#include <lut_cover.h>
-#include <lut_optimize.h>
 
 TEST_CASE("XMG to Logic Network", "[conversion]") {
     auto xmg = read_verilog("../assets/adder.v");

@@ -1,6 +1,5 @@
 #pragma once
 
-
 extern "C" {
 #include <base/abc/abc.h>
 #include <misc/vec/vecInt.h>
@@ -14,6 +13,7 @@ extern "C" {
 #undef l_True
 #undef l_False
 #undef l_Undef
+#include <thread>
 
 namespace majesty {
 	struct synth_spec;
@@ -85,6 +85,11 @@ namespace majesty {
 	inline void init_solver<CMSat::SATSolver>() {
 		assert(cms_solver == nullptr);
 		cms_solver = new CMSat::SATSolver;
+#ifndef _WIN32
+		auto nr_threads = std::thread::hardware_concurency();
+		//cout << "cms using " << nr_threads << " threads" << endl;
+		cms_solver->set_num_threads(nr_threads);
+#endif
 	}
 
 	template<>
@@ -92,7 +97,11 @@ namespace majesty {
 		assert(cms_solver != nullptr);
 		delete cms_solver;
 		cms_solver = new CMSat::SATSolver;
-		//cms_solver.set_num_threads(4);
+#ifndef _WIN32
+		auto nr_threads = std::thread::hardware_concurency();
+		//cout << "cms using " << nr_threads << " threads" << endl;
+		cms_solver->set_num_threads(nr_threads);
+#endif
 	}
 
 	template<>
