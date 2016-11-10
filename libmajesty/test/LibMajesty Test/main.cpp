@@ -100,7 +100,6 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	}
 }
 
-/*
 TEST_CASE("CryptoMiniSat", "[exact synthesis]") {
 	synth_spec spec;
 	spec.nr_vars = 3;
@@ -125,7 +124,6 @@ TEST_CASE("CryptoMiniSat", "[exact synthesis]") {
 		REQUIRE(old_size == new_size);
 	}
 }
-*/
 
 #ifndef _WIN32
 #include <maj_io.h>

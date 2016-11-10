@@ -1,5 +1,6 @@
 #pragma once
 
+
 extern "C" {
 #include <base/abc/abc.h>
 #include <misc/vec/vecInt.h>
@@ -8,6 +9,11 @@ extern "C" {
 }
 
 #include <cryptominisat5/cryptominisat.h>
+// A hack to undefine the CryptoMiniSat lbool definitions, 
+// as they conflict with those defined by ABC.
+#undef l_True
+#undef l_False
+#undef l_Undef
 
 namespace majesty {
 	struct synth_spec;
@@ -74,7 +80,6 @@ namespace majesty {
 	}
 
 
-	/*
 	CMSat::SATSolver cms_solver;
 	template<>
 	inline void init_solver<CMSat::SATSolver>() {
@@ -83,7 +88,7 @@ namespace majesty {
 	template<>
 	inline void restart_solver<CMSat::SATSolver>() {
 		cms_solver = CMSat::SATSolver();
-		cms_solver.set_num_threads(4);
+		//cms_solver.set_num_threads(4);
 	}
 
 	template<>
@@ -103,7 +108,7 @@ namespace majesty {
 
 	template<>
 	inline int var_value<CMSat::SATSolver>(int var) {
-		return cms_solver.get_model()[var] == CMSat::l_True;
+		return cms_solver.get_model()[var] == CMSat::boolToLBool(true);
 	}
 
 	template<>
@@ -114,9 +119,12 @@ namespace majesty {
 			assumps.push_back(CMSat::Lit(Abc_Lit2Var(*i), Abc_LitIsCompl(*i)));
 		}
 		auto res = cms_solver.solve(&assumps);
-		if (res == CMSat::l_True) {
+//#define l_True  lbool((uint8_t)0) // gcc does not do constant propagation if these are real constants.
+//#define l_False lbool((uint8_t)1)
+//#define l_Undef lbool((uint8_t)2)
+		if (res == CMSat::boolToLBool(true)) {
 			return l_True;
-		} else if (res == CMSat::l_False) {
+		} else if (res == CMSat::boolToLBool(false)) {
 			return l_False;
 		} else {
 			return l_Undef;
@@ -126,7 +134,5 @@ namespace majesty {
 	template<>
 	inline void destroy_solver<CMSat::SATSolver>() {
 	}
-
-	*/
 }
 

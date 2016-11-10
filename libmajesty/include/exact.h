@@ -6,7 +6,6 @@
 #include <tuple>
 #include <sat_interface.h>
 #include <vector>
-#include <logic_network.h>
 
 using namespace cirkit;
 	
