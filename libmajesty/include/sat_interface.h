@@ -7,6 +7,8 @@ extern "C" {
 #include <sat/bsat/satSolver.h>
 }
 
+#include <cryptominisat5/cryptominisat.h>
+
 namespace majesty {
 	struct synth_spec;
 
@@ -70,5 +72,61 @@ namespace majesty {
 		sat_solver_delete(abc_solver);
 		abc_solver = NULL;
 	}
+
+
+	/*
+	CMSat::SATSolver cms_solver;
+	template<>
+	inline void init_solver<CMSat::SATSolver>() {
+	}
+
+	template<>
+	inline void restart_solver<CMSat::SATSolver>() {
+		cms_solver = CMSat::SATSolver();
+		cms_solver.set_num_threads(4);
+	}
+
+	template<>
+	inline void set_nr_vars<CMSat::SATSolver>(unsigned nr_vars) {
+		cms_solver.new_vars(nr_vars);
+	}
+
+	template<>
+	inline void add_clause<CMSat::SATSolver>(lit* begin, lit* end) {
+		static std::vector<CMSat::Lit> clause;
+		clause.clear();
+		for (auto i = begin; i < end; i++) {
+			clause.push_back(CMSat::Lit(Abc_Lit2Var(*i), Abc_LitIsCompl(*i)));
+		}
+		cms_solver.add_clause(clause);
+	}
+
+	template<>
+	inline int var_value<CMSat::SATSolver>(int var) {
+		return cms_solver.get_model()[var] == CMSat::l_True;
+	}
+
+	template<>
+	inline int solve<CMSat::SATSolver>(lit* begin, lit* end) {
+		static std::vector<CMSat::Lit> assumps;
+		assumps.clear();
+		for (auto i = begin; i < end; i++) {
+			assumps.push_back(CMSat::Lit(Abc_Lit2Var(*i), Abc_LitIsCompl(*i)));
+		}
+		auto res = cms_solver.solve(&assumps);
+		if (res == CMSat::l_True) {
+			return l_True;
+		} else if (res == CMSat::l_False) {
+			return l_False;
+		} else {
+			return l_Undef;
+		}
+	}
+
+	template<>
+	inline void destroy_solver<CMSat::SATSolver>() {
+	}
+
+	*/
 }
 

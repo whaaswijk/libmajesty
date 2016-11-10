@@ -72,16 +72,10 @@
     <ClCompile Include="src\function_store.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\exact.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\mlpmemory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\logic_network.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\sat_interface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

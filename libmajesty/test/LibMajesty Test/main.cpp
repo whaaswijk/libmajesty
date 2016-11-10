@@ -100,6 +100,33 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	}
 }
 
+/*
+TEST_CASE("CryptoMiniSat", "[exact synthesis]") {
+	synth_spec spec;
+	spec.nr_vars = 3;
+	spec.verbose = false;
+	spec.use_cegar = false;//true;
+	spec.use_all_gates = true;
+	spec.use_colex_order = true;
+	spec.use_no_triv_ops = true;
+	spec.use_exact_nr_svars = true;
+	spec.use_no_reapplication = true;
+	for (auto f = 0u; f < 256; f++) {
+		auto old_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
+		auto old_size = old_ntk.ninternal();
+		auto old_simvec = old_ntk.simulate();
+		auto new_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(f, &spec);
+		auto new_size = new_ntk.ninternal();
+		auto new_simvec = new_ntk.simulate();
+		if (old_size != new_size) {
+			std::cout << "hur" << std::endl;
+		}
+		REQUIRE(old_simvec == new_simvec);
+		REQUIRE(old_size == new_size);
+	}
+}
+*/
+
 #ifndef _WIN32
 #include <maj_io.h>
 #include <convert.h>
