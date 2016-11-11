@@ -573,7 +573,7 @@ namespace majesty {
 		
 		const auto& outnames = xmg.outnames();
 		for (const auto& name : outnames) {
-			ntk.add_inname(name);
+			ntk.add_outname(name);
 		}
 
 		return ntk;
@@ -615,7 +615,7 @@ namespace majesty {
 		
 		const auto& outnames = net.outnames();
 		for (const auto& name : outnames) {
-			ntk.add_inname(name);
+			ntk.add_outname(name);
 		}
 
 		return ntk;

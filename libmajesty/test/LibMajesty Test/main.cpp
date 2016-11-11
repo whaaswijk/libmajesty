@@ -261,6 +261,16 @@ TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     write_blif(opt_ntk, "decomp_adder.blif");
 }
 
+TEST_CASE("LUT Area Optimization", "[optimization]") {
+    auto xmg = read_verilog("../assets/adder.v");
+    auto ntk = xmg_to_logic_ntk(xmg);
+
+	for (auto lut_size = 3; lut_size < 7; lut_size++) {
+		auto opt_ntk = lut_area_strategy(ntk, lut_size);
+		write_blif(opt_ntk, "adder_opt_" + std::to_string(lut_size) + ".blif");
+	}
+}
+
 TEST_CASE("XMG String Serialization", "[serialization]") {
     // Get a MIG and use it to test on
     auto mig = mig_int_decompose(6, 20);
