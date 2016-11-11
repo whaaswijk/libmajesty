@@ -290,7 +290,7 @@ namespace majesty {
 		return npn;
 	}
 	
-	boost::optional<std::string> function_store::size_optimum_ntk_ns(const tt& f, synth_spec* spec, unsigned conflict_limit) {
+	boost::optional<std::string> function_store::get_size_optimum_ntk_ns(const tt& f, synth_spec* spec, unsigned conflict_limit) {
 		// First see if the optimum xmg has already been computed
 		optional<string> expr;
 #ifndef _WIN32

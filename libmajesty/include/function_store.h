@@ -33,7 +33,7 @@ namespace majesty {
 					cirkit::tt& phase, std::vector<unsigned>& perm);
 			boost::optional<unsigned> get_last_size(const cirkit::tt& func);
 			
-			boost::optional<std::string> size_optimum_ntk_ns(const cirkit::tt&, synth_spec* spec, unsigned conflict_limit);
+			boost::optional<std::string> get_size_optimum_ntk_ns(const cirkit::tt&, synth_spec* spec, unsigned conflict_limit);
 	};
 }
 

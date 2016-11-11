@@ -34,7 +34,7 @@ namespace majesty {
 
 		synth_spec() : verbose(false), use_cegar(false), use_colex_order(true),
 			use_no_triv_ops(true), use_all_gates(true), use_exact_nr_svars(true),
-			use_no_reapplication(true), use_colex_functions(true), gate_size(2u) {}
+			use_no_reapplication(true), use_colex_functions(true), gate_size(2u), gate_tt_size(3u) {}
 	};
 
 	static inline int selection_variable(const synth_spec* spec, unsigned gate_i, unsigned fanin_j, unsigned fanin_k) {
@@ -1282,6 +1282,9 @@ namespace majesty {
 
 		spec->nr_gates = 1u;
 		init_solver<S>();
+		if (spec->verbose) {
+			std::cout << "\nnr vars: " << spec->nr_vars << "\n";
+		}
 		while (true) {
 			if (spec->verbose) {
 				std::cout << "trying with " << spec->nr_gates << " gates\n";
@@ -1292,7 +1295,7 @@ namespace majesty {
 				if (network_exists == l_True) {
 					ntk = extract_fanin_3_ntk_ns<S>(func, spec, invert);
 					if (spec->verbose) {
-						print_fanin_3_solution_ns<S>(func, spec);
+						//print_fanin_3_solution_ns<S>(func, spec);
 					}
 					break;
 				}

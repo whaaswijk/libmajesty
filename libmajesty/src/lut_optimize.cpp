@@ -357,25 +357,35 @@ namespace majesty {
 	}
 
 	pair<nodeid, bool> 
-		parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const nodemap& nodemap, const input_map_t& imap, bool invert_output) {
+		parse_into_logic_ntk(logic_ntk& ntk, const synth_spec* spec, const logic_ntk& opt_ntk, 
+				const nodemap& nodemap, const input_map_t& imap, bool invert_output) {
 		const auto& opt_nodes = opt_ntk.nodes();
 		vector<pair<nodeid,bool>> nids(opt_nodes.size());
-		vector<nodeid> ntk_fanin(2);
+		vector<nodeid> ntk_fanin(spec->gate_size);
+		vector<tt> fanin_tts(spec->gate_size);
+		for (auto i = 0u; i < spec->gate_size; i++) {
+			fanin_tts[i] = tt_nth_var(i);
+		}
+
 		for (auto i = 0u; i < opt_nodes.size(); i++) {
 			const auto& node = opt_nodes[i];
 			if (node.pi) {
-				nids[i] = imap.at('a' + i);// nodemap.at(cut_fanin[i]).first;
+				nids[i] = imap.at(i);// nodemap.at(cut_fanin[i]).first;
 			} else {
-				auto fanin1 = nids[node.fanin[0]];
-				auto fanin2 = nids[node.fanin[1]];
-				ntk_fanin[0] = fanin1.first;
-				ntk_fanin[1] = fanin2.first;
-
-				tt localfunc(4, 0);
-				tt var0 = fanin1.second ? ~tt_nth_var(0) : tt_nth_var(0);
-				tt var1 = fanin2.second ? ~tt_nth_var(1) : tt_nth_var(1);
-				for (auto i = 0; i  < 4; i++) {
-					localfunc[i] = node.function[var1[i] << 1 | var0[i]];
+				for (auto j = 0u; j < spec->gate_size; j++) {
+					ntk_fanin[j] = nids[node.fanin[j]].first;
+				}
+				tt localfunc(spec->gate_tt_size + 1, 0);
+				for (auto j = 0; j  < spec->gate_tt_size + 1; j++) {
+					auto func_idx = 0u;
+					for (auto k = 0; k < spec->gate_size; k++) {
+						auto tbit = fanin_tts[k].test(j);
+						if (nids[node.fanin[k]].second) {
+							tbit = !tbit;
+						}
+						func_idx += (tbit << k);
+					}
+					localfunc[j] = node.function[func_idx];
 				}
 
 				if ((i == opt_nodes.size() - 1) && invert_output) {
@@ -401,10 +411,18 @@ namespace majesty {
 
 		synth_spec spec;
 		spec.nr_vars = node.fanin.size();
-spec.verbose = true;
+		if (spec.nr_vars >= 3) {
+			// We have to manually set the gate size and gate_tt_size here,
+			// as exact synthesis may not be called when we use stored results.
+			// ES normally deduces these values, but if it's not called we
+			// still need them to parse the results back into the logic_ntk. 
+			spec.gate_size = 3;
+			spec.gate_tt_size = 7;
+		}
+		//spec.verbose = true;
 		//auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(npn.to_ulong(), &spec);
 
-		auto opt_ntk_str = fstore.size_optimum_ntk_ns(npn, &spec, conflict_limit);
+		auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(npn, &spec, conflict_limit);
 		if (!opt_ntk_str) { // Exact synthesis may have timed out
 		//	if (behavior == rebuild_cover) {
 				timeoutfuncs.push_back(node.function);
@@ -446,10 +464,10 @@ spec.verbose = true;
         auto invperm = inv(perm);
 		for (auto i = 0u; i < node.fanin.size(); i++) {
 			auto inode = nodemap[node.fanin[i]];
-			imap['a' + invperm[i]] = make_pair(inode.first, phase.test(i));
+			imap[invperm[i]] = make_pair(inode.first, phase.test(i));
 		}
 
-		return parse_into_logic_ntk(ntk, opt_ntk, nodemap, imap, phase.test(node.fanin.size()));
+		return parse_into_logic_ntk(ntk, &spec, opt_ntk, nodemap, imap, phase.test(node.fanin.size()));
 	}
 	
 	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk) {
