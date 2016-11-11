@@ -192,6 +192,7 @@ TEST_CASE("LUT Mapping", "[techmapping]") {
     lut_ntk = lut_map_area(ntk, cut_params.get());
     write_blif(lut_ntk, "div.blif");
 }
+*/
 
 TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     auto xmg = read_verilog("../assets/adder.v");
@@ -202,7 +203,6 @@ TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     auto opt_ntk = logic_ntk_from_luts(lut_ntk);
     write_blif(opt_ntk, "decomp_adder.blif");
 }
-*/
 
 TEST_CASE("XMG String Serialization", "[serialization]") {
     // Get a MIG and use it to test on
