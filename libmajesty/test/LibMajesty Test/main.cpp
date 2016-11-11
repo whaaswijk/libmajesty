@@ -103,6 +103,37 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	}
 }
 
+TEST_CASE("Logic Ntk String Serialization", "[serialization]") {
+	synth_spec spec;
+	spec.nr_vars = 3;
+	spec.verbose = false;
+	spec.use_cegar = true;
+	spec.use_all_gates = true;
+	spec.use_colex_order = true;
+	spec.use_no_triv_ops = true;
+	spec.use_exact_nr_svars = true;
+	spec.use_no_reapplication = true;
+	for (auto f = 0u; f < 256; f++) {
+		auto old_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
+		auto old_size = old_ntk.ninternal();
+		auto old_simvec = old_ntk.simulate();
+
+		auto ntk_str = logic_ntk_to_string(old_ntk);
+
+		auto str_ntk = string_to_logic_ntk(ntk_str);
+		auto str_size = str_ntk.ninternal();
+		auto str_simvec = str_ntk.simulate();
+		if (old_size != str_size) {
+			std::cout << "hur" << std::endl;
+		}
+		if (old_simvec != str_simvec) {
+			std::cout << "dur" << std::endl;
+		}
+		REQUIRE(old_simvec == str_simvec);
+		REQUIRE(old_size == str_size);
+	}
+}
+
 #ifndef _WIN32
 #include <maj_io.h>
 #include <convert.h>

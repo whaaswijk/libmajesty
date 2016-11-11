@@ -636,4 +636,132 @@ namespace majesty {
 		freemig(mig);
 		return res;
 	}
+	
+	// String format: nin;fanin_1,...fanin_n+gatefunc_1,...,gatefunc_m;...
+	string logic_ntk_to_string(const logic_ntk& ntk) {
+		stringstream buf;
+
+		const auto ninputs = ntk.nin();
+		buf << ninputs;
+
+		const auto nr_funcnodes = ntk.ninternal();
+		if (nr_funcnodes > 0) {
+			buf << ";";
+			const auto& nodes = ntk.nodes();
+			for (auto j = 0u; j < nr_funcnodes - 1; j++) {
+				auto node = nodes[ninputs + j];
+				assert(!node.pi);
+
+				const auto nfanin = node.fanin.size();
+				if (nfanin > 0) {
+					for (auto i = 0u; i < nfanin - 1; i++) {
+						buf << node.fanin[i] << ",";
+					}
+					buf << node.fanin[nfanin - 1];
+				}
+				buf << "+";
+				const auto funcsize = node.function.size();
+				if (funcsize > 0) {
+					for (auto i = funcsize - 1; i > 0; i--) {
+						buf << node.function[i] << ",";
+					}
+					buf << node.function[0];
+				}
+				buf << ";";
+			}
+			auto node = nodes[ninputs + nr_funcnodes - 1];
+			assert(!node.pi);
+
+			const auto nfanin = node.fanin.size();
+			if (nfanin > 0) {
+				for (auto i = 0u; i < nfanin - 1; i++) {
+					buf << node.fanin[i] << ",";
+				}
+				buf << node.fanin[nfanin - 1];
+			}
+			buf << "+";
+			const auto funcsize = node.function.size();
+			if (funcsize > 0) {
+				for (auto i = funcsize - 1; i > 0; i--) {
+					buf << node.function[i] << ",";
+				}
+				buf << node.function[0];
+			}
+		}
+
+		return buf.str();
+	}
+
+	void split(const std::string &s, char delim, std::vector<std::string> &elems) {
+		std::stringstream ss;
+		ss.str(s);
+		std::string item;
+		while (std::getline(ss, item, delim)) {
+			elems.push_back(item);
+		}
+	}
+
+	std::vector<std::string> split(const std::string &s, char delim) {
+		std::vector<std::string> elems;
+		split(s, delim, elems);
+		return elems;
+	}
+
+	logic_ntk string_to_logic_ntk(const string& str) {
+		logic_ntk ntk;
+
+		const auto tokens = split(str, ';');
+		const auto ntokens = tokens.size();
+		assert(ntokens > 0);
+
+		const auto nin = stoi(tokens[0]);
+		for (auto i = 0u; i < nin; i++) {
+			ntk.create_input();
+		}
+
+		if (ntokens > 1) {
+			for (auto i = 1u; i < ntokens; i++) {
+				const auto& token = tokens[i];
+				if (token.size() == 0) { // Split may result in empty tokens
+					continue;
+				}
+				vector<nodeid> fanin;
+				tt func;
+				const auto gate_tokens = split(token, '+');
+
+				const auto& fanin_token = gate_tokens[0];
+				if (fanin_token.size() > 0) {
+					const auto fanins = split(fanin_token, ',');
+					for (auto faninstr : fanins) {
+						if (faninstr.size() > 0) {
+							fanin.push_back(stoi(faninstr));
+						}
+					}
+				}
+
+				const auto& func_token = gate_tokens[1];
+				if (func_token.size() > 0) {
+					// The least significant bit is the last in the sequence!
+					const auto func_tt_tokens = split(func_token, ',');
+					const auto nfunc_tt_tokens = func_tt_tokens.size();
+					for (auto i = nfunc_tt_tokens - 1; i > 0; i--) {
+						const auto& func_tt_token = func_tt_tokens[i];
+						if (func_tt_token.size() > 0) {
+							func.push_back(stoi(func_tt_token));
+						}
+					}
+					const auto& func_tt_token = func_tt_tokens[0];
+					if (func_tt_token.size() > 0) {
+						func.push_back(stoi(func_tt_token));
+					}
+				}
+				ntk.create_node(fanin, func);
+			}
+
+			// For now we only support single-output functions
+			ntk.create_output(ntk.nnodes() - 1);
+		}
+
+		return ntk;
+	}
 }

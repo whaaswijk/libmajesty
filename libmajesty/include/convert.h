@@ -16,6 +16,9 @@ namespace majesty {
 	xmg xmg_from_string(unsigned, const std::string&);
 	xmg xmg_from_string(unsigned, const std::string&, const cirkit::tt&,  const std::vector<unsigned>&);
 	std::pair<nodeid,bool> xmg_parse_string(xmg&, nodemap&, const std::string&);
+
+	std::string logic_ntk_to_string(const logic_ntk&);
+	logic_ntk string_to_logic_ntk(const std::string&);
 	
 	cirkit::tt tt_from_long(unsigned ninputs, unsigned function);
 	xmg mig_shannon_decompose(unsigned ninputs, const cirkit::tt& func);
