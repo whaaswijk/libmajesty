@@ -134,6 +134,32 @@ TEST_CASE("Logic Ntk String Serialization", "[serialization]") {
 	}
 }
 
+TEST_CASE("Fanin 3 Ntk Equivalence", "[exact synthesis]") {
+synth_spec spec;
+	spec.nr_vars = 3;
+	spec.verbose = false;
+	spec.use_cegar = false;
+	spec.use_all_gates = true;
+	spec.use_colex_order = true;
+	spec.use_no_triv_ops = true;
+	spec.use_exact_nr_svars = true;
+	spec.use_no_reapplication = true;
+	for (auto f = 0u; f < 256; f++) {
+		spec.gate_size = 2;
+		auto old_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
+		auto old_size = old_ntk.ninternal();
+		auto old_simvec = old_ntk.simulate();
+		
+		spec.gate_size = 3;
+		auto new_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
+		auto new_size = new_ntk.ninternal();
+		auto new_simvec = new_ntk.simulate();
+		REQUIRE(old_simvec == new_simvec);
+		REQUIRE(new_size <= old_size);
+		REQUIRE(new_size == 1);
+	}
+}
+
 #ifndef _WIN32
 #include <maj_io.h>
 #include <convert.h>
