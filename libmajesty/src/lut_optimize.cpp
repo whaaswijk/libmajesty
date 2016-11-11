@@ -356,27 +356,41 @@ namespace majesty {
 		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
 
-	pair<nodeid, bool> parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& cut_fanin, const nodemap& nodemap) {
+	pair<nodeid, bool> 
+		parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const nodemap& nodemap, const input_map_t& imap, bool invert_output) {
 		const auto& opt_nodes = opt_ntk.nodes();
-		vector<nodeid> nids(opt_nodes.size());
+		vector<pair<nodeid,bool>> nids(opt_nodes.size());
 		vector<nodeid> ntk_fanin(2);
 		for (auto i = 0u; i < opt_nodes.size(); i++) {
 			const auto& node = opt_nodes[i];
 			if (node.pi) {
-				nids[i] = nodemap.at(cut_fanin[i]).first;
+				nids[i] = imap.at('a' + i);// nodemap.at(cut_fanin[i]).first;
 			} else {
-				ntk_fanin[0] = nids[node.fanin[0]];
-				ntk_fanin[1] = nids[node.fanin[1]];
-				nids[i] = ntk.create_node(ntk_fanin, node.function);
+				auto fanin1 = nids[node.fanin[0]];
+				auto fanin2 = nids[node.fanin[1]];
+				ntk_fanin[0] = fanin1.first;
+				ntk_fanin[1] = fanin2.first;
+
+				tt localfunc(4, 0);
+				tt var0 = fanin1.second ? ~tt_nth_var(0) : tt_nth_var(0);
+				tt var1 = fanin2.second ? ~tt_nth_var(1) : tt_nth_var(1);
+				for (auto i = 0; i  < 4; i++) {
+					localfunc[i] = node.function[var1[i] << 1 | var0[i]];
+				}
+
+				if ((i == opt_nodes.size() - 1) && invert_output) {
+					nids[i] = make_pair(ntk.create_node(ntk_fanin, ~localfunc), false);
+				} else {
+					nids[i] = make_pair(ntk.create_node(ntk_fanin, localfunc), false);
+				}
 			}
 		}
-		return make_pair(nids[opt_nodes.size() - 1], false);
+		return nids[opt_nodes.size() - 1];
 	}
 
 	optional<pair<nodeid, bool>> decompose_cut(logic_ntk& ntk, const ln_node& node, nodemap& nodemap, 
 		function_store& fstore, vector<tt>& timeoutfuncs, const unsigned conflict_limit, timeout_behavior behavior) {
 		
-		/*
         vector<unsigned> perm; tt phase, npn;
         if (node.fanin.size() < 6) {
             npn = exact_npn_canonization(node.function, phase, perm);
@@ -384,20 +398,20 @@ namespace majesty {
             npn = npn_canonization_lucky(node.function, phase, perm);
         }
         npn.resize(node.function.size());
-		*/
 
 		synth_spec spec;
 		spec.nr_vars = node.fanin.size();
 spec.verbose = true;
-		auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(node.function.to_ulong(), &spec);
+		//auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(npn.to_ulong(), &spec);
 
-		/*
-		auto min_xmg = fstore.min_size_xmg(npn, timeout);
-		if (!min_xmg) { // Exact synthesis may have timed out
-			if (behavior == rebuild_cover) {
+		auto opt_ntk_str = fstore.size_optimum_ntk_ns(npn, &spec, conflict_limit);
+		if (!opt_ntk_str) { // Exact synthesis may have timed out
+		//	if (behavior == rebuild_cover) {
 				timeoutfuncs.push_back(node.function);
 				return boost::none;
-			} 
+		//	} 
+			
+				/*
 			// Try to resynthesize, starting from the last size that failed
 			auto olast_size = fstore.get_last_size(npn);
 			assert(olast_size);
@@ -423,17 +437,19 @@ spec.verbose = true;
 			} else {
 				cout << "Using cached heuristic result" << endl;
 			}
+			*/
 		}
+		auto opt_ntk = string_to_logic_ntk(opt_ntk_str.get());
+
 		input_map_t imap;
 
         auto invperm = inv(perm);
 		for (auto i = 0u; i < node.fanin.size(); i++) {
 			auto inode = nodemap[node.fanin[i]];
-			imap['a' + invperm[i]] = make_pair(inode.first, phase.test(i) ^ inode.second);
+			imap['a' + invperm[i]] = make_pair(inode.first, phase.test(i));
 		}
-		*/
 
-		return parse_into_logic_ntk(ntk, opt_ntk, node.fanin, nodemap);
+		return parse_into_logic_ntk(ntk, opt_ntk, nodemap, imap, phase.test(node.fanin.size()));
 	}
 	
 	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk) {

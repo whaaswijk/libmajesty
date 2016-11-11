@@ -9,6 +9,7 @@ extern "C" {
 #include "truth_table_utils.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
+#include <exact.h>
 
 namespace majesty {
 	
@@ -31,6 +32,8 @@ namespace majesty {
 			cirkit::tt npn_canon(const cirkit::tt&, 
 					cirkit::tt& phase, std::vector<unsigned>& perm);
 			boost::optional<unsigned> get_last_size(const cirkit::tt& func);
+			
+			boost::optional<std::string> size_optimum_ntk_ns(const cirkit::tt&, synth_spec* spec, unsigned conflict_limit);
 	};
 }
 

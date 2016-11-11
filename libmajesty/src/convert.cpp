@@ -714,7 +714,7 @@ namespace majesty {
 		const auto ntokens = tokens.size();
 		assert(ntokens > 0);
 
-		const auto nin = stoi(tokens[0]);
+		const auto nin = unsigned(stoi(tokens[0]));
 		for (auto i = 0u; i < nin; i++) {
 			ntk.create_input();
 		}

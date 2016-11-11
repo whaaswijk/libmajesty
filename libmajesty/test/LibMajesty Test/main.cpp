@@ -229,7 +229,7 @@ TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     auto xmg = read_verilog("../assets/adder.v");
     auto ntk = xmg_to_logic_ntk(xmg);
     auto cut_params = default_cut_params();
-    cut_params->klut_size = 5;
+    cut_params->klut_size = 6;
     auto lut_ntk = lut_map_area(ntk, cut_params.get());
     auto opt_ntk = logic_ntk_from_luts(lut_ntk);
     write_blif(opt_ntk, "decomp_adder.blif");
