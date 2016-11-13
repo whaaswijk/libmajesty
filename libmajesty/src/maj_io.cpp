@@ -48,6 +48,19 @@ namespace majesty {
 		return res;
 	}
 
+	xmg read_verilog(const std::string& filename, const xmg_params* frparams) {
+		MIG* mig;
+		auto fp = fopen(filename.c_str(), "r");
+		if (fp == NULL) {
+			throw runtime_error("Unable to open input file");
+		}
+		parse_verilog(fp, &mig);
+		fclose(fp);
+		xmg res(mig, frparams);
+		freemig(mig);
+		return res;
+	}
+
 	xmg* ptr_read_verilog(const std::string& filename) {
 		return new xmg(read_verilog(filename));
 	}
