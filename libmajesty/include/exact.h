@@ -589,9 +589,15 @@ namespace majesty {
 		}
 		return l_True;
 	}
-
+	
 	template<typename S>
 	lbool exists_fanin_2_ntk(const uint64_t func, synth_spec* spec) {
+		tt functt(1 << spec->nr_vars, func);
+		return exists_fanin_2_ntk<S>(functt, spec);
+	}
+
+	template<typename S>
+	lbool exists_fanin_2_ntk(const tt& func, synth_spec* spec) {
 		static lit plits[3];
 		
 		create_variables<S>(spec);
@@ -726,7 +732,7 @@ namespace majesty {
 			Vec_IntClear(vlits);
 			for (auto t = 0u; t < spec->tt_size; t++) {
 				auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
-				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !((func >> (t + 1)) & 1)));
+				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !func.test(t + 1)));
 			}
 
 			auto res = solve<S>(Vec_IntArray(vlits), Vec_IntLimit(vlits));
@@ -739,7 +745,7 @@ namespace majesty {
 	template<typename S>
 	lbool exists_fanin_2_ntk_ns(const uint64_t func, synth_spec* spec) {
 		tt functt(1 << spec->nr_vars, func);
-		return exists_fanin_2_ntk_ns(functt, spec);
+		return exists_fanin_2_ntk_ns<S>(functt, spec);
 	}
 	
 	// Tries to find a network using the new selection variable implementation
@@ -1151,11 +1157,18 @@ namespace majesty {
 
 	template<typename S>
 	logic_ntk size_optimum_ntk(uint64_t func, synth_spec* spec) {
+		tt functt(1 << spec->nr_vars, func);
+		return size_optimum_ntk<S>(functt, spec);
+	}
+	
+	template<typename S>
+	logic_ntk size_optimum_ntk(const tt& spec_func, synth_spec* spec) {
 		// TODO: Check if function is constant or variable. If so, return early.
+		tt func = spec_func;
 
 
 		// Make the function normal if it isn't already
-		bool invert = func & 1;
+		auto invert = func.test(0);
 		if (invert) {
 			func = ~func;
 		}
