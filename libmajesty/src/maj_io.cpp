@@ -315,7 +315,12 @@ namespace majesty {
 		}
 	}
 
-	static inline string nodename(nodeid id) {
+	static inline string nodename(nodeid id, const vector<nodeid>& outputs, const vector<string>& outnames) {
+		for (auto i = 0u; i < outputs.size(); i++) {
+			if (outputs[i] == id) {
+				return outnames[i];
+			}
+		}
 		return "n_" + to_string(id);
 	}
 
@@ -343,6 +348,7 @@ namespace majesty {
 		f << endl;
 
 		const auto& nodes = ntk.nodes();
+		const auto& outputs = ntk.outputs();
 		for (auto i = 0u; i < nodes.size(); i++) {
 			const auto& node = nodes[i];
 			if (node.pi) {
@@ -355,11 +361,11 @@ namespace majesty {
 				if (fanin_node.pi) {
 					name = innames[nodeid];
 				} else {
-					name = nodename(nodeid);
+					name = nodename(nodeid, outputs, outnames);
 				}
 				f << name << " ";
 			}
-			f << nodename(i) << endl;
+			f << nodename(i, outputs, outnames) << endl;
 			// Simply print the truth table implemented by this node
 			const auto& tt = node.function;
 			for (auto j = 0u; j < tt.size(); j++) {
@@ -370,14 +376,6 @@ namespace majesty {
                     f << " " << tt.test(j) << endl;
                 }
 			}
-		}
-
-		const auto& outputs = ntk.outputs();
-		for (auto i = 0u; i < outputs.size(); i++) {
-			const auto& outnode = outputs[i];
-			const auto& outname = outnames[i];
-			f << ".names " << nodename(outnode) << " " << outname << endl;
-			f << 1 << " " << 1 << endl;
 		}
 
 		f << ".end";

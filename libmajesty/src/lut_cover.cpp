@@ -824,9 +824,13 @@ namespace majesty {
 	
 	logic_ntk lut_map_area(const xmg& m, const cut_params* params) {
 		const auto cut_map = enumerate_cuts(m, params);
+		cout << "cut_map size: " << cut_map.size() << endl;
 		auto best_area = eval_matches_area(m, cut_map);
 		auto area_cover = build_cover(m, best_area);
 		it_exact_cover(m, area_cover, cut_map, best_area);
+		cout << "cover struct size: " << area_cover.size() << endl;
+		auto csize = cover_size(m, area_cover);
+		cout << "cover size: " << csize << endl;
 		auto functionmap = compute_functions(m, area_cover, best_area, cut_map);
 		auto lut_ntk = xmg_cover_to_logic_ntk(m, area_cover, best_area, functionmap);
 		

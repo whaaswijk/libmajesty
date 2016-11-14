@@ -73,6 +73,8 @@ namespace majesty {
 			if (decomp_ntk) {
 				auto newsize = decomp_ntk.get_ptr()->nnodes();
 				if (newsize < oldsize) {
+					cout << "oldsize: " << oldsize << endl;
+					cout << "newsize: " << newsize << endl;
 					cntk = std::move(decomp_ntk.value());
 					continue;
 				} else {
@@ -108,6 +110,8 @@ namespace majesty {
 			if (lutxmg) {
 				auto newsize = lutxmg.get_ptr()->nnodes();
 				if (newsize < oldsize) {
+					cout << "oldsize: " << oldsize << endl;
+					cout << "newsize: " << newsize << endl;
 					cmig = std::move(lutxmg.value());
 					continue;
 				} else {

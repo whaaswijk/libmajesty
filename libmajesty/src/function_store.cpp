@@ -317,7 +317,7 @@ namespace majesty {
 					freeReplyObject(reply);
 				}
 				//auto opt_size_ntk = 
-				expr = logic_ntk_to_string(size_optimum_ntk_ns<CMSat::SATSolver>(f.to_ulong(), spec));
+				expr = logic_ntk_to_string(size_optimum_ntk_ns<CMSat::SATSolver>(f, spec));
 				if (expr) {
 					reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s",
 							to_string(f).c_str(), expr.get().c_str());

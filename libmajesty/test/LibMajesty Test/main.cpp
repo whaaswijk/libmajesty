@@ -249,7 +249,6 @@ TEST_CASE("LUT Mapping", "[techmapping]") {
     lut_ntk = lut_map_area(ntk, cut_params.get());
     write_blif(lut_ntk, "div.blif");
 }
-*/
 
 TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     auto xmg = read_verilog("../assets/adder.v");
@@ -260,14 +259,36 @@ TEST_CASE("Logic Network LUT Decomposition", "[optimization]") {
     auto opt_ntk = logic_ntk_from_luts(lut_ntk);
     write_blif(opt_ntk, "decomp_adder.blif");
 }
+*/
 
-TEST_CASE("LUT Area Optimization", "[optimization]") {
+/*
+TEST_CASE("XMG LUT Area Optimization", "[optimization]") {
+	auto xmg_params = default_xmg_params();
+    auto xmg = read_verilog("../assets/adder.v", xmg_params.get());
+    
+	auto cut_params = default_cut_params();
+    cut_params->klut_size = 6;
+
+	auto opt_xmg = lut_area_strategy(xmg, xmg_params.get(), 4);
+	majesty::xmg cover_xmg(opt_xmg, xmg_params.get());
+	auto lut_mapped = lut_map_area(cover_xmg, cut_params.get());
+	std::cout << "lut_mapped size: " << lut_mapped.ninternal() << std::endl;
+	write_blif(lut_mapped, "xmg_adder_opt_4_mapped.blif");
+}
+*/
+
+TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
     auto xmg = read_verilog("../assets/adder.v");
     auto ntk = xmg_to_logic_ntk(xmg);
+    
+	auto cut_params = default_cut_params();
+    cut_params->klut_size = 6;
 
-	for (auto lut_size = 3; lut_size < 7; lut_size++) {
+	for (auto lut_size = 3; lut_size < 9; lut_size++) {
 		auto opt_ntk = lut_area_strategy(ntk, lut_size);
 		write_blif(opt_ntk, "adder_opt_" + std::to_string(lut_size) + ".blif");
+		auto lut_mapped = lut_map_area(opt_ntk, cut_params.get());
+		write_blif(lut_mapped, "ntk_adder_opt_" + std::to_string(lut_size) + "_mapped.blif");
 	}
 }
 
