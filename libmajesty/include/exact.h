@@ -489,9 +489,15 @@ namespace majesty {
 		}
 		add_clause<S>(plits, plits + ctr);
 	}
-
+	
 	template<typename S>
 	static inline lbool cegar_solve(const uint64_t func, synth_spec* spec, Vec_Int_t* vlits) {
+		tt functt(1 << spec->nr_vars, func);
+		return cegar_solve<S>(functt, spec, vlits);
+	}
+
+	template<typename S>
+	static inline lbool cegar_solve(const tt& func, synth_spec* spec, Vec_Int_t* vlits) {
 		Vec_IntClear(vlits);
 
 		while (true) {
@@ -508,7 +514,7 @@ namespace majesty {
 			// Check if the solution found matches the specification
 			for (auto t = 0u; t < spec->tt_size; t++) {
 				const auto ntk_val = ntk_func[t + 1];
-				const bool spec_val = (func >> (t + 1)) & 1;
+				const bool spec_val = func.test(t + 1);
 				if (ntk_val != spec_val) {
 					// Constrain the solver further by adding an additional constraint for this truth table row
 					const auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
