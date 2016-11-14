@@ -159,57 +159,14 @@ namespace majesty {
 		tt functt((1u << spec->nr_vars), func);
 		print_fanin_3_solution_ns<S>(functt, spec);
 	}
-
-	template<typename S>
-    logic_ntk extract_fanin_2_ntk(const tt& func, synth_spec* spec) {
-        return extract_fanin_2_ntk<S>(func, spec, false);
-    }
-
-	template<typename S>
-	logic_ntk extract_fanin_2_ntk(const tt& func, synth_spec* spec, bool invert) {
-		logic_ntk ntk;
-
-		for (auto i = 0u; i < spec->nr_vars; i++) {
-			ntk.create_input();
-		}
-
-		auto sel_var_ctr = 0u;
-		static std::vector<nodeid> fanin(2);
-		static tt nodefunc(4);
-		for (auto i = 0u; i < spec->nr_gates; i++) {
-			for (auto j = 0u; j < spec->nr_vars + i; j++) {
-				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-					if (var_value<S>(spec->selection_var_offset + sel_var_ctr)) {
-						// Gate i has gates j and k as fanin
-						fanin[0] = j;
-						fanin[1] = k;
-						nodefunc.set(0, 0);
-						nodefunc.set(1, var_value<S>(gate_variable(i, 0, spec)));
-						nodefunc.set(2, var_value<S>(gate_variable(i, 1, spec)));
-						nodefunc.set(3, var_value<S>(gate_variable(i, 2, spec)));
-						ntk.create_node(fanin, nodefunc);
-					}
-				}
-			}
-		}
-
-		// The last node is the output node
-        if (invert) {
-            auto& outnode = ntk.get_node(ntk.nnodes() - 1);
-            outnode.function = ~outnode.function;
-        }
-		ntk.create_output(ntk.nnodes() - 1);
-
-		return ntk;
-	}
 	
 	template<typename S>
-	logic_ntk extract_fanin_2_ntk(const uint64_t func, synth_spec* spec) {
-		return extract_fanin_2_ntk<S>(func, spec, false);
+	logic_ntk extract_fanin_2_ntk(synth_spec* spec) {
+		return extract_fanin_2_ntk<S>(spec, false);
 	}
 
 	template<typename S>
-	logic_ntk extract_fanin_2_ntk(const uint64_t func, synth_spec* spec, bool invert) {
+	logic_ntk extract_fanin_2_ntk(synth_spec* spec, bool invert) {
 		logic_ntk ntk;
 		
 		for (auto i = 0u; i < spec->nr_vars; i++) {
@@ -247,12 +204,12 @@ namespace majesty {
 	}
 
 	template<typename S>
-	logic_ntk extract_fanin_2_ntk_ns(const tt& func, synth_spec* spec) {
-		return extract_fanin_2_ntk_ns<S>(func, spec, false);
+	logic_ntk extract_fanin_2_ntk_ns(synth_spec* spec) {
+		return extract_fanin_2_ntk_ns<S>(spec, false);
 	}
 
 	template<typename S>
-	logic_ntk extract_fanin_2_ntk_ns(const tt& func, synth_spec* spec, bool invert) {
+	logic_ntk extract_fanin_2_ntk_ns(synth_spec* spec, bool invert) {
 		logic_ntk ntk;
 
 		for (auto i = 0u; i < spec->nr_vars; i++) {
@@ -298,12 +255,12 @@ namespace majesty {
 	}
 
 	template<typename S>
-	logic_ntk extract_fanin_3_ntk_ns(const uint64_t func, synth_spec* spec) {
-		return extract_fanin_3_ntk_ns<S>(func, spec, false);
+	logic_ntk extract_fanin_3_ntk_ns(synth_spec* spec) {
+		return extract_fanin_3_ntk_ns<S>(spec, false);
 	}
-
+	
 	template<typename S>
-	logic_ntk extract_fanin_3_ntk_ns(const uint64_t func, synth_spec* spec, bool invert) {
+	logic_ntk extract_fanin_3_ntk_ns(synth_spec* spec, bool invert) {
 		logic_ntk ntk;
 
 		for (auto i = 0u; i < spec->nr_vars; i++) {
@@ -355,59 +312,6 @@ namespace majesty {
 
 		return ntk;
 	}
-
-	template<typename S>
-	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, synth_spec* spec) {
-		return extract_fanin_2_ntk_ns<S>(func, spec, false);
-	}
-
-	template<typename S>
-	logic_ntk extract_fanin_2_ntk_ns(const uint64_t func, synth_spec* spec, bool invert) {
-		logic_ntk ntk;
-		
-		for (auto i = 0u; i < spec->nr_vars; i++) {
-			ntk.create_input();
-		}
-
-		static std::vector<nodeid> fanin(2);
-		static tt nodefunc(4);
-		auto selection_var_ctr = 0u;
-		for (auto i = 0u; i < spec->nr_gates; i++) {
-			auto inputs_found = 0u;
-			auto in1 = 0u;
-			auto in2 = 0u;
-			for (auto j = 0u; j < spec->nr_vars + i; j++) {
-				if (var_value<S>(spec->selection_var_offset + selection_var_ctr++)) {
-					if (inputs_found == 0u) {
-						in1 = j;
-					} else {
-						in2 = j;
-					}
-					++inputs_found;
-					if (inputs_found == 2) {
-						fanin[0] = in1;
-						fanin[1] = in2;
-						nodefunc.set(0, 0);
-						nodefunc.set(1, var_value<S>(gate_variable(i, 0, spec)));
-						nodefunc.set(2, var_value<S>(gate_variable(i, 1, spec)));
-						nodefunc.set(3, var_value<S>(gate_variable(i, 2, spec)));
-						ntk.create_node(fanin, nodefunc);
-					}
-				}
-			}
-		}
-
-		// The last node is the output node
-        if (invert) {
-            auto& outnode = ntk.get_node(ntk.nnodes() - 1);
-            outnode.function = ~outnode.function;
-        }
-		ntk.create_output(ntk.nnodes() - 1);
-
-		return ntk;
-	}
-
-
 
 	template<typename S>
 	static inline void create_variables(synth_spec* spec) {
@@ -597,7 +501,7 @@ namespace majesty {
 			}
 
 			// Extract the network, simulate it, and find the first bit where it's different from the specification
-			auto ntk = extract_fanin_2_ntk<S>(func, spec);
+			auto ntk = extract_fanin_2_ntk<S>(spec);
 			auto ntk_func = ntk.simulate();
 
 			bool found_solution = true;
@@ -632,9 +536,15 @@ namespace majesty {
 		}
 		return l_True;
 	}
-
+	
 	template<typename S>
 	static inline lbool cegar_solve_ns(const uint64_t func, synth_spec* spec, Vec_Int_t* vlits) {
+		tt functt(1 << spec->nr_vars, func);
+		return cegar_solve_ns<S>(functt, spec, vlits);
+	}
+
+	template<typename S>
+	static inline lbool cegar_solve_ns(const tt& func, synth_spec* spec, Vec_Int_t* vlits) {
 		Vec_IntClear(vlits);
 
 		while (true) {
@@ -644,14 +554,14 @@ namespace majesty {
 			}
 
 			// Extract the network, simulate it, and find the first bit where it's different from the specification
-			auto ntk = extract_fanin_2_ntk_ns<S>(func, spec);
+			auto ntk = extract_fanin_2_ntk_ns<S>(spec);
 			auto ntk_func = ntk.simulate();
 
 			bool found_solution = true;
 			// Check if the solution found matches the specification
 			for (auto t = 0u; t < spec->tt_size; t++) {
 				const auto ntk_val = ntk_func[t + 1];
-				const bool spec_val = (func >> (t + 1)) & 1;
+				const bool spec_val = func.test(t + 1);
 				if (ntk_val != spec_val) {
 					// Constrain the solver further by adding an additional constraint for this truth table row
 					const auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
@@ -828,6 +738,13 @@ namespace majesty {
 	// Tries to find a network using the new selection variable implementation
 	template<typename S>
 	lbool exists_fanin_2_ntk_ns(const uint64_t func, synth_spec* spec) {
+		tt functt(1 << spec->nr_vars, func);
+		return exists_fanin_2_ntk_ns(functt, spec);
+	}
+	
+	// Tries to find a network using the new selection variable implementation
+	template<typename S>
+	lbool exists_fanin_2_ntk_ns(const tt& func, synth_spec* spec) {
 		static lit plits[4];
 		
 		create_variables_ns<S>(spec);
@@ -980,17 +897,23 @@ namespace majesty {
 			Vec_IntClear(vlits);
 			for (auto t = 0u; t < spec->tt_size; t++) {
 				auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
-				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !((func >> (t + 1)) & 1)));
+				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !func.test(t + 1)));
 			}
 			auto res = solve<S>(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			Vec_IntFree(vlits);
 			return res;
 		}
 	}
+	
+	template<typename S>
+	lbool exists_fanin_3_ntk_ns(const uint64_t func, synth_spec* spec) {
+		tt functt(1 << spec->nr_vars, func);
+		return exists_fanin_3_ntk_ns<S>(functt, spec);
+	}
 
 	// Tries to find a network using the new selection variable implementation
 	template<typename S>
-	lbool exists_fanin_3_ntk_ns(const uint64_t func, synth_spec* spec) {
+	lbool exists_fanin_3_ntk_ns(const tt& func, synth_spec* spec) {
 		static lit plits[4];
 		
 		create_variables_ns<S>(spec);
@@ -1157,7 +1080,7 @@ namespace majesty {
 			Vec_IntClear(vlits);
 			for (auto t = 0u; t < spec->tt_size; t++) {
 				auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
-				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !((func >> (t + 1)) & 1)));
+				Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !(func.test(t + 1))));
 			}
 			auto res = solve<S>(Vec_IntArray(vlits), Vec_IntLimit(vlits));
 			Vec_IntFree(vlits);
@@ -1251,7 +1174,7 @@ namespace majesty {
 			restart_solver<S>();
 			auto network_exists = exists_fanin_2_ntk<S>(func, spec);
 			if (network_exists == l_True) {
-				ntk = extract_fanin_2_ntk<S>(func, spec, invert);
+				ntk = extract_fanin_2_ntk<S>(spec, invert);
 				if (spec->verbose) {
 					print_fanin_2_solution<S>(func, spec);
 				}
@@ -1266,11 +1189,18 @@ namespace majesty {
 
 	template<typename S>
 	logic_ntk size_optimum_ntk_ns(uint64_t func, synth_spec* spec) {
+		tt functt(1 << spec->nr_vars, func);
+		return size_optimum_ntk_ns<S>(functt, spec);
+	}
+	
+	template<typename S>
+	logic_ntk size_optimum_ntk_ns(const tt& spec_func, synth_spec* spec) {
 		// TODO: Check if function is constant or variable. If so, return early.
+		tt func = spec_func;
 
 
 		// Make the function normal if it isn't already
-		bool invert = func & 1;
+		auto invert = func.test(0);
 		if (invert) {
 			func = ~func;
 		}
@@ -1293,7 +1223,7 @@ namespace majesty {
 			if (spec->gate_size == 3) {
 				auto network_exists = exists_fanin_3_ntk_ns<S>(func, spec);
 				if (network_exists == l_True) {
-					ntk = extract_fanin_3_ntk_ns<S>(func, spec, invert);
+					ntk = extract_fanin_3_ntk_ns<S>(spec, invert);
 					if (spec->verbose) {
 						//print_fanin_3_solution_ns<S>(func, spec);
 					}
@@ -1302,7 +1232,7 @@ namespace majesty {
 			} else {
 				auto network_exists = exists_fanin_2_ntk_ns<S>(func, spec);
 				if (network_exists == l_True) {
-					ntk = extract_fanin_2_ntk_ns<S>(func, spec, invert);
+					ntk = extract_fanin_2_ntk_ns<S>(spec, invert);
 					if (spec->verbose) {
 						print_fanin_2_solution_ns<S>(func, spec);
 					}
