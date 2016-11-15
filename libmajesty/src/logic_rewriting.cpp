@@ -664,7 +664,7 @@ namespace majesty {
 				if (existing_id != EC_NULL) {
 					// A strash hit! Since this node already exists, it only adds
 					// to the area if it wasn't previously selected.
-					cout << "Got virtual strash hit!" << endl;
+					//cout << "Got virtual strash hit!" << endl;
 					virtmap.push_back(existing_id);
 					nref[existing_id] += 1;
 					if (nref.at(existing_id) == 1) {
@@ -694,23 +694,24 @@ namespace majesty {
 				if (nref[faninid] == 1) {
 					recursive_select(faninid, ntk.nodes(), nref);
 				}
-			}
-			vector<nodeid> virtfanin;
-			for (auto id : node.fanin) {
-				virtfanin.push_back(virtmap[id]);
-			}
-			auto existing_id = ntk.get_nodeid(virtfanin, node.function);
-			if (existing_id != EC_NULL) {
-				cout << "Got actual strash hit!" << endl;
-				virtmap[i] = existing_id;
-				nref[existing_id] += 1;
-				if (nref.at(existing_id) == 1) {
-					recursive_select(existing_id, ntk.nodes(), nref);
-				}
 			} else {
-				auto new_nodeid = ntk.create_node(virtfanin, node.function);
-				virtmap[i] = new_nodeid;
-				nref[new_nodeid] = 1;
+				vector<nodeid> virtfanin;
+				for (auto id : node.fanin) {
+					virtfanin.push_back(virtmap[id]);
+				}
+				auto existing_id = ntk.get_nodeid(virtfanin, node.function);
+				if (existing_id != EC_NULL) {
+					//cout << "Got actual strash hit!" << endl;
+					virtmap[i] = existing_id;
+					nref[existing_id] += 1;
+					if (nref.at(existing_id) == 1) {
+						recursive_select(existing_id, ntk.nodes(), nref);
+					}
+				} else {
+					auto new_nodeid = ntk.create_node(virtfanin, node.function);
+					virtmap[i] = new_nodeid;
+					nref[new_nodeid] = 1;
+				}
 			}
 		}
 
@@ -756,7 +757,7 @@ namespace majesty {
 					break;
 				} else {
 					synth_spec spec;
-					spec.verbose = true;
+					//spec.verbose = true;
 					spec.nr_vars = node.fanin.size();
 					if (spec.nr_vars >= 3) {
 						// We have to manually set the gate size and gate_tt_size here,
@@ -782,7 +783,7 @@ namespace majesty {
 			}
 			const auto& cutfunc = *fm.at(best_cut);
 			synth_spec spec;
-			spec.verbose = true;
+			//spec.verbose = true;
 			spec.nr_vars = node.fanin.size();
 			if (spec.nr_vars >= 3) {
 				// We have to manually set the gate size and gate_tt_size here,
@@ -795,7 +796,9 @@ namespace majesty {
 			//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
 			auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(cutfunc, &spec);// string_to_logic_ntk(opt_ntk_str.get());
 			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk, best_cut->nodes(), nodemap, nref);
+			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
+		cout << endl;
 
 		const auto& outputs = cut_ntk.outputs();
 		for (auto i = 0u; i < outputs.size(); i++) {
