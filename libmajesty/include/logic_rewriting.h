@@ -1,5 +1,4 @@
-#ifndef LUT_OPTIMIZE_H
-#define LUT_OPTIMIZE_H
+#pragma once
 
 #include "cut.h"
 #include "lut_cover.h"
@@ -39,6 +38,5 @@ namespace majesty {
 	void mine_functions(const xmg&, const xmg_params*, unsigned);
 	cirkit::tt jake_canon(const cirkit::tt&, unsigned* uCanonPhase, char* pCanonPerm, unsigned num_vars);
 
+	logic_ntk size_rewrite_strategy(const logic_ntk&, unsigned cut_size, unsigned conflict_limit);
 }
-
-#endif

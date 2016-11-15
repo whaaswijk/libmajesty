@@ -364,6 +364,7 @@ namespace majesty {
 	store_stats function_store::get_store_stats() {
 		store_stats stats;
 		
+#ifndef _WIN32
 		redisReply* reply = (redisReply*) redisCommand(_rcontext, "KEYS *");
         if (reply == NULL) {
             throw runtime_error("Error connecting to server");
@@ -387,8 +388,7 @@ namespace majesty {
 				throw runtime_error(errorstring);
 				break;
 		}
-
-
+#endif
 		return stats;
 	}
 

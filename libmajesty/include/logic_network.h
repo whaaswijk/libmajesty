@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <truth_table_utils.hpp>
+#include <unordered_map>
 
 /**
  * A class and note type to represent arbitrary homogenous logic network. Functions of nodes in the
@@ -24,6 +25,11 @@ namespace majesty {
 			std::vector<nodeid> _outputs;
 			std::vector<std::string> _innames;
 			std::vector<std::string> _outnames;
+			bool _has_const0_node = false;
+			nodeid _const0_id = 0u;
+			bool _has_const1_node = false;
+			nodeid _const1_id = 0u;
+			std::unordered_multimap<size_t,std::pair<std::vector<nodeid>,std::pair<cirkit::tt,nodeid>>> _shmap;
 			
 		public:
 			logic_ntk() {  }
@@ -70,6 +76,9 @@ namespace majesty {
 			nodeid create_output(nodeid, const std::string&, bool);
 
 			nodeid create_node(const std::vector<nodeid>&, const cirkit::tt&);
+
+			nodeid get_const0_node();
+			nodeid get_const1_node();
 
 			void create_dummy_innames();
 			void create_dummy_outnames();

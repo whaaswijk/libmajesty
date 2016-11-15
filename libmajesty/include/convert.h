@@ -6,7 +6,7 @@
 #include <map>
 #include <unordered_map>
 #include <boost/optional.hpp>
-#include <lut_optimize.h>
+#include <logic_rewriting.h>
 
 namespace majesty {
 

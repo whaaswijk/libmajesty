@@ -6,6 +6,7 @@
 #include <tuple>
 #include <sat_interface.h>
 #include <vector>
+#include <unordered_map>
 
 using namespace cirkit;
 	
@@ -168,9 +169,10 @@ namespace majesty {
 	template<typename S>
 	logic_ntk extract_fanin_2_ntk(synth_spec* spec, bool invert) {
 		logic_ntk ntk;
+		std::unordered_map<nodeid, nodeid> nodemap;
 		
 		for (auto i = 0u; i < spec->nr_vars; i++) {
-			ntk.create_input();
+			nodemap[i] = ntk.create_input();
 		}
 
 		static std::vector<nodeid> fanin(2);
@@ -181,13 +183,13 @@ namespace majesty {
 				for (auto k = j + 1; k < spec->nr_vars + i; k++) {
 					if (var_value<S>(spec->selection_var_offset + selection_var_ctr++)) {
 						// Gate i has gates j and k as fanin
-						fanin[0] = j;
-						fanin[1] = k;
+						fanin[0] = nodemap[j];
+						fanin[1] = nodemap[k];
 						nodefunc.set(0, 0);
 						nodefunc.set(1, var_value<S>(gate_variable(i, 0, spec)));
 						nodefunc.set(2, var_value<S>(gate_variable(i, 1, spec)));
 						nodefunc.set(3, var_value<S>(gate_variable(i, 2, spec)));
-						ntk.create_node(fanin, nodefunc);
+						nodemap[i + spec->nr_vars] = ntk.create_node(fanin, nodefunc);
 					}
 				}
 			}
@@ -211,9 +213,10 @@ namespace majesty {
 	template<typename S>
 	logic_ntk extract_fanin_2_ntk_ns(synth_spec* spec, bool invert) {
 		logic_ntk ntk;
+		std::unordered_map<nodeid, nodeid> nodemap;
 
 		for (auto i = 0u; i < spec->nr_vars; i++) {
-			ntk.create_input();
+			nodemap[i] = ntk.create_input();
 		}
 
 		static std::vector<nodeid> fanin(2);
@@ -232,13 +235,13 @@ namespace majesty {
 					}
 					++inputs_found;
 					if (inputs_found == 2) {
-						fanin[0] = in1;
-						fanin[1] = in2;
+						fanin[0] = nodemap[in1];
+						fanin[1] = nodemap[in2];
 						nodefunc.set(0, 0);
 						nodefunc.set(1, var_value<S>(gate_variable(i, 0, spec)));
 						nodefunc.set(2, var_value<S>(gate_variable(i, 1, spec)));
 						nodefunc.set(3, var_value<S>(gate_variable(i, 2, spec)));
-						ntk.create_node(fanin, nodefunc);
+						nodemap[i + spec->nr_vars] = ntk.create_node(fanin, nodefunc);
 					}
 				}
 			}
@@ -262,9 +265,10 @@ namespace majesty {
 	template<typename S>
 	logic_ntk extract_fanin_3_ntk_ns(synth_spec* spec, bool invert) {
 		logic_ntk ntk;
+		std::unordered_map<nodeid, nodeid> nodemap;
 
 		for (auto i = 0u; i < spec->nr_vars; i++) {
-			ntk.create_input();
+			nodemap[i] = ntk.create_input();
 		}
 
 		static std::vector<nodeid> fanin(3);
@@ -286,9 +290,9 @@ namespace majesty {
 					}
 					++inputs_found;
 					if (inputs_found == 3) {
-						fanin[0] = in1;
-						fanin[1] = in2;
-						fanin[2] = in3;
+						fanin[0] = nodemap[in1];
+						fanin[1] = nodemap[in2];
+						fanin[2] = nodemap[in3];
 						nodefunc.set(0, 0);
 						nodefunc.set(1, var_value<S>(gate_variable(i, 0, spec)));
 						nodefunc.set(2, var_value<S>(gate_variable(i, 1, spec)));
@@ -297,7 +301,7 @@ namespace majesty {
 						nodefunc.set(5, var_value<S>(gate_variable(i, 4, spec)));
 						nodefunc.set(6, var_value<S>(gate_variable(i, 5, spec)));
 						nodefunc.set(7, var_value<S>(gate_variable(i, 6, spec)));
-						ntk.create_node(fanin, nodefunc);
+						nodemap[i + spec->nr_vars] = ntk.create_node(fanin, nodefunc);
 					}
 				}
 			}

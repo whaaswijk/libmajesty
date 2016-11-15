@@ -1,6 +1,7 @@
 #include <logic_network.h>
 #include <string>
 #include <unordered_map>
+#include <boost/functional/hash.hpp>
 
 using namespace cirkit;
 
@@ -62,6 +63,26 @@ namespace majesty {
         _outputs.push_back(id);
         return _outputs.size() - 1;
 	}
+	
+	nodeid logic_ntk::get_const0_node() {
+		if (_has_const0_node) {
+			return _const0_id;
+		}
+		std::vector<nodeid> zerofanin;
+		_const0_id = create_node(zerofanin, tt_const0());
+		_has_const0_node = true;
+		return _const0_id;
+	}
+	
+	nodeid logic_ntk::get_const1_node() {
+		if (_has_const1_node) {
+			return _const1_id;
+		}
+		std::vector<nodeid> zerofanin;
+		_const1_id = create_node(zerofanin, tt_const1());
+		_has_const1_node = true;
+		return _const1_id;
+	}
 
 	nodeid logic_ntk::create_output(nodeid id) {
 		return create_output(id, false);
@@ -77,6 +98,21 @@ namespace majesty {
 	}
 
 	nodeid logic_ntk::create_node(const std::vector<nodeid>& fanin, const cirkit::tt& function) {
+		auto hash_key = boost::hash_range(fanin.begin(), fanin.end());
+		auto sh_lookup = _shmap.equal_range(hash_key);
+		for (auto it = sh_lookup.first; it != sh_lookup.second; it++) {
+			const auto& lookup_fanin = it->second.first;
+			if (lookup_fanin == fanin) {
+				// The fanin is the same, now we have to check if the function is the same too
+				const auto& lookup_func = it->second.second.first;
+				if (lookup_func == function) {
+					// We have a node with the same fanin and the same function, strash hit!
+					//std::cout << "logic_ntk strash hit!" << std::endl;
+					return it->second.second.second;
+				}
+			}
+		}
+
 		ln_node node;
 		node.pi = false;
 		node.fanin = fanin;
@@ -86,7 +122,10 @@ namespace majesty {
 		}
 		node.function = function;
 		_nodes.push_back(node);
-		return _nodes.size() - 1;
+		auto id = _nodes.size() - 1;
+		// Insert into the strash map
+		_shmap.emplace(hash_key, std::make_pair(fanin, std::make_pair(function, id)));
+		return id;
 	}
 
 	void logic_ntk::create_dummy_innames() {

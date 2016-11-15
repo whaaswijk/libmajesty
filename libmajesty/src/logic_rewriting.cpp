@@ -1,6 +1,6 @@
 #include <iostream>
 #include <stack>
-#include "lut_optimize.h"
+#include <logic_rewriting.h>
 #include "strashmap.h"
 #include "npn_canonization.hpp"
 #include <convert.h>
@@ -569,7 +569,78 @@ namespace majesty {
 		return res;
 	}
 
+	logic_ntk logic_ntk_from_cuts(const logic_ntk& cut_ntk, const cutmap& cut_map, unsigned conflict_limit) {
+		logic_ntk ntk;
+		
+		nodemap nodemap;
+		function_store fstore;
 
+		const auto& nodes = cut_ntk.nodes();
+		const auto total_nodes = cut_ntk.nnodes();
+		auto progress = 0u;
+		for (auto i = 0u; i < total_nodes; i++) {
+			const auto& node = nodes[i];
+			if (node.pi) {
+				nodemap[i] = make_pair(ntk.create_input(), false);
+				++progress;
+				continue;
+			}
+			const auto& node_cuts = cut_map.at(i);
+			for (const auto& cut : node_cuts) {
+				if (cut->size() == 0) {
+					// Const 1 or 0
+				}
+			}
+		}
+
+		const auto& outputs = cut_ntk.outputs();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto np = nodemap[outputs[i]];
+			ntk.create_output(np.first);
+		}
+
+		const auto& innames = cut_ntk.innames();
+		for (const auto& name : innames) {
+			ntk.add_inname(name);
+		}
+
+		const auto& outnames = cut_ntk.outnames();
+		for (const auto& name : outnames) {
+			ntk.add_outname(name);
+		}
+
+		return ntk;
+	}
+
+	logic_ntk size_rewrite_strategy(const logic_ntk& ntk, unsigned cut_size, unsigned conflict_limit) {
+		auto cut_params = default_cut_params();
+		cut_params->klut_size = cut_size;
+		vector<tt> timeoutfuncs;
+	
+		logic_ntk cntk(ntk);
+		auto ctu = false;
+		do {
+			ctu = false;
+			funcmap fm;
+			auto oldsize = cntk.nnodes();
+			const auto cut_map = enumerate_cuts_eval_funcs(cntk, cut_params.get(), fm);
+			auto decomp_ntk = logic_ntk_from_cuts(cntk, cut_map, conflict_limit);
+			auto newsize = decomp_ntk.nnodes();
+			if (newsize < oldsize) {
+				cout << "oldsize: " << oldsize << endl;
+				cout << "newsize: " << newsize << endl;
+				cout << "continuing" << endl;
+				cntk = std::move(decomp_ntk);
+				ctu = true;
+			} else {
+				cout << "oldsize: " << oldsize << endl;
+				cout << "newsize: " << newsize << endl;
+				cout << "not continuing" << endl;
+			}
+		} while (ctu);
+
+		return std::move(cntk);
+	}
 
     /*
 	// NPN canonization function from ABC

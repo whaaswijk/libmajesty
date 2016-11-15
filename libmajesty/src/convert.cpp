@@ -491,8 +491,7 @@ namespace majesty {
 		for (auto i = 1u; i < nodes.size(); i++) {
             vector<nodeid> fanin;
             if (i == 0u) {
-                auto const_one = ntk.create_node(fanin, tt(1, 1));
-                nodemap[0] = const_one;
+                nodemap[0] = ntk.get_const1_node();
             } else {
                 const auto& node = nodes[i];
                 if (is_pi(node)) {
