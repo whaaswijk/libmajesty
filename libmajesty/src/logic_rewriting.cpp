@@ -649,6 +649,7 @@ namespace majesty {
 		for (auto i = 0u; i < nr_opt_ntk_nodes; i++) {
 			const auto& node = opt_ntk_nodes[i];
 			if (node.pi) {
+				assert(nodemap.find(fanin[i]) != nodemap.end());
 				auto faninid = nodemap.at(fanin[i]); 
 				virtmap[i] = faninid;
 				nref[faninid] += 1;
@@ -688,6 +689,7 @@ namespace majesty {
 		for (auto i = 0u; i < nr_opt_ntk_nodes; i++) {
 			const auto& node = opt_ntk_nodes[i];
 			if (node.pi) {
+				assert(nodemap.find(fanin[i]) != nodemap.end());
 				auto faninid = nodemap.at(fanin[i]);
 				virtmap[i] = faninid;
 				nref[faninid] += 1;
@@ -701,7 +703,7 @@ namespace majesty {
 				}
 				auto existing_id = ntk.get_nodeid(virtfanin, node.function);
 				if (existing_id != EC_NULL) {
-					//cout << "Got actual strash hit!" << endl;
+					cout << "Got actual strash hit!" << endl;
 					virtmap[i] = existing_id;
 					nref[existing_id] += 1;
 					if (nref.at(existing_id) == 1) {
@@ -748,6 +750,7 @@ namespace majesty {
 				if (cut->size() == 1 && cut->nodes()[0] == i) { // Trivial cut
 					continue;
 				} else if (cut->size() == 0) { // Const 1 or 0
+					cout << "got const cut!" << endl;
 					found_const_cut = true;
 					if (cutfunc == tt_const0()) {
 						nodemap[i] = tmp_ntk.get_const0_node();
@@ -758,7 +761,7 @@ namespace majesty {
 				} else {
 					synth_spec spec;
 					//spec.verbose = true;
-					spec.nr_vars = node.fanin.size();
+					spec.nr_vars = cut->size();
 					if (spec.nr_vars >= 3) {
 						// We have to manually set the gate size and gate_tt_size here,
 						// as exact synthesis may not be called when we use stored results.
@@ -770,6 +773,7 @@ namespace majesty {
 					//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
 					auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(cutfunc, &spec);// //string_to_logic_ntk(opt_ntk_str.get());
 					auto virt_nodes_added = virtual_recursive_select(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
+					//auto virt_nodes_added = opt_ntk.nnodes();
 					if (virt_nodes_added < smallest_add) {
 						best_cut = cut.get();
 						smallest_add = virt_nodes_added;
@@ -781,10 +785,11 @@ namespace majesty {
 			if (found_const_cut) {
 				continue;
 			}
+			assert(best_cut != nullptr);
 			const auto& cutfunc = *fm.at(best_cut);
 			synth_spec spec;
 			//spec.verbose = true;
-			spec.nr_vars = node.fanin.size();
+			spec.nr_vars = best_cut->size();
 			if (spec.nr_vars >= 3) {
 				// We have to manually set the gate size and gate_tt_size here,
 				// as exact synthesis may not be called when we use stored results.
@@ -800,23 +805,63 @@ namespace majesty {
 		}
 		cout << endl;
 
-		const auto& outputs = cut_ntk.outputs();
-		for (auto i = 0u; i < outputs.size(); i++) {
-			const auto nid = nodemap[outputs[i]];
-			tmp_ntk.create_output(nid);
+		nref.clear();
+
+		{
+			const auto& outputs = cut_ntk.outputs();
+			for (auto i = 0u; i < outputs.size(); i++) {
+				const auto nid = nodemap[outputs[i]];
+				tmp_ntk.create_output(nid);
+				nref[nid] = 1;
+				recursive_select(nid, tmp_ntk.nodes(), nref);
+			}
+		}
+
+		auto nunref = 0;
+		auto tmp_nodes = tmp_ntk.nodes();
+		for (auto i = 0u; i < tmp_ntk.nnodes(); i++) {
+			const auto& node = tmp_nodes[i];
+			if (!node.pi && nref[i] == 0) {
+				++nunref;
+			}
+		}
+
+		logic_ntk ntk;
+		nodemap.clear();
+		for (auto i = 0u; i < tmp_ntk.nnodes(); i++) {
+			const auto& node = tmp_nodes[i];
+			if (node.pi) {
+				nodemap[i] = ntk.create_input();
+				++progress;
+			} else {
+				auto refs = nref[i];
+				if (refs > 0) {
+					vector<nodeid> nfanin;
+					for (auto id : node.fanin) {
+						nfanin.push_back(nodemap[id]);
+					}
+					nodemap[i] = ntk.create_node(nfanin, node.function);
+				}
+			}
+		}
+		
+		const auto& tmp_outputs = tmp_ntk.outputs();
+		for (auto i = 0u; i < tmp_outputs.size(); i++) {
+			const auto nid = nodemap[tmp_outputs[i]];
+			ntk.create_output(nid);
 		}
 
 		const auto& innames = cut_ntk.innames();
 		for (const auto& name : innames) {
-			tmp_ntk.add_inname(name);
+			ntk.add_inname(name);
 		}
 
 		const auto& outnames = cut_ntk.outnames();
 		for (const auto& name : outnames) {
-			tmp_ntk.add_outname(name);
+			ntk.add_outname(name);
 		}
 
-		return tmp_ntk;
+		return ntk;
 	}
 
 	logic_ntk size_rewrite_strategy(const logic_ntk& ntk, unsigned cut_size, unsigned conflict_limit) {
@@ -838,7 +883,7 @@ namespace majesty {
 				cout << "newsize: " << newsize << endl;
 				cout << "continuing" << endl;
 				cntk = std::move(decomp_ntk);
-				ctu = true;
+				//ctu = true;
 			} else {
 				cout << "oldsize: " << oldsize << endl;
 				cout << "newsize: " << newsize << endl;
