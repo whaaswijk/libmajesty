@@ -701,6 +701,7 @@ namespace majesty {
 			}
 			auto existing_id = ntk.get_nodeid(virtfanin, node.function);
 			if (existing_id != EC_NULL) {
+				cout << "Got actual strash hit!" << endl;
 				virtmap[i] = existing_id;
 				nref[existing_id] += 1;
 				if (nref.at(existing_id) == 1) {
@@ -733,7 +734,6 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (node.pi) {
 				nodemap[i] = tmp_ntk.create_input();
-				nref[i] = 1;
 				++progress;
 				continue;
 			}
