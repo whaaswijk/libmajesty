@@ -569,17 +569,17 @@ namespace majesty {
 		return res;
 	}
 
-	int recursive_deselect(const nodeid nid, const vector<ln_node>& nodes, const vector<nodeid> fanin, unordered_map<nodeid,unsigned>& nref) {
+	int recursive_deselect(const nodeid nid, const vector<ln_node>& nodes, unordered_map<nodeid,unsigned>& nref) {
 		const auto& node = nodes[nid];
 		if (node.pi) {
 			return 0;
 		}
 		auto area = 1;
-		for (auto nodeid : fanin) {
+		for (auto nodeid : node.fanin) {
 			nref[nodeid] -= 1;
 			if (nref[nodeid] == 0) {
 				const auto& innode = nodes[nodeid];
-				area += recursive_deselect(nodeid, nodes, innode.fanin, nref);
+				area += recursive_deselect(nodeid, nodes, nref);
 			}
 		}
 		return area;
@@ -615,7 +615,7 @@ namespace majesty {
 				virtmap[i] = faninid;
 				nref[faninid] -= 1;
 				if (nref.at(faninid) == 0) {
-					area += recursive_select(faninid, ntk.nodes(), nref);
+					area += recursive_deselect(faninid, ntk.nodes(), nref);
 				}
 			} else {
 				vector<nodeid> virtfanin;
@@ -627,7 +627,7 @@ namespace majesty {
 					virtmap.push_back(existing_id);
 					nref[existing_id] -= 1;
 					if (nref.at(existing_id) == 0) {
-						area += recursive_select(existing_id, ntk.nodes(), nref);
+						area += recursive_deselect(existing_id, ntk.nodes(), nref);
 					}
 					continue;
 				} else {
@@ -766,8 +766,8 @@ namespace majesty {
 						spec.gate_size = 3;
 						spec.gate_tt_size = 7;
 					}
-					auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
-					auto opt_ntk = string_to_logic_ntk(opt_ntk_str.get());
+					//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
+					auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(cutfunc, &spec);// //string_to_logic_ntk(opt_ntk_str.get());
 					auto virt_nodes_added = virtual_recursive_select(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
 					if (virt_nodes_added < smallest_add) {
 						best_cut = cut.get();
@@ -792,8 +792,8 @@ namespace majesty {
 				spec.gate_size = 3;
 				spec.gate_tt_size = 7;
 			}
-			auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
-			auto opt_ntk = string_to_logic_ntk(opt_ntk_str.get());
+			//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
+			auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(cutfunc, &spec);// string_to_logic_ntk(opt_ntk_str.get());
 			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk, best_cut->nodes(), nodemap, nref);
 		}
 
