@@ -31,10 +31,9 @@ namespace majesty {
 	unsigned logic_ntk::nin() const {
 		auto res = 0u;
 		for (const auto& node : _nodes) {
-			if (!node.pi) {
-				break;
+			if (node.pi) {
+				++res;
 			}
-			++res;
 		}
 		return res;
 	}

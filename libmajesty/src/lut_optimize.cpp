@@ -58,13 +58,13 @@ namespace majesty {
 		cut_params->klut_size = lut_size;
 		vector<tt> timeoutfuncs;
 	
-		bool timeout_occurred = false;
-		auto oldsize = ntk.nnodes();
-		funcmap fm;
-		const auto cut_map = enumerate_cuts_eval_funcs(ntk, cut_params.get(), fm);
 		logic_ntk cntk(ntk);
+		auto ctu = false;
 		do {
-			timeout_occurred = false;
+			ctu = false;
+			funcmap fm;
+			auto oldsize = cntk.nnodes();
+			const auto cut_map = enumerate_cuts_eval_funcs(cntk, cut_params.get(), fm);
 			auto best_area = eval_matches_area_timeout(cntk, cut_map, fm, timeoutfuncs);
 			auto area_cover = build_cover(cntk, best_area);
 			it_exact_cover_timeout(cntk, area_cover, cut_map, best_area, fm, timeoutfuncs);
@@ -75,16 +75,19 @@ namespace majesty {
 				if (newsize < oldsize) {
 					cout << "oldsize: " << oldsize << endl;
 					cout << "newsize: " << newsize << endl;
+					cout << "continuing" << endl;
 					cntk = std::move(decomp_ntk.value());
-					continue;
+					ctu = true;
 				} else {
-					break;
+					cout << "oldsize: " << oldsize << endl;
+					cout << "newsize: " << newsize << endl;
+					cout << "not continuing" << endl;
 				}
 			} else {
 				cerr << "timeout occurred" << endl;
-				timeout_occurred = true;
+				ctu = true;
 			}
-		} while (timeout_occurred);
+		} while (ctu);
 
 		return std::move(cntk);
 	}
@@ -414,6 +417,7 @@ namespace majesty {
         npn.resize(node.function.size());
 
 		synth_spec spec;
+		spec.verbose = true;
 		spec.nr_vars = node.fanin.size();
 		if (spec.nr_vars >= 3) {
 			// We have to manually set the gate size and gate_tt_size here,
@@ -484,9 +488,13 @@ namespace majesty {
 		bool timeout_occurred = false;
 
 		logic_ntk ntk;
-
+		
 		nodemap nodemap;
 		function_store fstore;
+
+		const vector<nodeid> emptyfanin;
+		bool have_const1 = false, have_const0 = false;
+		nodeid const1id = 0, const0id = 0;
 
 		const auto& nodes = lut_ntk.nodes();
 		const auto total_nodes = lut_ntk.nnodes();
@@ -496,6 +504,33 @@ namespace majesty {
 			if (node.pi) {
 				nodemap[i] = make_pair(ntk.create_input(), false);
 				++progress;
+				continue;
+			} else if (node.fanin.size() == 0) {
+				// Const 0 or 1
+				if (node.function == tt_const1()) {
+					if (!have_const1) {
+						have_const1 = true;
+						cout << "creating const 1 node" << endl;
+						const1id = ntk.create_node(emptyfanin, tt(1, 1));
+						nodemap[i] = make_pair(const1id, false);
+					} else {
+						nodemap[i] = make_pair(const1id, false);
+					}
+				} else {
+					if (!have_const0) {
+						have_const0 = true;
+						cout << "creating const 0 node" << endl;
+						const0id = ntk.create_node(emptyfanin, tt(1, 0));
+						nodemap[i] = make_pair(const0id, false);
+					} else {
+						nodemap[i] = make_pair(const0id, false);
+					}
+				}
+				continue;
+			} else if (node.fanin.size() == 1) {
+				// Primary input
+				cout << "mapping to PI" << endl;
+				nodemap[i] = nodemap[node.fanin[0]];
 				continue;
 			}
 			auto decomp_cut = decompose_cut(ntk, node, nodemap, fstore, timeoutfuncs, conflict_limit, behavior);
@@ -507,6 +542,7 @@ namespace majesty {
 			}
 			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
+
 		cout << endl;
 		if (timeout_occurred) {
 			cout << "Timeout occurred" << endl;

@@ -1253,7 +1253,7 @@ namespace majesty {
 				if (network_exists == l_True) {
 					ntk = extract_fanin_2_ntk_ns<S>(spec, invert);
 					if (spec->verbose) {
-						print_fanin_2_solution_ns<S>(func, spec);
+						//print_fanin_2_solution_ns<S>(func, spec);
 					}
 					break;
 				}

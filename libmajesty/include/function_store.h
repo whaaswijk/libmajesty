@@ -10,8 +10,13 @@ extern "C" {
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <exact.h>
+#include <map>
 
 namespace majesty {
+
+	struct store_stats {
+		std::map<unsigned, unsigned> vars_size_map;
+	};
 	
 	class function_store {
 		private:
@@ -34,6 +39,10 @@ namespace majesty {
 			boost::optional<unsigned> get_last_size(const cirkit::tt& func);
 			
 			boost::optional<std::string> get_size_optimum_ntk_ns(const cirkit::tt&, synth_spec* spec, unsigned conflict_limit);
+
+			logic_ntk get_logic_ntk(const std::string& key);
+
+			store_stats get_store_stats();
 	};
 }
 

@@ -361,4 +361,39 @@ namespace majesty {
 
 	}
 
+	store_stats function_store::get_store_stats() {
+		store_stats stats;
+		
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "KEYS *");
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
+		switch (reply->type) {
+			case REDIS_REPLY_NIL:
+				cout << "No keys found" << endl;
+				break;
+			case REDIS_REPLY_ARRAY:
+				cout << "Nr keys: " << reply->elements << endl;
+				for (auto i = 0; i < reply->elements; i++) {
+					auto element = reply->element[i];
+					//auto key = string(reply->str, reply->len);
+					cout << "reply: " << element->type << endl;
+				}
+				break;
+			default:
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
+				throw runtime_error(errorstring);
+				break;
+		}
+
+
+		return stats;
+	}
+
+
+	/*logic_ntk function_store::get_logic_ntk(const std::string& key) {
+	}*/
+
 }

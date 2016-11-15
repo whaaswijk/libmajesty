@@ -6,6 +6,7 @@
 #include "catch.hpp"
 #include <iostream>
 #include <convert.h>
+#include <function_store.h>
 
 using namespace majesty;
 using cirkit::tt;
@@ -275,7 +276,6 @@ TEST_CASE("XMG LUT Area Optimization", "[optimization]") {
 	std::cout << "lut_mapped size: " << lut_mapped.ninternal() << std::endl;
 	write_blif(lut_mapped, "xmg_adder_opt_4_mapped.blif");
 }
-*/
 
 TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
     auto xmg = read_verilog("../assets/adder.v");
@@ -290,6 +290,12 @@ TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
 		auto lut_mapped = lut_map_area(opt_ntk, cut_params.get());
 		write_blif(lut_mapped, "ntk_adder_opt_" + std::to_string(lut_size) + "_mapped.blif");
 	}
+}
+*/
+
+TEST_CASE("Function Store Stats", "[statistics]") {
+	function_store fstore;
+	auto store_stats = fstore.get_store_stats();
 }
 
 TEST_CASE("XMG String Serialization", "[serialization]") {

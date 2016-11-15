@@ -409,12 +409,17 @@ namespace majesty {
 		for (auto i = 0u; i < total_nodes; i++) {
 			cutvec res;
 			const auto& n = nodes[i];
-			if (!n.pi) {
-				res = node_cuts(n, i, cut_map, p);
+			if (!n.pi && n.fanin.size() == 0) { // Constant 0 or 1!
+				unique_ptr<cut> oc(new cut());
+				res.push_back(move(oc));
+			} else {
+				if (!n.pi) {
+					res = node_cuts(n, i, cut_map, p);
+				}
+				// Always add the trivial cut
+				unique_ptr<cut> c(new cut(i));
+				res.push_back(move(c));
 			}
-			// Always add the trivial cut
-			unique_ptr<cut> c(new cut(i));
-			res.push_back(move(c));
 			cut_map[i] = move(res);
 			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
 			cout << ")\r";
@@ -474,17 +479,24 @@ namespace majesty {
 		for (auto i = 0u; i < total_nodes; i++) {
 			cutvec res;
 			const auto& n = nodes[i];
-			if (!n.pi) {
-				res = node_cuts(n, i, cut_map, p);
-				for (auto& cut : res) {
-					cut->computefunction(i, nodes, fm);
+			if (!n.pi && n.fanin.size() == 0) { // Constant 0 or 1!
+				unique_ptr<cut> oc(new cut());
+				unique_ptr<tt> f(new tt(n.function));
+				fm[oc.get()] = std::move(f);
+				res.push_back(move(oc));
+			} else {
+				if (!n.pi) {
+					res = node_cuts(n, i, cut_map, p);
+					for (auto& cut : res) {
+						cut->computefunction(i, nodes, fm);
+					}
 				}
+				// Always add the trivial cut
+				unique_ptr<cut> c(new cut(i));
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				fm[c.get()] = std::move(f);
+				res.push_back(move(c));
 			}
-			// Always add the trivial cut
-			unique_ptr<cut> c(new cut(i));
-			unique_ptr<tt> f(new tt(tt_nth_var(0)));
-			fm[c.get()] = std::move(f);
-			res.push_back(move(c));
 			cut_map[i] = move(res);
 			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
 			cout << ")\r";
@@ -510,6 +522,13 @@ namespace majesty {
 	}
 
 	void cut::computefunction(const nodeid nid, const vector<ln_node>& nodes, funcmap& m) {
+		const auto& node = nodes[nid];
+		if (_nodes.size() == 0u && !node.pi) {
+			// A trivial constant 1 or 0 cut!
+			unique_ptr<tt> f(new tt(node.function));
+			m[this] = std::move(f);
+			return;
+		}
 		if (_nodes.size() == 1u && _nodes[0] == nid) {
 			// This is a trivial cut, we cannot compute its function
 			// based on its child cuts as it has none
@@ -517,7 +536,6 @@ namespace majesty {
 			m[this] = std::move(f);
 			return;
 		}
-		const auto& node = nodes[nid];
 		map<nodeid, unsigned> sigma;
 		for (auto i = 0u; i < _nodes.size(); i++) {
 			sigma[_nodes[i]] = i;

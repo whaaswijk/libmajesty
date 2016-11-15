@@ -378,6 +378,23 @@ namespace majesty {
 			}
 		}
 
+		// Check if any output was mapped to a (constant) input
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto outid = outputs[i];
+			const auto& node = nodes[outid];
+			if (node.pi) {
+				if (node.function == tt_const0()) {
+					f << ".names " << outnames[i] << endl;
+				} else if (node.function == tt_const1()) {
+					f << ".names " << outnames[i] << endl;
+					f << "1" << endl;
+				} else {
+					f << ".names " << innames[outid] << " " << outnames[i] << endl;
+					f << "1 1" << endl;
+				}
+			}
+		}
+
 		f << ".end";
 	}
 
