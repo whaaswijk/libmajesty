@@ -569,34 +569,89 @@ namespace majesty {
 		return res;
 	}
 
+	int recursive_deselect(const nodeid nid, const vector<ln_node>& nodes, const vector<nodeid> fanin, cover& nref) {
+		const auto& node = nodes[nid];
+		if (node.pi) {
+			return 0;
+		}
+		auto area = 1;
+		for (auto nodeid : fanin) {
+			nref[nodeid] -= 1;
+			if (nref[nodeid] == 0) {
+				const auto& innode = nodes[nodeid];
+				area += recursive_deselect(nodeid, nodes, innode.fanin, nref);
+			}
+		}
+		return area;
+	}
+
+	int recursive_select(const nodeid nid, const vector<ln_node>& nodes, const vector<nodeid> fanin, cover& nref) {
+		const auto& node = nodes[nid];
+		if (node.pi) {
+			return 0;
+		}
+		auto area = 1;
+		for (auto nodeid : fanin) {
+			nref[nodeid] += 1;
+			if (nref[nodeid] == 1) {
+				const auto& innode = nodes[nodeid];
+				area += recursive_select(nodeid, nodes, innode.fanin, nref);
+			}
+		}
+		return area;
+	}
+
 	logic_ntk logic_ntk_from_cuts(const logic_ntk& cut_ntk, const cutmap& cut_map, unsigned conflict_limit) {
 		logic_ntk ntk;
 		
-		nodemap nodemap;
+		unordered_map<nodeid,nodeid> nodemap;
 		function_store fstore;
+		
 
 		const auto& nodes = cut_ntk.nodes();
 		const auto total_nodes = cut_ntk.nnodes();
+
+		cover nref(total_nodes);
+		for (auto i = 0u; i < total_nodes; i++) {
+			nref[i] = nodes[i].fanout.size();
+		}
+
+		funcmap fm = compute_all_functions(cut_ntk, cut_map);
+
 		auto progress = 0u;
 		for (auto i = 0u; i < total_nodes; i++) {
 			const auto& node = nodes[i];
 			if (node.pi) {
-				nodemap[i] = make_pair(ntk.create_input(), false);
+				nodemap[i] = ntk.create_input();
 				++progress;
 				continue;
 			}
 			const auto& node_cuts = cut_map.at(i);
+			auto best_gain = 0;
+			auto best_cut = nullptr;
+			auto nodes_saved = recursive_deselect(i, nodes, node.fanin, nref);
+
 			for (const auto& cut : node_cuts) {
+				const auto& cutfunc = *fm.at(cut.get());
 				if (cut->size() == 0) {
 					// Const 1 or 0
+					if (cutfunc == tt_const0()) {
+						nodemap[i] = ntk.get_const0_node();
+					} else {
+						nodemap[i] = ntk.get_const1_node();
+					}
+					break;
+				} else {
 				}
 			}
+			auto nodes_added = recursive_select(i, nodes, node.fanin, nref);
+			assert(nodes_saved == nodes_added);
 		}
 
 		const auto& outputs = cut_ntk.outputs();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			const auto np = nodemap[outputs[i]];
-			ntk.create_output(np.first);
+			const auto nid = nodemap[outputs[i]];
+			ntk.create_output(nid);
 		}
 
 		const auto& innames = cut_ntk.innames();

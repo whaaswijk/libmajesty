@@ -107,7 +107,6 @@ namespace majesty {
 				const auto& lookup_func = it->second.second.first;
 				if (lookup_func == function) {
 					// We have a node with the same fanin and the same function, strash hit!
-					//std::cout << "logic_ntk strash hit!" << std::endl;
 					return it->second.second.second;
 				}
 			}

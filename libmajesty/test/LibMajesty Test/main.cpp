@@ -83,7 +83,7 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	synth_spec spec;
 	spec.nr_vars = 3;
 	spec.verbose = false;
-	spec.use_cegar = true;
+	spec.use_cegar = false;
 	spec.use_all_gates = true;
 	spec.use_colex_order = true;
 	spec.use_no_triv_ops = true;
@@ -108,7 +108,7 @@ TEST_CASE("Logic Ntk String Serialization", "[serialization]") {
 	synth_spec spec;
 	spec.nr_vars = 3;
 	spec.verbose = false;
-	spec.use_cegar = true;
+	spec.use_cegar = false;
 	spec.use_all_gates = true;
 	spec.use_colex_order = true;
 	spec.use_no_triv_ops = true;

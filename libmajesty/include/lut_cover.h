@@ -49,6 +49,9 @@ namespace majesty {
 	
 	funcmap compute_functions(const xmg&, const bestmap&, const cutmap&);
 	funcmap compute_functions(const xmg&, const cover&, const bestmap&, const cutmap&);
+	
+	funcmap compute_all_functions(const logic_ntk& ntk, const cutmap& cutmap);
+	funcmap compute_functions(const logic_ntk& ntk, const cover& cover, const bestmap& best, const cutmap& cutmap);
 
 	logic_ntk lut_map_area(const xmg&, const cut_params*);
 	logic_ntk lut_map_area(const logic_ntk&, const cut_params*);

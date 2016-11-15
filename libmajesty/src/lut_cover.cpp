@@ -789,6 +789,29 @@ namespace majesty {
 		return fm;
 	}
 
+	funcmap compute_all_functions(const logic_ntk& xmg, const cutmap& cutmap) {
+		funcmap fm;
+
+		const auto& nodes = xmg.nodes();
+
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& node = nodes[i];
+			if (node.pi) {
+				const auto& cutvec = cutmap[i];
+				const auto& cut = cutvec[0];
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				fm[cut.get()] = std::move(f);
+				continue;
+			}
+			const auto& cuts = cutmap[i];
+			for (auto& cut : cuts) {
+				cut->computefunction(i, nodes, fm);
+			}
+		}
+		
+		return fm;
+	}
+
 	funcmap compute_functions(const logic_ntk& xmg, const cover& cover, const bestmap& best, const cutmap& cutmap) {
 		funcmap fm;
 
