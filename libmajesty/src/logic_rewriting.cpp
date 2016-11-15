@@ -806,7 +806,6 @@ namespace majesty {
 		cout << endl;
 
 		nref.clear();
-
 		{
 			const auto& outputs = cut_ntk.outputs();
 			for (auto i = 0u; i < outputs.size(); i++) {
@@ -817,16 +816,8 @@ namespace majesty {
 			}
 		}
 
-		auto nunref = 0;
-		auto tmp_nodes = tmp_ntk.nodes();
-		for (auto i = 0u; i < tmp_ntk.nnodes(); i++) {
-			const auto& node = tmp_nodes[i];
-			if (!node.pi && nref[i] == 0) {
-				++nunref;
-			}
-		}
-
 		logic_ntk ntk;
+		auto tmp_nodes = tmp_ntk.nodes();
 		nodemap.clear();
 		for (auto i = 0u; i < tmp_ntk.nnodes(); i++) {
 			const auto& node = tmp_nodes[i];
@@ -883,7 +874,7 @@ namespace majesty {
 				cout << "newsize: " << newsize << endl;
 				cout << "continuing" << endl;
 				cntk = std::move(decomp_ntk);
-				//ctu = true;
+				ctu = true;
 			} else {
 				cout << "oldsize: " << oldsize << endl;
 				cout << "newsize: " << newsize << endl;
