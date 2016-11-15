@@ -165,7 +165,7 @@ synth_spec spec;
 #include <maj_io.h>
 #include <convert.h>
 #include <lut_cover.h>
-#include <lut_optimize.h>
+#include <logic_rewriting.h>
 
 TEST_CASE("CryptoMiniSaat Trivial Exact Synthesis", "[exact synthesis]") {
 	auto pi1 = cirkit::tt_nth_var(0);
@@ -293,10 +293,29 @@ TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
 }
 */
 
+TEST_CASE("Classic Logic Rewriting", "[optimization]") {
+    auto xmg = read_verilog("../assets/adder.v");
+    auto ntk = xmg_to_logic_ntk(xmg);
+    
+	auto cut_params = default_cut_params();
+    cut_params->klut_size = 6;
+
+	for (auto lut_size = 3; lut_size < 4; lut_size++) {
+		auto opt_ntk = size_rewrite_strategy(ntk, lut_size, 0);
+		/*
+		write_blif(opt_ntk, "adder_opt_" + std::to_string(lut_size) + ".blif");
+		auto lut_mapped = lut_map_area(opt_ntk, cut_params.get());
+		write_blif(lut_mapped, "ntk_adder_opt_" + std::to_string(lut_size) + "_mapped.blif");
+		*/
+	}
+}
+
+/*
 TEST_CASE("Function Store Stats", "[statistics]") {
 	function_store fstore;
 	auto store_stats = fstore.get_store_stats();
 }
+*/
 
 TEST_CASE("XMG String Serialization", "[serialization]") {
     // Get a MIG and use it to test on
