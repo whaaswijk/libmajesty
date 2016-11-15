@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
+#include <xmg.h>
 
 using namespace cirkit;
 
@@ -95,6 +96,23 @@ namespace majesty {
 	nodeid logic_ntk::create_output(nodeid id, const std::string& name, bool c) {
         _outnames.push_back(name);
         return create_output(id, c);
+	}
+
+	nodeid logic_ntk::get_nodeid(const std::vector<nodeid>& fanin, const cirkit::tt& function) const {
+		auto hash_key = boost::hash_range(fanin.begin(), fanin.end());
+		auto sh_lookup = _shmap.equal_range(hash_key);
+		for (auto it = sh_lookup.first; it != sh_lookup.second; it++) {
+			const auto& lookup_fanin = it->second.first;
+			if (lookup_fanin == fanin) {
+				// The fanin is the same, now we have to check if the function is the same too
+				const auto& lookup_func = it->second.second.first;
+				if (lookup_func == function) {
+					// We have a node with the same fanin and the same function, strash hit!
+					return it->second.second.second;
+				}
+			}
+		}
+		return EC_NULL;
 	}
 
 	nodeid logic_ntk::create_node(const std::vector<nodeid>& fanin, const cirkit::tt& function) {

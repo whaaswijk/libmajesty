@@ -569,7 +569,7 @@ namespace majesty {
 		return res;
 	}
 
-	int recursive_deselect(const nodeid nid, const vector<ln_node>& nodes, const vector<nodeid> fanin, cover& nref) {
+	int recursive_deselect(const nodeid nid, const vector<ln_node>& nodes, const vector<nodeid> fanin, unordered_map<nodeid,unsigned>& nref) {
 		const auto& node = nodes[nid];
 		if (node.pi) {
 			return 0;
@@ -585,36 +585,146 @@ namespace majesty {
 		return area;
 	}
 
-	int recursive_select(const nodeid nid, const vector<ln_node>& nodes, const vector<nodeid> fanin, cover& nref) {
+	int recursive_select(const nodeid nid, const vector<ln_node>& nodes, unordered_map<nodeid,unsigned>& nref) {
 		const auto& node = nodes[nid];
 		if (node.pi) {
 			return 0;
 		}
 		auto area = 1;
+		const auto& fanin = node.fanin;
 		for (auto nodeid : fanin) {
 			nref[nodeid] += 1;
 			if (nref[nodeid] == 1) {
 				const auto& innode = nodes[nodeid];
-				area += recursive_select(nodeid, nodes, innode.fanin, nref);
+				area += recursive_select(nodeid, nodes, nref);
 			}
 		}
 		return area;
 	}
 
+	int virtual_recursive_deselect(const logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid, nodeid>& nodemap, unordered_map<nodeid, unsigned> nref) {
+		auto area = 0;
+		const auto& opt_ntk_nodes = opt_ntk.nodes();
+		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
+		vector<nodeid> virtmap(nr_opt_ntk_nodes);
+
+		for (auto i = 0u; i < nr_opt_ntk_nodes; i++) {
+			const auto& node = opt_ntk_nodes[i];
+			if (node.pi) {
+				auto faninid = nodemap.at(fanin[i]); 
+				virtmap[i] = faninid;
+				nref[faninid] -= 1;
+				if (nref.at(faninid) == 0) {
+					area += recursive_select(faninid, ntk.nodes(), nref);
+				}
+			} else {
+				vector<nodeid> virtfanin;
+				for (auto id : node.fanin) {
+					virtfanin.push_back(virtmap[id]);
+				}
+				auto existing_id = ntk.get_nodeid(virtfanin, node.function);
+				if (existing_id != EC_NULL) {
+					virtmap.push_back(existing_id);
+					nref[existing_id] -= 1;
+					if (nref.at(existing_id) == 0) {
+						area += recursive_select(existing_id, ntk.nodes(), nref);
+					}
+					continue;
+				} else {
+					virtmap.push_back(ntk.nnodes() + area);
+					++area;
+				}
+			}
+		}
+
+		return area;
+	}
+
+	int virtual_recursive_select(const logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid,nodeid>& nodemap, unordered_map<nodeid,unsigned> nref) {
+		auto area = 0;
+		const auto& opt_ntk_nodes = opt_ntk.nodes();
+		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
+		vector<nodeid> virtmap(nr_opt_ntk_nodes);
+
+		for (auto i = 0u; i < nr_opt_ntk_nodes; i++) {
+			const auto& node = opt_ntk_nodes[i];
+			if (node.pi) {
+				auto faninid = nodemap.at(fanin[i]); 
+				virtmap[i] = faninid;
+				nref[faninid] += 1;
+				if (nref.at(faninid) == 1) {
+					area += recursive_select(faninid, ntk.nodes(), nref);
+				}
+			} else {
+				vector<nodeid> virtfanin;
+				for (auto id : node.fanin) {
+					virtfanin.push_back(virtmap[id]);
+				}
+				auto existing_id = ntk.get_nodeid(virtfanin, node.function);
+				if (existing_id != EC_NULL) {
+					// A strash hit! Since this node already exists, it only adds
+					// to the area if it wasn't previously selected.
+					cout << "Got virtual strash hit!" << endl;
+					virtmap.push_back(existing_id);
+					nref[existing_id] += 1;
+					if (nref.at(existing_id) == 1) {
+						area += recursive_select(existing_id, ntk.nodes(), nref);
+					}
+				} else {
+					virtmap.push_back(ntk.nnodes() + area);
+					++area;
+				}
+			}
+		}
+
+		return area;
+	}
+
+	nodeid select_opt_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid, nodeid>& nodemap, unordered_map<nodeid,unsigned> nref) {
+		const auto& opt_ntk_nodes = opt_ntk.nodes();
+		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
+		vector<nodeid> virtmap(nr_opt_ntk_nodes);
+
+		for (auto i = 0u; i < nr_opt_ntk_nodes; i++) {
+			const auto& node = opt_ntk_nodes[i];
+			if (node.pi) {
+				auto faninid = nodemap.at(fanin[i]);
+				virtmap[i] = faninid;
+				nref[faninid] += 1;
+				if (nref[faninid] == 1) {
+					recursive_select(faninid, ntk.nodes(), nref);
+				}
+			}
+			vector<nodeid> virtfanin;
+			for (auto id : node.fanin) {
+				virtfanin.push_back(virtmap[id]);
+			}
+			auto existing_id = ntk.get_nodeid(virtfanin, node.function);
+			if (existing_id != EC_NULL) {
+				virtmap[i] = existing_id;
+				nref[existing_id] += 1;
+				if (nref.at(existing_id) == 1) {
+					recursive_select(existing_id, ntk.nodes(), nref);
+				}
+			} else {
+				auto new_nodeid = ntk.create_node(virtfanin, node.function);
+				virtmap[i] = new_nodeid;
+				nref[new_nodeid] = 1;
+			}
+		}
+
+		return virtmap[virtmap.size() - 1];
+	}
+
 	logic_ntk logic_ntk_from_cuts(const logic_ntk& cut_ntk, const cutmap& cut_map, unsigned conflict_limit) {
-		logic_ntk ntk;
+		logic_ntk tmp_ntk;
 		
 		unordered_map<nodeid,nodeid> nodemap;
+		unordered_map<nodeid,unsigned> nref;
 		function_store fstore;
-		
 
 		const auto& nodes = cut_ntk.nodes();
 		const auto total_nodes = cut_ntk.nnodes();
-
-		cover nref(total_nodes);
-		for (auto i = 0u; i < total_nodes; i++) {
-			nref[i] = nodes[i].fanout.size();
-		}
 
 		funcmap fm = compute_all_functions(cut_ntk, cut_map);
 
@@ -622,49 +732,88 @@ namespace majesty {
 		for (auto i = 0u; i < total_nodes; i++) {
 			const auto& node = nodes[i];
 			if (node.pi) {
-				nodemap[i] = ntk.create_input();
+				nodemap[i] = tmp_ntk.create_input();
+				nref[i] = 1;
 				++progress;
 				continue;
 			}
 			const auto& node_cuts = cut_map.at(i);
-			auto best_gain = 0;
-			auto best_cut = nullptr;
-			auto nodes_saved = recursive_deselect(i, nodes, node.fanin, nref);
+			auto smallest_add = std::numeric_limits<unsigned>::max();
+			cut* best_cut = nullptr;
+			auto found_const_cut = false;
 
 			for (const auto& cut : node_cuts) {
 				const auto& cutfunc = *fm.at(cut.get());
-				if (cut->size() == 0) {
-					// Const 1 or 0
+				if (cut->size() == 1 && cut->nodes()[0] == i) { // Trivial cut
+					continue;
+				} else if (cut->size() == 0) { // Const 1 or 0
+					found_const_cut = true;
 					if (cutfunc == tt_const0()) {
-						nodemap[i] = ntk.get_const0_node();
+						nodemap[i] = tmp_ntk.get_const0_node();
 					} else {
-						nodemap[i] = ntk.get_const1_node();
+						nodemap[i] = tmp_ntk.get_const1_node();
 					}
 					break;
 				} else {
+					synth_spec spec;
+					spec.verbose = true;
+					spec.nr_vars = node.fanin.size();
+					if (spec.nr_vars >= 3) {
+						// We have to manually set the gate size and gate_tt_size here,
+						// as exact synthesis may not be called when we use stored results.
+						// ES normally deduces these values, but if it's not called we
+						// still need them to parse the results back into the logic_ntk. 
+						spec.gate_size = 3;
+						spec.gate_tt_size = 7;
+					}
+					auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
+					auto opt_ntk = string_to_logic_ntk(opt_ntk_str.get());
+					auto virt_nodes_added = virtual_recursive_select(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
+					if (virt_nodes_added < smallest_add) {
+						best_cut = cut.get();
+						smallest_add = virt_nodes_added;
+					}
+					auto virt_nodes_saved = virtual_recursive_deselect(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
+					assert(virt_nodes_added == virt_nodes_saved);
 				}
 			}
-			auto nodes_added = recursive_select(i, nodes, node.fanin, nref);
-			assert(nodes_saved == nodes_added);
+			if (found_const_cut) {
+				continue;
+			}
+			const auto& cutfunc = *fm.at(best_cut);
+			synth_spec spec;
+			spec.verbose = true;
+			spec.nr_vars = node.fanin.size();
+			if (spec.nr_vars >= 3) {
+				// We have to manually set the gate size and gate_tt_size here,
+				// as exact synthesis may not be called when we use stored results.
+				// ES normally deduces these values, but if it's not called we
+				// still need them to parse the results back into the logic_ntk. 
+				spec.gate_size = 3;
+				spec.gate_tt_size = 7;
+			}
+			auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
+			auto opt_ntk = string_to_logic_ntk(opt_ntk_str.get());
+			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk, best_cut->nodes(), nodemap, nref);
 		}
 
 		const auto& outputs = cut_ntk.outputs();
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nid = nodemap[outputs[i]];
-			ntk.create_output(nid);
+			tmp_ntk.create_output(nid);
 		}
 
 		const auto& innames = cut_ntk.innames();
 		for (const auto& name : innames) {
-			ntk.add_inname(name);
+			tmp_ntk.add_inname(name);
 		}
 
 		const auto& outnames = cut_ntk.outnames();
 		for (const auto& name : outnames) {
-			ntk.add_outname(name);
+			tmp_ntk.add_outname(name);
 		}
 
-		return ntk;
+		return tmp_ntk;
 	}
 
 	logic_ntk size_rewrite_strategy(const logic_ntk& ntk, unsigned cut_size, unsigned conflict_limit) {

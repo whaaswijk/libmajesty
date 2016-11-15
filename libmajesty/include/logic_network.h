@@ -80,6 +80,8 @@ namespace majesty {
 			nodeid get_const0_node();
 			nodeid get_const1_node();
 
+			nodeid get_nodeid(const std::vector<nodeid>&, const cirkit::tt&) const;
+
 			void create_dummy_innames();
 			void create_dummy_outnames();
 			void create_dummy_names();
