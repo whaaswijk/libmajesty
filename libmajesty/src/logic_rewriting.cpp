@@ -602,7 +602,7 @@ namespace majesty {
 		return area;
 	}
 
-	int virtual_recursive_deselect(const logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid, nodeid>& nodemap, unordered_map<nodeid, unsigned> nref) {
+	int virtual_recursive_deselect(const logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid, nodeid>& nodemap, unordered_map<nodeid, unsigned>& nref) {
 		auto area = 0;
 		const auto& opt_ntk_nodes = opt_ntk.nodes();
 		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
@@ -640,7 +640,7 @@ namespace majesty {
 		return area;
 	}
 
-	int virtual_recursive_select(const logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid,nodeid>& nodemap, unordered_map<nodeid,unsigned> nref) {
+	int virtual_recursive_select(const logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid,nodeid>& nodemap, unordered_map<nodeid,unsigned>& nref) {
 		auto area = 0;
 		const auto& opt_ntk_nodes = opt_ntk.nodes();
 		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
@@ -680,7 +680,7 @@ namespace majesty {
 		return area;
 	}
 
-	nodeid select_opt_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid, nodeid>& nodemap, unordered_map<nodeid,unsigned> nref) {
+	nodeid select_opt_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid, nodeid>& nodemap, unordered_map<nodeid,unsigned>& nref) {
 		const auto& opt_ntk_nodes = opt_ntk.nodes();
 		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
 		vector<nodeid> virtmap(nr_opt_ntk_nodes);
