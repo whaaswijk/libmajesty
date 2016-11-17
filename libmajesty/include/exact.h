@@ -599,6 +599,69 @@ namespace majesty {
 		}
 		return l_True;
 	}
+
+	template<typename S>
+	static inline lbool cegar_solve_fanin3_ns(const uint64_t func, synth_spec* spec, Vec_Int_t* vlits) {
+		tt functt(1 << spec->nr_vars, func);
+		return cegar_solve_fanin3_ns<S>(functt, spec, vlits);
+	}
+
+	template<typename S>
+	static inline lbool cegar_solve_fanin3_ns(const tt& func, synth_spec* spec, Vec_Int_t* vlits) {
+		Vec_IntClear(vlits);
+
+		while (true) {
+			auto res = solve<S>(Vec_IntArray(vlits), Vec_IntLimit(vlits));
+			if (res == l_False) {
+				return res;
+			}
+
+			// Extract the network, simulate it, and find the first bit where it's different from the specification
+			auto ntk = extract_fanin_3_ntk_ns<S>(spec);
+			auto ntk_func = ntk.simulate();
+
+			bool found_solution = true;
+			// Check if the solution found matches the specification
+			for (auto t = 0u; t < spec->tt_size; t++) {
+				const auto ntk_val = ntk_func[t + 1];
+				const bool spec_val = func.test(t + 1);
+				if (ntk_val != spec_val) {
+					// Constrain the solver further by adding an additional constraint for this truth table row
+					const auto gate_var = simulation_variable(spec->nr_gates - 1, t, spec);
+					Vec_IntPush(vlits, Abc_Var2Lit(gate_var, !spec_val));
+					for (auto i = 0u; i < spec->nr_gates; i++) {
+						for (auto j = 0u; j < spec->nr_vars + i; j++) {
+							for (auto k = j + 1; k < spec->nr_vars + i; k++) {
+								for (auto l = k + 1; l < spec->nr_vars + i; l++) {
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 0, 0, 0, 1);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 0, 0, 1, 0);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 0, 0, 1, 1);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 0, 1, 0, 0);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 0, 1, 0, 1);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 0, 1, 1, 0);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 0, 1, 1, 1);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 0, 0, 0);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 0, 0, 1);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 0, 1, 0);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 0, 1, 1);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 1, 0, 0);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 1, 0, 1);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 1, 1, 0);
+									add_selection_clause_ns<S>(spec, t, i, j, k, l, 1, 1, 1, 1);
+								}
+							}
+						}
+					}
+					found_solution = false;
+					break;
+				}
+			}
+			if (found_solution) {
+				break;
+			}
+		}
+		return l_True;
+	}
 	
 	template<typename S>
 	lbool exists_fanin_2_ntk(const uint64_t func, synth_spec* spec) {
@@ -611,30 +674,6 @@ namespace majesty {
 		static lit plits[3];
 		
 		create_variables<S>(spec);
-
-		// The gate's function constraint variables
-		if (spec->use_no_triv_ops) {
-			for (auto i = 0u; i < spec->nr_gates; i++) {
-				const auto func_var0 = gate_variable(i, 0, spec);
-				const auto func_var1 = gate_variable(i, 1, spec);
-				const auto func_var2 = gate_variable(i, 2, spec);
-
-				plits[0] = Abc_Var2Lit(func_var0, 0);
-				plits[1] = Abc_Var2Lit(func_var1, 0);
-				plits[2] = Abc_Var2Lit(func_var2, 0);
-				add_clause<S>(plits, plits + 3);
-
-				plits[0] = Abc_Var2Lit(func_var0, 0);
-				plits[1] = Abc_Var2Lit(func_var1, 1);
-				plits[2] = Abc_Var2Lit(func_var2, 1);
-				add_clause<S>(plits, plits + 3);
-				
-				plits[0] = Abc_Var2Lit(func_var0, 1);
-				plits[1] = Abc_Var2Lit(func_var1, 0);
-				plits[2] = Abc_Var2Lit(func_var2, 1);
-				add_clause<S>(plits, plits + 3);
-			}
-		}
 
 		// Add selection (fanin) constraints
 		Vec_Int_t * vlits = Vec_IntAlloc(spec->nr_selection_vars);
@@ -729,6 +768,30 @@ namespace majesty {
 						}
 					}
 				}
+			}
+		}
+
+		// The gate's function constraint variables
+		if (spec->use_no_triv_ops) {
+			for (auto i = 0u; i < spec->nr_gates; i++) {
+				const auto func_var0 = gate_variable(i, 0, spec);
+				const auto func_var1 = gate_variable(i, 1, spec);
+				const auto func_var2 = gate_variable(i, 2, spec);
+
+				plits[0] = Abc_Var2Lit(func_var0, 0);
+				plits[1] = Abc_Var2Lit(func_var1, 0);
+				plits[2] = Abc_Var2Lit(func_var2, 0);
+				add_clause<S>(plits, plits + 3);
+
+				plits[0] = Abc_Var2Lit(func_var0, 0);
+				plits[1] = Abc_Var2Lit(func_var1, 1);
+				plits[2] = Abc_Var2Lit(func_var2, 1);
+				add_clause<S>(plits, plits + 3);
+				
+				plits[0] = Abc_Var2Lit(func_var0, 1);
+				plits[1] = Abc_Var2Lit(func_var1, 0);
+				plits[2] = Abc_Var2Lit(func_var2, 1);
+				add_clause<S>(plits, plits + 3);
 			}
 		}
 
@@ -930,33 +993,60 @@ namespace majesty {
 	// Tries to find a network using the new selection variable implementation
 	template<typename S>
 	lbool exists_fanin_3_ntk_ns(const tt& func, synth_spec* spec) {
-		static lit plits[4];
+		static lit plits[7];
 		
 		create_variables_ns<S>(spec);
 
 		// The gate's function constraint variables
 		if (spec->use_no_triv_ops) {
 			for (auto i = 0u; i < spec->nr_gates; i++) {
-				/*
 				const auto func_var0 = gate_variable(i, 0, spec);
 				const auto func_var1 = gate_variable(i, 1, spec);
 				const auto func_var2 = gate_variable(i, 2, spec);
+				const auto func_var3 = gate_variable(i, 3, spec);
+				const auto func_var4 = gate_variable(i, 4, spec);
+				const auto func_var5 = gate_variable(i, 5, spec);
+				const auto func_var6 = gate_variable(i, 6, spec);
 
+				// Exclude constant 0 function
 				plits[0] = Abc_Var2Lit(func_var0, 0);
 				plits[1] = Abc_Var2Lit(func_var1, 0);
 				plits[2] = Abc_Var2Lit(func_var2, 0);
-				add_clause<S>(plits, plits + 3);
+				plits[3] = Abc_Var2Lit(func_var3, 0);
+				plits[4] = Abc_Var2Lit(func_var4, 0);
+				plits[5] = Abc_Var2Lit(func_var5, 0);
+				plits[6] = Abc_Var2Lit(func_var6, 0);
+				add_clause<S>(plits, plits + 7);
 
-				plits[0] = Abc_Var2Lit(func_var0, 0);
-				plits[1] = Abc_Var2Lit(func_var1, 1);
-				plits[2] = Abc_Var2Lit(func_var2, 1);
-				add_clause<S>(plits, plits + 3);
-				
+				// Exclude variable 1 identity function
 				plits[0] = Abc_Var2Lit(func_var0, 1);
 				plits[1] = Abc_Var2Lit(func_var1, 0);
 				plits[2] = Abc_Var2Lit(func_var2, 1);
-				add_clause<S>(plits, plits + 3);
-				*/
+				plits[3] = Abc_Var2Lit(func_var3, 0);
+				plits[4] = Abc_Var2Lit(func_var4, 1);
+				plits[5] = Abc_Var2Lit(func_var5, 0);
+				plits[6] = Abc_Var2Lit(func_var6, 1);
+				add_clause<S>(plits, plits + 7);
+
+				// Exclude variable 2 identity function
+				plits[0] = Abc_Var2Lit(func_var0, 0);
+				plits[1] = Abc_Var2Lit(func_var1, 1);
+				plits[2] = Abc_Var2Lit(func_var2, 1);
+				plits[3] = Abc_Var2Lit(func_var3, 0);
+				plits[4] = Abc_Var2Lit(func_var4, 0);
+				plits[5] = Abc_Var2Lit(func_var5, 1);
+				plits[6] = Abc_Var2Lit(func_var6, 1);
+				add_clause<S>(plits, plits + 7);
+				
+				// Exclude variable 3 identity function
+				plits[0] = Abc_Var2Lit(func_var0, 0);
+				plits[1] = Abc_Var2Lit(func_var1, 0);
+				plits[2] = Abc_Var2Lit(func_var2, 0);
+				plits[3] = Abc_Var2Lit(func_var3, 1);
+				plits[4] = Abc_Var2Lit(func_var4, 1);
+				plits[5] = Abc_Var2Lit(func_var5, 1);
+				plits[6] = Abc_Var2Lit(func_var6, 1);
+				add_clause<S>(plits, plits + 7);
 			}
 		}
 
@@ -1037,22 +1127,30 @@ namespace majesty {
 
 		// Check for co-lexicographic order: given gates i and i+1 with fanin (x, y) and (x', y') respectively,
 		// we require y < y' OR y = y' AND x <= x'. This only if i is not a fanin of i+1.
-		if (false && spec->use_colex_order) {
+		if (spec->use_colex_order) {
 			for (auto i = 0u; i < spec->nr_gates - 1; i++) {
 				for (auto j = 0u; j < spec->nr_vars + i; j++) {
 					for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-						for (auto jp = 0u; jp < spec->nr_vars + i; jp++) {
-							for (auto kp = jp + 1; kp < spec->nr_vars + i; kp++) {
-								if ((k == kp && j > jp) || k > kp) {
-									auto sivar1 = selection_variable_ns(spec, i, j);
-									auto sivar2 = selection_variable_ns(spec, i, k);
-									auto sipvar1 = selection_variable_ns(spec, i+1, jp);
-									auto sipvar2 = selection_variable_ns(spec, i+1, kp);
-									plits[0] = Abc_Var2Lit(sivar1, true);
-									plits[1] = Abc_Var2Lit(sivar2, true);
-									plits[2] = Abc_Var2Lit(sipvar1, true);
-									plits[3] = Abc_Var2Lit(sipvar2, true);
-									add_clause<S>(plits, plits + 4);
+						for (auto l = k + 1; l < spec->nr_vars + i; l++) {
+							for (auto jp = 0u; jp < spec->nr_vars + i; jp++) {
+								for (auto kp = jp + 1; kp < spec->nr_vars + i; kp++) {
+									for (auto lp = kp + 1; lp < spec->nr_vars + i; lp++) {
+										if ((l == lp && k == kp && j > jp) || (l == lp && k > kp) || l > lp) {
+											auto sivar1 = selection_variable_ns(spec, i, j);
+											auto sivar2 = selection_variable_ns(spec, i, k);
+											auto sivar3 = selection_variable_ns(spec, i, l);
+											auto sipvar1 = selection_variable_ns(spec, i + 1, jp);
+											auto sipvar2 = selection_variable_ns(spec, i + 1, kp);
+											auto sipvar3 = selection_variable_ns(spec, i + 1, lp);
+											plits[0] = Abc_Var2Lit(sivar1, true);
+											plits[1] = Abc_Var2Lit(sivar2, true);
+											plits[2] = Abc_Var2Lit(sivar3, true);
+											plits[3] = Abc_Var2Lit(sipvar1, true);
+											plits[4] = Abc_Var2Lit(sipvar2, true);
+											plits[5] = Abc_Var2Lit(sipvar3, true);
+											add_clause<S>(plits, plits + 6);
+										}
+									}
 								}
 							}
 						}
@@ -1063,32 +1161,46 @@ namespace majesty {
 
 		// Do not allow reapplication of operators
 		if (spec->use_no_reapplication) {
-			/*
 			for (auto i = 0u; i < spec->nr_gates - 1; i++) {
 				for (auto ip = i + 1; ip < spec->nr_gates; ip++) {
 					for (auto j = 0u; j < spec->nr_vars + i; j++) {
 						for (auto k = j + 1; k < spec->nr_vars + i; k++) {
-							auto sivar1 = selection_variable_ns(spec, i, j);
-							auto sivar2 = selection_variable_ns(spec, i, k);
-							plits[0] = Abc_Var2Lit(sivar1, true);
-							plits[1] = Abc_Var2Lit(sivar2, true);
-							auto sipvar1 = selection_variable_ns(spec, ip, i + spec->nr_vars);
-							auto sipvar2 = selection_variable_ns(spec, ip, j);
-							plits[2] = Abc_Var2Lit(sipvar1, true);
-							plits[3] = Abc_Var2Lit(sipvar2, true);
-							add_clause<S>(plits, plits + 4);
-							sipvar2 = selection_variable_ns(spec, ip, k);
-							plits[3] = Abc_Var2Lit(sipvar2, true);
-							add_clause<S>(plits, plits + 4);
+							for (auto l = k + 1; l < spec->nr_vars + i; l++) {
+								auto sivar1 = selection_variable_ns(spec, i, j);
+								auto sivar2 = selection_variable_ns(spec, i, k);
+								auto sivar3 = selection_variable_ns(spec, i, l);
+								plits[0] = Abc_Var2Lit(sivar1, true);
+								plits[1] = Abc_Var2Lit(sivar2, true);
+								plits[2] = Abc_Var2Lit(sivar3, true);
+
+								auto sipvar1 = selection_variable_ns(spec, ip, i + spec->nr_vars);
+								auto sipvar2 = selection_variable_ns(spec, ip, j);
+								auto sipvar3 = selection_variable_ns(spec, ip, k);
+								plits[3] = Abc_Var2Lit(sipvar1, true);
+								plits[4] = Abc_Var2Lit(sipvar2, true);
+								plits[5] = Abc_Var2Lit(sipvar3, true);
+								add_clause<S>(plits, plits + 6);
+
+								sipvar2 = selection_variable_ns(spec, ip, j);
+								sipvar3 = selection_variable_ns(spec, ip, l);
+								plits[4] = Abc_Var2Lit(sipvar2, true);
+								plits[5] = Abc_Var2Lit(sipvar3, true);
+								add_clause<S>(plits, plits + 6);
+								
+								sipvar2 = selection_variable_ns(spec, ip, k);
+								sipvar3 = selection_variable_ns(spec, ip, l);
+								plits[4] = Abc_Var2Lit(sipvar2, true);
+								plits[5] = Abc_Var2Lit(sipvar3, true);
+								add_clause<S>(plits, plits + 6);
+							}
 						}
 					}
 				}
 			}
-			*/
 		}
 		
-		if (false && spec->use_cegar) {
-			auto res = cegar_solve_ns<S>(func, spec, vlits);
+		if (spec->use_cegar) {
+			auto res = cegar_solve_fanin3_ns<S>(func, spec, vlits);
 			Vec_IntFree(vlits);
 			return res;
 		} else {
@@ -1268,8 +1380,4 @@ namespace majesty {
 		
 		return std::move(ntk);
 	}
-	
-
-		
-		
 }
