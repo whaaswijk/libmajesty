@@ -276,6 +276,7 @@ TEST_CASE("XMG LUT Area Optimization", "[optimization]") {
 	std::cout << "lut_mapped size: " << lut_mapped.ninternal() << std::endl;
 	write_blif(lut_mapped, "xmg_adder_opt_4_mapped.blif");
 }
+*/
 
 TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
     auto xmg = read_verilog("../assets/adder.v");
@@ -284,31 +285,45 @@ TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
 	auto cut_params = default_cut_params();
     cut_params->klut_size = 6;
 
-	for (auto lut_size = 3; lut_size < 9; lut_size++) {
-		auto opt_ntk = lut_area_strategy(ntk, lut_size);
+	for (auto lut_size = 3; lut_size < 4; lut_size++) {
+		auto opt_ntk = lut_area_strategy<sat_solver>(ntk, lut_size);
 		write_blif(opt_ntk, "adder_opt_" + std::to_string(lut_size) + ".blif");
 		auto lut_mapped = lut_map_area(opt_ntk, cut_params.get());
 		write_blif(lut_mapped, "ntk_adder_opt_" + std::to_string(lut_size) + "_mapped.blif");
 	}
 }
-*/
 
+/*
 TEST_CASE("Classic Logic Rewriting", "[optimization]") {
-    auto xmg = read_verilog("../assets/adder.v");
-    auto ntk = xmg_to_logic_ntk(xmg);
-    
+	std::vector<std::string> assets = {
+		"../assets/adder.v",
+		"../assets/bar.v",
+		"../assets/max.v",
+		"../assets/sin.v",
+		"../assets/multiplier.v",
+		"../assets/square.v",
+		"../assets/log2.v",
+		"../assets/sqrt.v",
+		"../assets/div.v",
+		"../assets/hyp.v"
+	};
+
 	auto cut_params = default_cut_params();
-    cut_params->klut_size = 6;
+	cut_params->klut_size = 6;
 
 	for (auto lut_size = 3; lut_size < 4; lut_size++) {
-		auto opt_ntk = size_rewrite_strategy(ntk, lut_size, 0);
-		write_blif(opt_ntk, "adder_resyn_opt_" + std::to_string(lut_size) + ".blif");
-		/*
-		auto lut_mapped = lut_map_area(opt_ntk, cut_params.get());
-		write_blif(lut_mapped, "ntk_adder_opt_" + std::to_string(lut_size) + "_mapped.blif");
-		*/
+		for (auto& asset : assets) {
+			boost::filesystem::path p(asset);
+			auto xmg = read_verilog(asset);
+			auto ntk = xmg_to_logic_ntk(xmg);
+			auto opt_ntk = size_rewrite_strategy(ntk, lut_size, 0);
+			write_blif(opt_ntk, p.stem().string() + "_resyn_opt_" + std::to_string(lut_size) + ".blif");
+			auto lut_mapped = lut_map_area(opt_ntk, cut_params.get());
+			write_blif(lut_mapped, p.stem().string() + "_resyn_opt_" + std::to_string(lut_size) + "_mapped.blif");
+		}
 	}
 }
+*/
 
 /*
 TEST_CASE("Function Store Stats", "[statistics]") {

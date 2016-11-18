@@ -1387,7 +1387,7 @@ namespace majesty {
 				}
 			}
 			if (spec->verbose) {
-				cout << "failed with " << nr_conflicts<S>() << " conflicts" << endl;
+				std::cout << "failed with " << nr_conflicts<S>() << " conflicts" << std::endl;
 			}
 			++spec->nr_gates;
 		}

@@ -383,9 +383,9 @@ namespace majesty {
 			const auto outid = outputs[i];
 			const auto& node = nodes[outid];
 			if (node.pi) {
-				if (node.function == tt_const0()) {
+				if (node.function == cirkit::tt_const0()) {
 					f << ".names " << outnames[i] << endl;
-				} else if (node.function == tt_const1()) {
+				} else if (node.function == cirkit::tt_const1()) {
 					f << ".names " << outnames[i] << endl;
 					f << "1" << endl;
 				} else {

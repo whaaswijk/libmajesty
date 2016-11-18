@@ -6,8 +6,8 @@
 #include <map>
 #include <unordered_map>
 #include <boost/optional.hpp>
-#include <logic_rewriting.h>
 #include <sstream>
+#include <lut_cover.h>
 
 namespace majesty {
 
@@ -33,7 +33,6 @@ namespace majesty {
 	std::string exact_xmg_expression(const cirkit::tt&);
 	boost::optional<std::string> exact_xmg_expression(const cirkit::tt&, unsigned);
 	boost::optional<std::string> exact_xmg_expression(const cirkit::tt&, unsigned, unsigned);
-	boost::optional<std::string> heuristic_xmg_expression(const cirkit::tt&, unsigned, unsigned, unsigned, timeout_behavior);
 
 	boost::optional<unsigned> last_size_from_file(const std::string&);
 
@@ -68,4 +67,6 @@ namespace majesty {
 		split(s, delim, elems);
 		return elems;
 	}
+	
+	boost::optional<std::string> min_size_expression(const cirkit::tt& func, unsigned timeout, unsigned start_size, const std::string& synth_type);
 }

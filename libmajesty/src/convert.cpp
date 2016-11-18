@@ -359,46 +359,6 @@ namespace majesty {
 		return strash(exact_parsed);
 	}
 
-	static const auto heuristic_threshold = 5u;
-	optional<string> heuristic_xmg_expression(const tt& func, unsigned ninputs, unsigned timeout, 
-		unsigned last_size, timeout_behavior behavior) {
-		// Get an upper bound for optimization by using ABC's size optimization.
-		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % tt_to_hex(func)).str();
-		auto success = system(optcmd.c_str());
-		if (success != 0) {
-			throw runtime_error("Heuristic optimization through ABC failed");
-		}
-		auto upperbound_xmg = read_verilog("tmp.v");
-		auto start = upperbound_xmg.nnodes() - upperbound_xmg.nin() - 1;
-		// What we do now depends on the specified behavior. If the difference between the heuristic result and the last
-		// is too great it is unlikely that we will find an optimum result by going down from the starting point. We
-		// We also may not want to invoke exact synthesis too often.
-		if (behavior == combine) {
-			if (start - last_size > heuristic_threshold) {
-				return boost::none;
-			}
-		}
-		optional<string> expr = xmg_to_expr(upperbound_xmg);
-		while (true) {
-			auto sat_xmg_expr = min_size_expression(func, timeout, start - 1, "xmg");
-			if (sat_xmg_expr) {
-				auto sat_xmg = xmg_from_string(ninputs, sat_xmg_expr.get());
-				if (sat_xmg.nnodes() == upperbound_xmg.nnodes()) {
-					// The upperbound found by ABC was already optimum (otherwise we would've found and XMG with size start - 1)
-					expr = sat_xmg_expr;
-					break;
-				} else {
-					--start;
-				}
-			} else {
-				// Exact synthesis times out before finding a solution better than the heuristic one.
-				break;
-			}
-		}
-
-		return expr;
-	}
-
 	void node_to_expr(const vector<node>& nodes, const vector<string> innames, nodeid nodeid, stringstream& os) {
 		const auto& node = nodes[nodeid];
 		if (nodeid == 0) {
