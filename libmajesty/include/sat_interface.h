@@ -111,7 +111,9 @@ namespace majesty {
 		cms_solver = new CMSat::SATSolver;
 		auto nr_threads = std::thread::hardware_concurrency();
 		cms_solver->set_num_threads(nr_threads);
-		cms_solver->set_max_confl(conflict_limit);
+		if (conflict_limit > 0) {
+			cms_solver->set_max_confl(conflict_limit);
+		}
 	}
 
 	template<>

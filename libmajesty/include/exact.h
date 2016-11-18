@@ -1331,7 +1331,7 @@ namespace majesty {
 	template<typename S>
 	boost::optional<logic_ntk> size_optimum_ntk_ns(uint64_t func, synth_spec* spec, unsigned conflict_limit = 0) {
 		tt functt(1 << spec->nr_vars, func);
-		return size_optimum_ntk_ns<S>(functt, spec);
+		return size_optimum_ntk_ns<S>(functt, spec, conflict_limit);
 	}
 	
 	template<typename S>
@@ -1363,9 +1363,9 @@ namespace majesty {
 			restart_solver<S>();
 			if (spec->gate_size == 3) {
 				auto network_exists = exists_fanin_3_ntk_ns<S>(func, spec);
+				stats.nr_conflicts = nr_conflicts<S>();
 				if (network_exists == l_True) {
 					ntk = extract_fanin_3_ntk_ns<S>(spec, invert);
-					stats.nr_conflicts = nr_conflicts<S>();
 					if (spec->verbose) {
 						//print_fanin_3_solution_ns<S>(func, spec);
 					}
@@ -1377,9 +1377,9 @@ namespace majesty {
 				}
 			} else {
 				auto network_exists = exists_fanin_2_ntk_ns<S>(func, spec);
+				stats.nr_conflicts = nr_conflicts<S>();
 				if (network_exists == l_True) {
 					ntk = extract_fanin_2_ntk_ns<S>(spec, invert);
-					stats.nr_conflicts = nr_conflicts<S>();
 					if (spec->verbose) {
 						//print_fanin_2_solution_ns<S>(func, spec);
 					}
@@ -1391,7 +1391,7 @@ namespace majesty {
 				} 
 			}
 			if (spec->verbose) {
-				std::cout << "failed with " << nr_conflicts<S>() << " conflicts" << std::endl;
+				std::cout << "failed with " << stats.nr_conflicts << " conflicts" << std::endl;
 			}
 			++spec->nr_gates;
 		}
