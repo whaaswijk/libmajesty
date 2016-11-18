@@ -377,7 +377,7 @@ namespace majesty {
 				break;
 			case REDIS_REPLY_ARRAY:
 				cout << "Nr keys: " << reply->elements << endl;
-				for (auto i = 0; i < reply->elements; i++) {
+				for (auto i = 0u; i < reply->elements; i++) {
 					auto element = reply->element[i];
 					//auto key = string(reply->str, reply->len);
 					cout << "reply: " << element->type << endl;
@@ -401,16 +401,43 @@ namespace majesty {
 
 	void function_store::set_entry(const cirkit::tt& function, const function_store_entry& entry) {
 #ifndef _WIN32
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "SET %s %s", to_string(function).c_str(), entry.to_string().c_str());
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
+		freeReplyObject(reply);
 #else
 #endif
 	}
 
 	boost::optional<function_store_entry> function_store::get_entry(const cirkit::tt& function) {
-#ifndef _WIN32
-#else
 		function_store_entry entry;
-		return entry;
+		string entry_string;
+#ifndef _WIN32
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "GET %s", to_string(function).c_str());
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
+		switch (reply->type) {
+			case REDIS_REPLY_NIL: // This entry doesn't exist yet
+				freeReplyObject(reply);
+				return boost::none;
+				break;
+			case REDIS_REPLY_STRING:
+				entry_string = string(reply->str, reply->len);
+				entry = to_function_store_entry(entry_string);
+				freeReplyObject(reply);
+				return std::move(entry);
+				break;
+			default:
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
+				throw runtime_error(errorstring);
+				break;
+		}
 #endif
+		return std::move(entry);
 	}
 	
 	// Function store entry format: expr-is_exact-conflict_limit

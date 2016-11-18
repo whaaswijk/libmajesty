@@ -436,14 +436,20 @@ namespace majesty {
 		return area;
 	}
 
-	inline nodeid select_opt_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, 
-			const synth_spec* spec, const input_map_t& imap, 
+	inline nodeid select_opt_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const input_map_t& imap, 
 			bool invert_output, unordered_map<nodeid,unsigned>& nref) {
 		const auto& opt_ntk_nodes = opt_ntk.nodes();
 		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
+
+		// Get the gate size, this may be different from the spec's gate
+		// size if we're dealing with a heuristic result that was obtained
+		// from an AIG.
+		const auto gate_size = opt_ntk_nodes[nr_opt_ntk_nodes - 1].fanin.size();
+		const auto gate_tt_size = (1u << gate_size);
+
 		vector<pair<nodeid,bool>> nids(nr_opt_ntk_nodes);
-		vector<tt> fanin_tts(spec->gate_size);
-		for (auto i = 0u; i < spec->gate_size; i++) {
+		vector<tt> fanin_tts(gate_size);
+		for (auto i = 0u; i < gate_size; i++) {
 			fanin_tts[i] = tt_nth_var(i);
 		}
 
@@ -458,13 +464,13 @@ namespace majesty {
 				}
 			} else {
 				vector<nodeid> virtfanin;
-				for (auto j = 0u; j < spec->gate_size; j++) {
+				for (auto j = 0u; j < gate_size; j++) {
 					virtfanin.push_back(nids[node.fanin[j]].first);
 				}
-				tt localfunc(spec->gate_tt_size + 1, 0);
-				for (auto j = 0u; j < spec->gate_tt_size + 1; j++) {
+				tt localfunc(gate_tt_size, 0);
+				for (auto j = 0u; j < gate_tt_size; j++) {
 					auto func_idx = 0u;
-					for (auto k = 0u; k < spec->gate_size; k++) {
+					for (auto k = 0u; k < gate_size; k++) {
 						auto tbit = fanin_tts[k].test(j);
 						if (nids[node.fanin[k]].second) {
 							tbit = !tbit;
@@ -594,7 +600,7 @@ namespace majesty {
 				imap[invperm[i]] = make_pair(inode, phase.test(i));
 			}
 
-			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk.get(), &spec, imap, phase.test(cutnodes.size()), nref);
+			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk.get(), imap, phase.test(cutnodes.size()), nref);
 			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
 		cout << endl;

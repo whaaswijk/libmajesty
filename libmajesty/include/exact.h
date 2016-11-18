@@ -1320,9 +1320,7 @@ namespace majesty {
 					print_fanin_2_solution<S>(func, spec);
 				}
 				break;
-			} else if (network_exists == l_Undef) {
-				return boost::none;
-			}
+			} 
 			++spec->nr_gates;
 		}
 		destroy_solver<S>();
@@ -1372,6 +1370,10 @@ namespace majesty {
 						//print_fanin_3_solution_ns<S>(func, spec);
 					}
 					break;
+				} else if (network_exists == l_Undef) {
+					std::cout << "got undef!" << std::endl;
+					destroy_solver<S>();
+					return boost::none;
 				}
 			} else {
 				auto network_exists = exists_fanin_2_ntk_ns<S>(func, spec);
@@ -1383,8 +1385,10 @@ namespace majesty {
 					}
 					break;
 				} else if (network_exists == l_Undef) {
+					std::cout << "got undef!" << std::endl;
+					destroy_solver<S>();
 					return boost::none;
-				}
+				} 
 			}
 			if (spec->verbose) {
 				std::cout << "failed with " << nr_conflicts<S>() << " conflicts" << std::endl;

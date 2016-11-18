@@ -105,8 +105,9 @@ namespace majesty {
 
 	template<>
 	inline void restart_solver<CMSat::SATSolver>() {
-		assert(cms_solver == nullptr);
-		delete cms_solver;
+		if (cms_solver != nullptr) {
+			delete cms_solver;
+		}
 		cms_solver = new CMSat::SATSolver;
 		auto nr_threads = std::thread::hardware_concurrency();
 		cms_solver->set_num_threads(nr_threads);
@@ -141,9 +142,6 @@ namespace majesty {
 			assumps.push_back(CMSat::Lit(Abc_Lit2Var(*i), Abc_LitIsCompl(*i)));
 		}
 		auto res = cms_solver->solve(&assumps);
-//#define l_True  lbool((uint8_t)0) // gcc does not do constant propagation if these are real constants.
-//#define l_False lbool((uint8_t)1)
-//#define l_Undef lbool((uint8_t)2)
 		if (res == CMSat::boolToLBool(true)) {
 			return l_True;
 		} else if (res == CMSat::boolToLBool(false)) {

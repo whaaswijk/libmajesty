@@ -32,7 +32,7 @@ namespace majesty {
 			expr(expr), is_exact(is_exact), conflict_limit(conflict_limit) {
 		}
 
-		std::string to_string() {
+		std::string to_string() const {
 			return (boost::format("%s-%d-%u") % expr % is_exact % conflict_limit).str();
 		}
 	};

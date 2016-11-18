@@ -52,13 +52,18 @@ namespace majesty {
 	}
 
 	std::pair<nodeid, bool> 
-		parse_into_logic_ntk(logic_ntk& ntk, const synth_spec* spec, const logic_ntk& opt_ntk, 
+		parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, 
 				const input_map_t& imap, bool invert_output) {
 		const auto& opt_nodes = opt_ntk.nodes();
+		// Get the gate size, this may be different from the spec's gate
+		// size if we're dealing with a heuristic result that was obtained
+		// from an AIG.
+		const auto gate_size = opt_ntk.nodes()[opt_ntk.nin()].fanin.size();
+		const auto gate_tt_size = (1u << gate_size);
 		std::vector<std::pair<nodeid,bool>> nids(opt_nodes.size());
-		std::vector<nodeid> ntk_fanin(spec->gate_size);
-		std::vector<tt> fanin_tts(spec->gate_size);
-		for (auto i = 0u; i < spec->gate_size; i++) {
+		std::vector<nodeid> ntk_fanin(gate_size);
+		std::vector<tt> fanin_tts(gate_size);
+		for (auto i = 0u; i < gate_size; i++) {
 			fanin_tts[i] = tt_nth_var(i);
 		}
 
@@ -67,13 +72,13 @@ namespace majesty {
 			if (node.pi) {
 				nids[i] = imap.at(i);// nodemap.at(cut_fanin[i]).first;
 			} else {
-				for (auto j = 0u; j < spec->gate_size; j++) {
+				for (auto j = 0u; j < gate_size; j++) {
 					ntk_fanin[j] = nids[node.fanin[j]].first;
 				}
-				tt localfunc(spec->gate_tt_size + 1, 0);
-				for (auto j = 0u; j  < spec->gate_tt_size + 1; j++) {
+				tt localfunc(gate_tt_size, 0);
+				for (auto j = 0u; j  < gate_tt_size; j++) {
 					auto func_idx = 0u;
-					for (auto k = 0u; k < spec->gate_size; k++) {
+					for (auto k = 0u; k < gate_size; k++) {
 						auto tbit = fanin_tts[k].test(j);
 						if (nids[node.fanin[k]].second) {
 							tbit = !tbit;
@@ -116,7 +121,7 @@ namespace majesty {
 			spec.gate_size = 3;
 			spec.gate_tt_size = 7;
 		}
-		//spec.verbose = true;
+		spec.verbose = true;
 
 		logic_ntk opt_ntk;
 		auto entry = fstore.get_entry(npn);
@@ -134,15 +139,17 @@ namespace majesty {
 				lbool exists = l_False;
 				// Try to find a heuristic solution by increasing the nr of gate, starting
 				// from the last attempted number.
+				init_solver<S>(conflict_limit);
 				for (auto nr_gates = last_size + 1; nr_gates < last_size + 4; nr_gates++) {
-					spec.nr_gates = nr_gates;
 					restart_solver<S>();
+					spec.nr_gates = nr_gates;
 					exists = exists_fanin_3_ntk_ns<S>(npn, &spec);
 					if (exists == l_True) {
 						opt_ntk = extract_fanin_3_ntk_ns<S>(&spec);
 						break;
 					}
 				}
+				destroy_solver<S>();
 				if (exists == l_True) { 
 					fstore.set_entry(npn, logic_ntk_to_string(opt_ntk), false, conflict_limit);
 				} else { // Use ABC to find a heuristic decomposition
@@ -162,7 +169,7 @@ namespace majesty {
 			imap[invperm[i]] = std::make_pair(inode.first, phase.test(i));
 		}
 
-		return parse_into_logic_ntk(ntk, &spec, opt_ntk, imap, phase.test(node.fanin.size()));
+		return parse_into_logic_ntk(ntk, opt_ntk, imap, phase.test(node.fanin.size()));
 	}
 
 	template<typename S>
