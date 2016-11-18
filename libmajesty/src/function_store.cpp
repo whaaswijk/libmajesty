@@ -290,6 +290,7 @@ namespace majesty {
 		return npn;
 	}
 	
+	/*
 	boost::optional<std::string> function_store::get_size_optimum_ntk_ns(const tt& f, synth_spec* spec, unsigned conflict_limit) {
 		// First see if the optimum xmg has already been computed
 		optional<string> expr;
@@ -360,6 +361,7 @@ namespace majesty {
 		return expr;
 
 	}
+	*/
 
 	store_stats function_store::get_store_stats() {
 		store_stats stats;
@@ -391,9 +393,38 @@ namespace majesty {
 #endif
 		return stats;
 	}
+			
+	void function_store::set_entry(const cirkit::tt& function, const std::string& expr, const bool is_exact, const unsigned conflict_limit) {
+		function_store_entry entry(expr, is_exact, conflict_limit);
+		set_entry(function, entry);
+	}
 
+	void function_store::set_entry(const cirkit::tt& function, const function_store_entry& entry) {
+#ifndef _WIN32
+#else
+#endif
+	}
 
-	/*logic_ntk function_store::get_logic_ntk(const std::string& key) {
-	}*/
+	boost::optional<function_store_entry> function_store::get_entry(const cirkit::tt& function) {
+#ifndef _WIN32
+#else
+		function_store_entry entry;
+		return entry;
+#endif
+	}
+	
+	// Function store entry format: expr-is_exact-conflict_limit
+	function_store_entry to_function_store_entry(const std::string& str) {
+		function_store_entry entry;
 
+		const auto tokens = split(str, '-');
+		const auto ntokens = tokens.size();
+		assert(ntokens == 3);
+
+		entry.expr = tokens[0];
+		entry.is_exact = stoi(tokens[1]);
+		entry.conflict_limit = stoi(tokens[2]);
+
+		return entry;
+	}
 }

@@ -98,38 +98,8 @@ namespace majesty {
         return create_output(id, c);
 	}
 
-	nodeid logic_ntk::get_nodeid(const std::vector<nodeid>& fanin, const cirkit::tt& function) const {
-		auto hash_key = boost::hash_range(fanin.begin(), fanin.end());
-		auto sh_lookup = _shmap.equal_range(hash_key);
-		for (auto it = sh_lookup.first; it != sh_lookup.second; it++) {
-			const auto& lookup_fanin = it->second.first;
-			if (lookup_fanin == fanin) {
-				// The fanin is the same, now we have to check if the function is the same too
-				const auto& lookup_func = it->second.second.first;
-				if (lookup_func == function) {
-					// We have a node with the same fanin and the same function, strash hit!
-					return it->second.second.second;
-				}
-			}
-		}
-		return EC_NULL;
-	}
-
+	
 	nodeid logic_ntk::create_node(const std::vector<nodeid>& fanin, const cirkit::tt& function) {
-		auto hash_key = boost::hash_range(fanin.begin(), fanin.end());
-		auto sh_lookup = _shmap.equal_range(hash_key);
-		for (auto it = sh_lookup.first; it != sh_lookup.second; it++) {
-			const auto& lookup_fanin = it->second.first;
-			if (lookup_fanin == fanin) {
-				// The fanin is the same, now we have to check if the function is the same too
-				const auto& lookup_func = it->second.second.first;
-				if (lookup_func == function) {
-					// We have a node with the same fanin and the same function, strash hit!
-					return it->second.second.second;
-				}
-			}
-		}
-
 		ln_node node;
 		node.pi = false;
 		node.fanin = fanin;
@@ -139,10 +109,7 @@ namespace majesty {
 		}
 		node.function = function;
 		_nodes.push_back(node);
-		auto id = _nodes.size() - 1;
-		// Insert into the strash map
-		_shmap.emplace(hash_key, std::make_pair(fanin, std::make_pair(function, id)));
-		return id;
+		return _nodes.size() - 1;
 	}
 
 	void logic_ntk::create_dummy_innames() {

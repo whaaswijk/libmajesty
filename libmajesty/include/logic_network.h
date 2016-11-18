@@ -29,7 +29,6 @@ namespace majesty {
 			nodeid _const0_id = 0u;
 			bool _has_const1_node = false;
 			nodeid _const1_id = 0u;
-			std::unordered_multimap<size_t,std::pair<std::vector<nodeid>,std::pair<cirkit::tt,nodeid>>> _shmap;
 			
 		public:
 			logic_ntk() {  }
@@ -79,8 +78,6 @@ namespace majesty {
 
 			nodeid get_const0_node();
 			nodeid get_const1_node();
-
-			nodeid get_nodeid(const std::vector<nodeid>&, const cirkit::tt&) const;
 
 			void create_dummy_innames();
 			void create_dummy_outnames();

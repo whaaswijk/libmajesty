@@ -5,6 +5,8 @@
 #include "npn_canonization.hpp"
 #include <convert.h>
 #include <exact.h>
+#include <sat_interface.h>
+#include <maj_io.h>
 
 using namespace std;
 using namespace cirkit;
@@ -22,10 +24,6 @@ namespace majesty {
         return lut_area_timeout_strategy(m, frparams, lut_size, 0, rebuild_cover).value();
 	}
    	
-	logic_ntk lut_area_strategy(const logic_ntk& ntk, unsigned lut_size) {
-		return lut_area_timeout_strategy(ntk, lut_size, 0).value();
-	}
-
 	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
 		frparams->nr_backtracks = nr_backtracks;
@@ -46,14 +44,9 @@ namespace majesty {
 		auto frparams = default_xmg_params();
 		return lut_area_timeout_strategy(m, frparams.get(), lut_size, timeout, behavior);
 	}
-	
-	boost::optional<logic_ntk> 
-		lut_area_timeout_strategy(const logic_ntk& ntk, unsigned lut_size, unsigned backtrack_limit) {
-		return lut_area_timeout_strategy(ntk, lut_size, backtrack_limit, rebuild_cover);
-	}
 
-	boost::optional<logic_ntk> 
-		lut_area_timeout_strategy(const logic_ntk& ntk, unsigned lut_size, unsigned backtrack_limit, timeout_behavior tb) {
+	template<typename S>
+	logic_ntk lut_area_strategy(const logic_ntk& ntk, unsigned lut_size, unsigned conflict_limit, timeout_behavior tb) {
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
 		vector<tt> timeoutfuncs;
@@ -69,7 +62,7 @@ namespace majesty {
 			auto area_cover = build_cover(cntk, best_area);
 			it_exact_cover_timeout(cntk, area_cover, cut_map, best_area, fm, timeoutfuncs);
 			auto lut_ntk = ntk_cover_to_logic_ntk(cntk, area_cover, best_area, fm);
-			auto decomp_ntk = logic_ntk_from_luts(lut_ntk, timeoutfuncs, backtrack_limit, tb);
+			auto decomp_ntk = logic_ntk_from_luts<S>(lut_ntk, timeoutfuncs, backtrack_limit, tb);
 			if (decomp_ntk) {
 				auto newsize = decomp_ntk.get_ptr()->nnodes();
 				if (newsize < oldsize) {
@@ -89,7 +82,7 @@ namespace majesty {
 			}
 		} while (ctu);
 
-		return std::move(cntk);
+		return cntk;
 	}
 
 	optional<xmg> 
@@ -365,7 +358,7 @@ namespace majesty {
 
 	pair<nodeid, bool> 
 		parse_into_logic_ntk(logic_ntk& ntk, const synth_spec* spec, const logic_ntk& opt_ntk, 
-				const nodemap& nodemap, const input_map_t& imap, bool invert_output) {
+				const input_map_t& imap, bool invert_output) {
 		const auto& opt_nodes = opt_ntk.nodes();
 		vector<pair<nodeid,bool>> nids(opt_nodes.size());
 		vector<nodeid> ntk_fanin(spec->gate_size);
@@ -405,6 +398,7 @@ namespace majesty {
 		return nids[opt_nodes.size() - 1];
 	}
 
+	template<typename S>
 	optional<pair<nodeid, bool>> decompose_cut(logic_ntk& ntk, const ln_node& node, nodemap& nodemap, 
 		function_store& fstore, vector<tt>& timeoutfuncs, const unsigned conflict_limit, timeout_behavior behavior) {
 		
@@ -428,44 +422,42 @@ namespace majesty {
 			spec.gate_tt_size = 7;
 		}
 		//spec.verbose = true;
-		//auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(npn.to_ulong(), &spec);
 
-		auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(npn, &spec, conflict_limit);
-		if (!opt_ntk_str) { // Exact synthesis may have timed out
-		//	if (behavior == rebuild_cover) {
-				timeoutfuncs.push_back(node.function);
-				return boost::none;
-		//	} 
-			
-				/*
-			// Try to resynthesize, starting from the last size that failed
-			auto olast_size = fstore.get_last_size(npn);
-			assert(olast_size);
-			auto start_size = olast_size.get() + 1;
-			// We may have stored a heuristic version of this NPN class before,
-			// so no need to compute it again
-			min_xmg = fstore.heuristic_size_xmg(npn, timeout);
-			if (!min_xmg) {
-				min_xmg = exact_xmg_expression(npn, timeout, start_size);
-				if (!min_xmg) { 
-					if (!min_xmg) {
-						// Try to compute a heuristic version
-						min_xmg = heuristic_xmg_expression(npn, num_vars, timeout, start_size, behavior);
-						if (!min_xmg) {
-							return boost::none;
-						} else {
-							fstore.set_heuristic_size_xmg(npn, min_xmg.get(), timeout);
-						}
-					}
-				} else {
-					fstore.set_heuristic_size_xmg(npn, min_xmg.get(), timeout);
+		logic_ntk opt_ntk;
+		auto entry = fstore.get_entry(npn);
+		if (!entry) { // This function hasn't been synthesized yet
+			auto synth_ntk = size_optimum_ntk_ns<S>(npn, &spec, conflict_limit);
+			if (synth_ntk) {
+				opt_ntk = std::move(synth_ntk.get());
+				fstore.set_entry(npn, logic_ntk_to_string(opt_ntk), true, conflict_limit);
+			} else { // Conflict limit was breached in exact synthesis
+				if (behavior == rebuild_cover) {
+					timeoutfuncs.push_back(node.function);
+					return boost::none;
 				}
-			} else {
-				cout << "Using cached heuristic result" << endl;
+				const auto last_size = spec.nr_gates;
+				lbool exists = l_False;
+				// Try to find a heuristic solution by increasing the nr of gate, starting
+				// from the last attempted number.
+				for (auto nr_gates = last_size + 1; nr_gates < last_size + 4; nr_gates++) {
+					spec.nr_gates = nr_gates;
+					restart_solver<S>();
+					exists = exists_fanin_3_ntk_ns<S>(npn, &spec);
+					if (exists == l_True) {
+						opt_ntk = extract_fanin_3_ntk_ns<S>(&spec);
+						break;
+					}
+				}
+				if (exists == l_True) { 
+					fstore.set_entry(npn, logic_ntk_to_string(opt_ntk), false, conflict_limit);
+				} else { // Use ABC to find a heuristic decomposition
+					opt_ntk = abc_heuristic_logic_ntk(npn);
+					fstore.set_entry(npn, logic_ntk_to_string(opt_ntk), false, conflict_limit);
+				}
 			}
-			*/
+		} else {
+			opt_ntk = string_to_logic_ntk(entry.get().expr);
 		}
-		auto opt_ntk = string_to_logic_ntk(opt_ntk_str.get());
 
 		input_map_t imap;
 
@@ -475,14 +467,10 @@ namespace majesty {
 			imap[invperm[i]] = make_pair(inode.first, phase.test(i));
 		}
 
-		return parse_into_logic_ntk(ntk, &spec, opt_ntk, nodemap, imap, phase.test(node.fanin.size()));
+		return parse_into_logic_ntk(ntk, &spec, opt_ntk, imap, phase.test(node.fanin.size()));
 	}
 	
-	logic_ntk logic_ntk_from_luts(const logic_ntk& lut_ntk) {
-		vector<tt> timeoutfuncs;
-		return logic_ntk_from_luts(lut_ntk, timeoutfuncs, 0, rebuild_cover).value();
-	}
-
+	template<typename S>
 	optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, vector<tt>& timeoutfuncs, 
 		const unsigned conflict_limit, timeout_behavior behavior) {
 		bool timeout_occurred = false;
@@ -533,7 +521,7 @@ namespace majesty {
 				nodemap[i] = nodemap[node.fanin[0]];
 				continue;
 			}
-			auto decomp_cut = decompose_cut(ntk, node, nodemap, fstore, timeoutfuncs, conflict_limit, behavior);
+			auto decomp_cut = decompose_cut<S>(ntk, node, nodemap, fstore, timeoutfuncs, conflict_limit, behavior);
 			if (decomp_cut) {
 				nodemap[i] = decomp_cut.get();
 			} else {
@@ -622,18 +610,8 @@ namespace majesty {
 				for (auto id : node.fanin) {
 					virtfanin.push_back(virtmap[id]);
 				}
-				auto existing_id = ntk.get_nodeid(virtfanin, node.function);
-				if (existing_id != EC_NULL) {
-					virtmap.push_back(existing_id);
-					nref[existing_id] -= 1;
-					if (nref.at(existing_id) == 0) {
-						area += recursive_deselect(existing_id, ntk.nodes(), nref);
-					}
-					continue;
-				} else {
-					virtmap.push_back(ntk.nnodes() + area);
-					++area;
-				}
+				virtmap.push_back(ntk.nnodes() + area);
+				++area;
 			}
 		}
 
@@ -661,66 +639,65 @@ namespace majesty {
 				for (auto id : node.fanin) {
 					virtfanin.push_back(virtmap[id]);
 				}
-				auto existing_id = ntk.get_nodeid(virtfanin, node.function);
-				if (existing_id != EC_NULL) {
-					// A strash hit! Since this node already exists, it only adds
-					// to the area if it wasn't previously selected.
-					//cout << "Got virtual strash hit!" << endl;
-					virtmap.push_back(existing_id);
-					nref[existing_id] += 1;
-					if (nref.at(existing_id) == 1) {
-						area += recursive_select(existing_id, ntk.nodes(), nref);
-					}
-				} else {
-					virtmap.push_back(ntk.nnodes() + area);
-					++area;
-				}
+				virtmap.push_back(ntk.nnodes() + area);
+				++area;
 			}
 		}
 
 		return area;
 	}
 
-	nodeid select_opt_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, const unordered_map<nodeid, nodeid>& nodemap, unordered_map<nodeid,unsigned>& nref) {
+	inline nodeid select_opt_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, const vector<nodeid>& fanin, 
+		const synth_spec* spec, const input_map_t& imap, 
+		bool invert_output, unordered_map<nodeid,unsigned>& nref) {
 		const auto& opt_ntk_nodes = opt_ntk.nodes();
 		const auto& nr_opt_ntk_nodes = opt_ntk.nnodes();
-		vector<nodeid> virtmap(nr_opt_ntk_nodes);
+		vector<pair<nodeid,bool>> nids(nr_opt_ntk_nodes);
+		vector<tt> fanin_tts(spec->gate_size);
+		for (auto i = 0u; i < spec->gate_size; i++) {
+			fanin_tts[i] = tt_nth_var(i);
+		}
 
 		for (auto i = 0u; i < nr_opt_ntk_nodes; i++) {
 			const auto& node = opt_ntk_nodes[i];
 			if (node.pi) {
-				assert(nodemap.find(fanin[i]) != nodemap.end());
-				auto faninid = nodemap.at(fanin[i]);
-				virtmap[i] = faninid;
+				nids[i] = imap.at(i);
+				const auto faninid = nids[i].first;
 				nref[faninid] += 1;
 				if (nref[faninid] == 1) {
 					recursive_select(faninid, ntk.nodes(), nref);
 				}
 			} else {
 				vector<nodeid> virtfanin;
-				for (auto id : node.fanin) {
-					virtfanin.push_back(virtmap[id]);
+				for (auto j = 0u; j < spec->gate_size; j++) {
+					virtfanin.push_back(nids[node.fanin[j]].first);
 				}
-				auto existing_id = ntk.get_nodeid(virtfanin, node.function);
-				if (existing_id != EC_NULL) {
-					cout << "Got actual strash hit!" << endl;
-					virtmap[i] = existing_id;
-					nref[existing_id] += 1;
-					if (nref.at(existing_id) == 1) {
-						recursive_select(existing_id, ntk.nodes(), nref);
+				tt localfunc(spec->gate_tt_size + 1, 0);
+				for (auto j = 0; j  < spec->gate_tt_size + 1; j++) {
+					auto func_idx = 0u;
+					for (auto k = 0; k < spec->gate_size; k++) {
+						auto tbit = fanin_tts[k].test(j);
+						if (nids[node.fanin[k]].second) {
+							tbit = !tbit;
+						}
+						func_idx += (tbit << k);
 					}
-				} else {
-					auto new_nodeid = ntk.create_node(virtfanin, node.function);
-					virtmap[i] = new_nodeid;
-					nref[new_nodeid] = 1;
+					localfunc[j] = node.function[func_idx];
 				}
+				if ((i == nr_opt_ntk_nodes - 1) && invert_output) {
+					localfunc = ~localfunc;
+				}
+				auto new_nodeid = ntk.create_node(virtfanin, localfunc);
+				nids[i] = make_pair(new_nodeid, false);
+				nref[new_nodeid] = 1;
 			}
 		}
 
-		return virtmap[virtmap.size() - 1];
+		return nids[nr_opt_ntk_nodes - 1].first;
 	}
 
-	logic_ntk logic_ntk_from_cuts(const logic_ntk& cut_ntk, const cutmap& cut_map, unsigned conflict_limit) {
+	template<typename S>
+	logic_ntk logic_ntk_from_cuts(const logic_ntk& cut_ntk, const cutmap& cut_map, unsigned conflict_limit, timeout_behavior tb) {
 		logic_ntk tmp_ntk;
 		
 		unordered_map<nodeid,nodeid> nodemap;
@@ -759,6 +736,14 @@ namespace majesty {
 					}
 					break;
 				} else {
+					vector<unsigned> perm; tt phase, npn;
+					if (node.fanin.size() < 6) {
+						npn = exact_npn_canonization(node.function, phase, perm);
+					} else {
+						npn = npn_canonization_lucky(node.function, phase, perm);
+					}
+					npn.resize(node.function.size());
+
 					synth_spec spec;
 					//spec.verbose = true;
 					spec.nr_vars = cut->size();
@@ -771,15 +756,17 @@ namespace majesty {
 						spec.gate_tt_size = 7;
 					}
 					//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
-					auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(cutfunc, &spec);// //string_to_logic_ntk(opt_ntk_str.get());
-					auto virt_nodes_added = virtual_recursive_select(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
-					//auto virt_nodes_added = opt_ntk.nnodes();
-					if (virt_nodes_added < smallest_add) {
-						best_cut = cut.get();
-						smallest_add = virt_nodes_added;
+					auto opt_ntk = size_optimum_ntk_ns<S>(npn, &spec, conflict_limit);// //string_to_logic_ntk(opt_ntk_str.get());
+					if (opt_ntk) {
+						auto virt_nodes_added = virtual_recursive_select(tmp_ntk, opt_ntk.get(), cut->nodes(), nodemap, nref);
+						//auto virt_nodes_added = opt_ntk.nnodes();
+						if (virt_nodes_added < smallest_add) {
+							best_cut = cut.get();
+							smallest_add = virt_nodes_added;
+						}
+						auto virt_nodes_saved = virtual_recursive_deselect(tmp_ntk, opt_ntk.get(), cut->nodes(), nodemap, nref);
+						assert(virt_nodes_added == virt_nodes_saved);
 					}
-					auto virt_nodes_saved = virtual_recursive_deselect(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
-					assert(virt_nodes_added == virt_nodes_saved);
 				}
 			}
 			if (found_const_cut) {
@@ -787,6 +774,14 @@ namespace majesty {
 			}
 			assert(best_cut != nullptr);
 			const auto& cutfunc = *fm.at(best_cut);
+			vector<unsigned> perm; tt phase, npn;
+			if (node.fanin.size() < 6) {
+				npn = exact_npn_canonization(node.function, phase, perm);
+			} else {
+				npn = npn_canonization_lucky(node.function, phase, perm);
+			}
+			npn.resize(node.function.size());
+
 			synth_spec spec;
 			//spec.verbose = true;
 			spec.nr_vars = best_cut->size();
@@ -799,8 +794,17 @@ namespace majesty {
 				spec.gate_tt_size = 7;
 			}
 			//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
-			auto opt_ntk = size_optimum_ntk_ns<CMSat::SATSolver>(cutfunc, &spec);// string_to_logic_ntk(opt_ntk_str.get());
-			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk, best_cut->nodes(), nodemap, nref);
+			auto opt_ntk = size_optimum_ntk_ns<S>(npn, &spec);// string_to_logic_ntk(opt_ntk_str.get());
+
+			input_map_t imap;
+			auto invperm = inv(perm);
+			for (auto i = 0u; i < node.fanin.size(); i++) {
+				auto inode = nodemap[node.fanin[i]];
+				imap[invperm[i]] = make_pair(inode.first, phase.test(i));
+			}
+
+			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk.get(), best_cut->nodes(), 
+				&spec, imap, phase.test(node.fanin.size()), nref);
 			cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
 		cout << endl;
@@ -855,7 +859,8 @@ namespace majesty {
 		return ntk;
 	}
 
-	logic_ntk size_rewrite_strategy(const logic_ntk& ntk, unsigned cut_size, unsigned conflict_limit) {
+	template<typename S>
+	logic_ntk size_rewrite_strategy(const logic_ntk& ntk, unsigned cut_size, unsigned conflict_limit, timeout_behavior tb) {
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = cut_size;
 		vector<tt> timeoutfuncs;
@@ -867,7 +872,7 @@ namespace majesty {
 			funcmap fm;
 			auto oldsize = cntk.nnodes();
 			const auto cut_map = enumerate_cuts_eval_funcs(cntk, cut_params.get(), fm);
-			auto decomp_ntk = logic_ntk_from_cuts(cntk, cut_map, conflict_limit);
+			auto decomp_ntk = logic_ntk_from_cuts<S>(cntk, cut_map, conflict_limit, tb);
 			auto newsize = decomp_ntk.nnodes();
 			if (newsize < oldsize) {
 				cout << "oldsize: " << oldsize << endl;
@@ -911,4 +916,14 @@ namespace majesty {
 		return tt_npn;
 	}
     */
+
+	logic_ntk abc_heuristic_logic_ntk(const tt& func) {
+		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % tt_to_hex(func)).str();
+		auto success = system(optcmd.c_str());
+		if (success != 0) {
+			throw runtime_error("Heuristic optimization through ABC failed");
+		}
+		auto upperbound_xmg = read_verilog("tmp.v");
+		return xmg_to_logic_ntk(upperbound_xmg);
+	}
 }

@@ -16,10 +16,13 @@ extern "C" {
 #include <thread>
 
 namespace majesty {
+
 	struct synth_spec;
 
+	static unsigned conflict_limit = 0u;
+
 	template<typename S>
-	void init_solver();
+	void init_solver(unsigned conflict_limit);
 
 	template<typename S>
 	void restart_solver();
@@ -38,13 +41,17 @@ namespace majesty {
 
 	template<typename S>
 	void destroy_solver();
+
+	template<typename S>
+	unsigned nr_conflicts();
 	
 	static sat_solver* abc_solver = NULL;
 
 	template<>
-	inline void init_solver<sat_solver>() {
+	inline void init_solver<sat_solver>(unsigned climit) {
 		assert(abc_solver == NULL);
 		abc_solver = sat_solver_new();
+		conflict_limit = climit;
 	}
 
 	template<>
@@ -69,7 +76,7 @@ namespace majesty {
 
 	template<>
 	inline int solve<sat_solver>(lit* begin, lit* end) {
-		return sat_solver_solve(abc_solver, begin, end, 0, 0, 0, 0);
+		return sat_solver_solve(abc_solver, begin, end, conflict_limit, 0, 0, 0);
 	}
 
 	template<>
@@ -79,23 +86,31 @@ namespace majesty {
 		abc_solver = NULL;
 	}
 
+	template<>
+	inline unsigned nr_conflicts<sat_solver>() {
+		return sat_solver_nconflicts(abc_solver);
+	}
 
 	static CMSat::SATSolver* cms_solver = nullptr;
 	template<>
-	inline void init_solver<CMSat::SATSolver>() {
+	inline void init_solver<CMSat::SATSolver>(unsigned climit) {
 		assert(cms_solver == nullptr);
+		conflict_limit = climit;
+		/*
 		cms_solver = new CMSat::SATSolver;
 		auto nr_threads = std::thread::hardware_concurrency();
 		cms_solver->set_num_threads(nr_threads);
+		*/
 	}
 
 	template<>
 	inline void restart_solver<CMSat::SATSolver>() {
-		assert(cms_solver != nullptr);
+		assert(cms_solver == nullptr);
 		delete cms_solver;
 		cms_solver = new CMSat::SATSolver;
 		auto nr_threads = std::thread::hardware_concurrency();
 		cms_solver->set_num_threads(nr_threads);
+		cms_solver->set_max_confl(conflict_limit);
 	}
 
 	template<>
@@ -143,6 +158,11 @@ namespace majesty {
 		assert(cms_solver != nullptr);
 		delete cms_solver;
 		cms_solver = nullptr;
+	}
+
+	template<>
+	inline unsigned nr_conflicts<CMSat::SATSolver>() {
+		return 0u;
 	}
 }
 

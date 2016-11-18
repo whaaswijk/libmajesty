@@ -691,20 +691,7 @@ namespace majesty {
 		return buf.str();
 	}
 
-	void split(const std::string &s, char delim, std::vector<std::string> &elems) {
-		std::stringstream ss;
-		ss.str(s);
-		std::string item;
-		while (std::getline(ss, item, delim)) {
-			elems.push_back(item);
-		}
-	}
-
-	std::vector<std::string> split(const std::string &s, char delim) {
-		std::vector<std::string> elems;
-		split(s, delim, elems);
-		return elems;
-	}
+	
 
 	logic_ntk string_to_logic_ntk(const string& str) {
 		logic_ntk ntk;
