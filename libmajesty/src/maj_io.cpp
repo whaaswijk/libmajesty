@@ -366,15 +366,23 @@ namespace majesty {
 				f << name << " ";
 			}
 			f << nodename(i, outputs, outnames) << endl;
-			// Simply print the truth table implemented by this node
-			const auto& tt = node.function;
-			for (auto j = 0u; j < tt.size(); j++) {
-                if (tt.test(j)) {
-                    for (auto k = 0u; k < node.fanin.size(); k++) {
-                        f << ((j >> k) & 1u);
-                    }
-                    f << " " << tt.test(j) << endl;
-                }
+			// Check if it's a constant node
+			if (ntk.has_const0_node() && i == ntk.const0_id()) {
+				// Const 0: no line necessary 
+			} else if (ntk.has_const1_node() && i == ntk.const1_id()) {
+				// Const 1
+				f << "1" << endl;
+			} else {
+				// Simply print the truth table implemented by this node
+				const auto& tt = node.function;
+				for (auto j = 0u; j < tt.size(); j++) {
+					if (tt.test(j)) {
+						for (auto k = 0u; k < node.fanin.size(); k++) {
+							f << ((j >> k) & 1u);
+						}
+						f << " " << tt.test(j) << endl;
+					}
+				}
 			}
 		}
 
@@ -383,15 +391,8 @@ namespace majesty {
 			const auto outid = outputs[i];
 			const auto& node = nodes[outid];
 			if (node.pi) {
-				if (node.function == cirkit::tt_const0()) {
-					f << ".names " << outnames[i] << endl;
-				} else if (node.function == cirkit::tt_const1()) {
-					f << ".names " << outnames[i] << endl;
-					f << "1" << endl;
-				} else {
-					f << ".names " << innames[outid] << " " << outnames[i] << endl;
-					f << "1 1" << endl;
-				}
+				f << ".names " << innames[outid] << " " << outnames[i] << endl;
+				f << "1 1" << endl;
 			}
 		}
 

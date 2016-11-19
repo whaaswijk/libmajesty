@@ -50,6 +50,11 @@ namespace majesty {
 			ln_node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
 
+			bool has_const0_node() const { return _has_const0_node; }
+			nodeid const0_id() const { return _const0_id; }
+			bool has_const1_node() const { return _has_const1_node; }
+			nodeid const1_id() const { return _const1_id; }
+
 			const std::vector<std::string>& innames() const { 
 				return _innames;
 		   	}

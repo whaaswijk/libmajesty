@@ -450,34 +450,39 @@ namespace majesty {
 		const auto& nodes = xmg.nodes();
 		for (auto i = 1u; i < nodes.size(); i++) {
             vector<nodeid> fanin;
-            if (i == 0u) {
-                nodemap[0] = ntk.get_const1_node();
-            } else {
-                const auto& node = nodes[i];
-                if (is_pi(node)) {
-                    nodemap[i] = ntk.create_input();
-                    continue;
-                }
-                if (is_xor(node)) {
-                    fanin.push_back(nodemap[node.in1]);
-                    fanin.push_back(nodemap[node.in2]);
-                } else if (is_and(node) || is_or(node)) {
-                    fanin.push_back(nodemap[node.in2]);
-                    fanin.push_back(nodemap[node.in3]);
-                } else {
-                    fanin.push_back(nodemap[node.in1]);
-                    fanin.push_back(nodemap[node.in2]);
-                    fanin.push_back(nodemap[node.in3]);
-                }
-                const auto node_tt = tt_from_node(node);
-                nodemap[i] = ntk.create_node(fanin, node_tt);
-            }
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				nodemap[i] = ntk.create_input();
+				continue;
+			}
+			if (is_xor(node)) {
+				fanin.push_back(nodemap[node.in1]);
+				fanin.push_back(nodemap[node.in2]);
+			} else if (is_and(node) || is_or(node)) {
+				fanin.push_back(nodemap[node.in2]);
+				fanin.push_back(nodemap[node.in3]);
+			} else {
+				fanin.push_back(nodemap[node.in1]);
+				fanin.push_back(nodemap[node.in2]);
+				fanin.push_back(nodemap[node.in3]);
+			}
+			const auto node_tt = tt_from_node(node);
+			nodemap[i] = ntk.create_node(fanin, node_tt);
 		}
 
 		const auto& outputs = xmg.outputs();
 		const auto& outcompl = xmg.outcompl();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			ntk.create_output(nodemap[outputs[i]], outcompl[i]);
+			if (outputs[i] == 0u) {
+				if (outcompl[i]) {
+					ntk.create_output(ntk.get_const0_node(), false);
+				} else {
+					ntk.create_output(ntk.get_const1_node(), false);
+
+				}
+			} else {
+				ntk.create_output(nodemap[outputs[i]], outcompl[i]);
+			}
 		}
 
 		const auto& innames = xmg.innames();
