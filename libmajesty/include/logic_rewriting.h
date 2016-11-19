@@ -477,7 +477,7 @@ namespace majesty {
 					npn.resize(cutfunc.size());
 
 					synth_spec spec;
-					//spec.verbose = true;
+					spec.verbose = true;
 					spec.nr_vars = cut->size();
 					if (spec.nr_vars >= 3) {
 						// We have to manually set the gate size and gate_tt_size here,
@@ -487,18 +487,53 @@ namespace majesty {
 						spec.gate_size = 3;
 						spec.gate_tt_size = 7;
 					}
-					//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
-					auto opt_ntk = size_optimum_ntk_ns<S>(npn, &spec, conflict_limit);// //string_to_logic_ntk(opt_ntk_str.get());
-					if (opt_ntk) {
-						auto virt_nodes_added = virtual_recursive_select(tmp_ntk, opt_ntk.get(), cut->nodes(), nodemap, nref);
-						//auto virt_nodes_added = opt_ntk.nnodes();
-						if (virt_nodes_added < smallest_add) {
-							best_cut = cut.get();
-							smallest_add = virt_nodes_added;
+
+					logic_ntk opt_ntk;
+					auto entry = fstore.get_entry(npn);
+					if (!entry) { // This function hasn't been synthesized yet
+						auto synth_ntk = size_optimum_ntk_ns<S>(npn, &spec, conflict_limit);
+						if (synth_ntk) {
+							opt_ntk = std::move(synth_ntk.get());
+							fstore.set_entry(npn, logic_ntk_to_string(opt_ntk), true, conflict_limit);
+						} else { // Conflict limit was breached in exact synthesis
+							const auto last_size = spec.nr_gates;
+							lbool exists = l_False;
+							auto invert = npn.test(0);
+							// Try to find a heuristic solution by increasing the nr of gate, starting
+							// from the last attempted number.
+							init_solver<S>(conflict_limit);
+							for (auto nr_gates = last_size + 1; nr_gates < last_size + 4; nr_gates++) {
+								restart_solver<S>();
+								spec.nr_gates = nr_gates;
+								if (spec.verbose) {
+									std::cout << "trying to get heuristicic result with " 
+										<< nr_gates << " gates" << std::endl;
+								}
+								exists = exists_fanin_3_ntk_ns<S>(invert ? ~npn : npn, &spec);
+								if (exists == l_True) {
+									opt_ntk = extract_fanin_3_ntk_ns<S>(&spec, invert);
+									break;
+								}
+							}
+							destroy_solver<S>();
+							if (exists == l_True) { 
+								fstore.set_entry(npn, logic_ntk_to_string(opt_ntk), false, conflict_limit);
+							} else { // Use ABC to find a heuristic decomposition
+								opt_ntk = abc_heuristic_logic_ntk(npn);
+								fstore.set_entry(npn, logic_ntk_to_string(opt_ntk), false, conflict_limit);
+							}
 						}
-						auto virt_nodes_saved = virtual_recursive_deselect(tmp_ntk, opt_ntk.get(), cut->nodes(), nodemap, nref);
-						assert(virt_nodes_added == virt_nodes_saved);
+					} else {
+						opt_ntk = string_to_logic_ntk(entry.get().expr);
 					}
+
+					auto virt_nodes_added = virtual_recursive_select(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
+					if (virt_nodes_added < smallest_add) {
+						best_cut = cut.get();
+						smallest_add = virt_nodes_added;
+					}
+					auto virt_nodes_saved = virtual_recursive_deselect(tmp_ntk, opt_ntk, cut->nodes(), nodemap, nref);
+					assert(virt_nodes_added == virt_nodes_saved);
 				}
 			}
 			if (found_const_cut) {
@@ -515,19 +550,9 @@ namespace majesty {
 			}
 			npn.resize(cutfunc.size());
 
-			synth_spec spec;
-			//spec.verbose = true;
-			spec.nr_vars = best_cut->size();
-			if (spec.nr_vars >= 3) {
-				// We have to manually set the gate size and gate_tt_size here,
-				// as exact synthesis may not be called when we use stored results.
-				// ES normally deduces these values, but if it's not called we
-				// still need them to parse the results back into the logic_ntk. 
-				spec.gate_size = 3;
-				spec.gate_tt_size = 7;
-			}
-			//auto opt_ntk_str = fstore.get_size_optimum_ntk_ns(cutfunc, &spec, conflict_limit);
-			auto opt_ntk = size_optimum_ntk_ns<S>(npn, &spec);// string_to_logic_ntk(opt_ntk_str.get());
+			// NOTE: optimized network must exist in function store at this point
+			auto entry = fstore.get_entry(npn);
+			auto opt_ntk = string_to_logic_ntk(entry.get().expr);
 
 			input_map_t imap;
 			auto invperm = inv(perm);
@@ -536,7 +561,7 @@ namespace majesty {
 				imap[invperm[i]] = std::make_pair(inode, phase.test(i));
 			}
 
-			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk.get(), imap, phase.test(cutnodes.size()), nref);
+			nodemap[i] = select_opt_ntk(tmp_ntk, opt_ntk, imap, phase.test(cutnodes.size()), nref);
 			std::cout << "Progress: (" << ++progress << "/" << total_nodes << ")\r";
 		}
 		std::cout << std::endl;
