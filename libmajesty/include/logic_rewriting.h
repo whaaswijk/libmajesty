@@ -455,6 +455,9 @@ namespace majesty {
 				const auto& cutfunc = *fm.at(cut.get());
 				if (cut->size() == 1 && cut->nodes()[0] == i) { // Trivial cut
 					continue;
+				} else if (cut->size() == 1) { // E.g. may map to a PI.
+					nodemap[i] = nodemap[cut->nodes()[0]];
+					continue;
 				} else if (cut->size() == 0) { // Const 1 or 0
 					found_const_cut = true;
 					if (cutfunc == tt_const0()) {
