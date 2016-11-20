@@ -453,18 +453,34 @@ namespace majesty {
 
 			for (const auto& cut : node_cuts) {
 				const auto& cutfunc = *fm.at(cut.get());
-				if (cut->size() == 1) {
+				if (cut->size() == 0) {
+					// The support of the cut may be empty if the
+					// function it computes is a trivial constant.
+					// This can be the case even if the node
+					// itself is non-trivial.
+					if (cutfunc.test(0)) { // Constant 1
+						found_simple_cut = true;
+						nodemap[i] = tmp_ntk.get_const1_node();
+						break;
+					} else { // Constant 0
+						found_simple_cut = true;
+						nodemap[i] = tmp_ntk.get_const0_node();
+						break;
+					}
+				} else if (cut->size() == 1) {
 					if (cut->nodes()[0] == i) { // Trivial cut
 						continue;
 					} else if (node.function == tt_const0()) {
+						// Cut of constant 0 node
 						found_simple_cut = true;
 						nodemap[i] = tmp_ntk.get_const0_node();
 						break;
 					} else if (node.function == tt_const1()) {
+						// Cut of constant 1 node
 						found_simple_cut = true;
 						nodemap[i] = tmp_ntk.get_const1_node();
 						break;
-					} else { // E.g. may map to a PI.
+					} else { // E.g. may map to a PI
 						found_simple_cut = true;
 						nodemap[i] = nodemap[cut->nodes()[0]];
 						break;
