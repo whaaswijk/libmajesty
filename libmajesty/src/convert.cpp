@@ -181,7 +181,6 @@ namespace majesty {
 	}
 
 	tt maj_tt_cof0(const tt& t, unsigned i, unsigned ninputs) {
-		auto n = tt_num_vars(t);
 		assert(i < n);
 		auto tv = ~tt_nth_var(i);
 		tv.resize(1u << ninputs);
@@ -194,7 +193,6 @@ namespace majesty {
 	}
 
 	tt maj_tt_cof1(const tt& t, unsigned i, unsigned ninputs) {
-		auto n = tt_num_vars(t);
 		assert(i < n);
 		auto tv = tt_nth_var(i);
 		tv.resize(1u << ninputs);
