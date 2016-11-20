@@ -449,23 +449,26 @@ namespace majesty {
 			const auto& node_cuts = cut_map.at(i);
 			auto smallest_add = std::numeric_limits<unsigned>::max();
 			cut* best_cut = nullptr;
-			auto found_const_cut = false;
+			auto found_simple_cut = false;
 
 			for (const auto& cut : node_cuts) {
 				const auto& cutfunc = *fm.at(cut.get());
-				if (cut->size() == 1 && cut->nodes()[0] == i) { // Trivial cut
-					continue;
-				} else if (cut->size() == 1) { // E.g. may map to a PI.
-					nodemap[i] = nodemap[cut->nodes()[0]];
-					continue;
-				} else if (cut->size() == 0) { // Const 1 or 0
-					found_const_cut = true;
-					if (cutfunc == tt_const0()) {
+				if (cut->size() == 1) {
+					if (cut->nodes()[0] == i) { // Trivial cut
+						continue;
+					} else if (node.function == tt_const0()) {
+						found_simple_cut = true;
 						nodemap[i] = tmp_ntk.get_const0_node();
-					} else {
+						break;
+					} else if (node.function == tt_const1()) {
+						found_simple_cut = true;
 						nodemap[i] = tmp_ntk.get_const1_node();
+						break;
+					} else { // E.g. may map to a PI.
+						found_simple_cut = true;
+						nodemap[i] = nodemap[cut->nodes()[0]];
+						break;
 					}
-					break;
 				} else {
 					std::vector<unsigned> perm; tt phase, npn;
 					const auto& cutnodes = cut->nodes();
@@ -536,7 +539,7 @@ namespace majesty {
 					assert(virt_nodes_added == virt_nodes_saved);
 				}
 			}
-			if (found_const_cut) {
+			if (found_simple_cut) {
 				continue;
 			}
 			assert(best_cut != nullptr);
@@ -625,9 +628,8 @@ namespace majesty {
 		auto ctu = false;
 		do {
 			ctu = false;
-			funcmap fm;
 			auto oldsize = cntk.nnodes();
-			const auto cut_map = enumerate_cuts_eval_funcs(cntk, cut_params.get(), fm);
+			const auto cut_map = enumerate_cuts(cntk, cut_params.get());
 			auto decomp_ntk = logic_ntk_from_cuts<S>(cntk, cut_map, conflict_limit);
 			auto newsize = decomp_ntk.nnodes();
 			std::cout << "oldsize: " << oldsize << std::endl;

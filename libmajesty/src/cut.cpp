@@ -410,8 +410,13 @@ namespace majesty {
 			cutvec res;
 			const auto& n = nodes[i];
 			if (!n.pi && n.fanin.size() == 0) { // Constant 0 or 1!
-				unique_ptr<cut> oc(new cut());
-				res.push_back(move(oc));
+				if (ntk.has_const0_node() && i == ntk.const0_id()) {
+					unique_ptr<cut> oc(new cut(ntk.const0_id()));
+					res.push_back(move(oc));
+				} else {
+					unique_ptr<cut> oc(new cut(ntk.const1_id()));
+					res.push_back(move(oc));
+				}
 			} else {
 				if (!n.pi) {
 					res = node_cuts(n, i, cut_map, p);
@@ -480,10 +485,17 @@ namespace majesty {
 			cutvec res;
 			const auto& n = nodes[i];
 			if (!n.pi && n.fanin.size() == 0) { // Constant 0 or 1!
-				unique_ptr<cut> oc(new cut());
-				unique_ptr<tt> f(new tt(n.function));
-				fm[oc.get()] = std::move(f);
-				res.push_back(move(oc));
+				if (i == m.const0_id()) {
+					unique_ptr<cut> oc(new cut(m.const0_id()));
+					unique_ptr<tt> f(new tt(n.function));
+					fm[oc.get()] = std::move(f);
+					res.push_back(move(oc));
+				} else {
+					unique_ptr<cut> oc(new cut(m.const1_id()));
+					unique_ptr<tt> f(new tt(n.function));
+					fm[oc.get()] = std::move(f);
+					res.push_back(move(oc));
+				}
 			} else {
 				if (!n.pi) {
 					res = node_cuts(n, i, cut_map, p);
@@ -523,19 +535,33 @@ namespace majesty {
 
 	void cut::computefunction(const nodeid nid, const vector<ln_node>& nodes, funcmap& m) {
 		const auto& node = nodes[nid];
-		if (_nodes.size() == 0u && !node.pi) {
-			// A trivial constant 1 or 0 cut!
-			unique_ptr<tt> f(new tt(node.function));
-			m[this] = std::move(f);
-			return;
+		if (_nodes.size() == 1u && !node.pi) {
+			if (node.function == tt_const0()) {
+				// Const 0 cut
+				unique_ptr<tt> f(new tt(node.function));
+				m[this] = std::move(f);
+				return;
+			} else if (node.function == tt_const1()) {
+				// Const 1 cut
+				unique_ptr<tt> f(new tt(node.function));
+				m[this] = std::move(f);
+				return;
+			} else if (_nodes[0] == nid) {
+				// This is a trivial cut, we cannot compute its function
+				// based on its child cuts as it has none
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				m[this] = std::move(f);
+				return;
+			} else {
+				// This is a cut of a non-PI node, but should
+				// contain only a PI.
+				assert(nodes[_nodes[0]].pi);
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				m[this] = std::move(f);
+				return;
+			}
 		}
-		if (_nodes.size() == 1u && _nodes[0] == nid) {
-			// This is a trivial cut, we cannot compute its function
-			// based on its child cuts as it has none
-			unique_ptr<tt> f(new tt(tt_nth_var(0)));
-			m[this] = std::move(f);
-			return;
-		}
+
 		map<nodeid, unsigned> sigma;
 		for (auto i = 0u; i < _nodes.size(); i++) {
 			sigma[_nodes[i]] = i;
