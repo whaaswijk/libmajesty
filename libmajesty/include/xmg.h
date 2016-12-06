@@ -59,8 +59,8 @@ static inline unsigned cantor_pair(unsigned i, unsigned j) {
 }
 
 
-#define SWAP(x, xc, y, yc) if (y < x) {\
-	tn = x; tc = xc; x = y; xc = yc; y = tn; yc = tc; }
+#define SWAP(x, xc, y, yc) if (y < x || (y == x && yc)) {\
+	tn = x; tc = xc; x = y; xc = yc; y = tn; yc = tc; } 
 
 static inline void sort_inputs(
 		nodeid& in1, bool& c1, 
