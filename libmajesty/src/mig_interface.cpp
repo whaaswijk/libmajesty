@@ -580,6 +580,18 @@ namespace majesty {
 			return NULL;
 		}
 		auto oldgpchildren = get_children(gp);
+		// It's possible that the grandparent has the parent as input twice! E.g. when the majority
+		// rule applies at the grandparent. In that case, we cannot swap, because swapping would try
+		// to make the parent a child of itself...
+		auto nparentfanin = 0u;
+		for (auto& gpchild : oldgpchildren) {
+			if (gpchild.first == pid) {
+				++nparentfanin;
+			}
+		}
+		if (nparentfanin > 1u) {
+			return NULL;
+		}
 		auto filt_parents = filter_nodes(oldgpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
 			auto parent = nodes[np.first];
 			if (np.first == pid && np.second == false && !is_pi(parent) && share_input_polarity(gp, parent)) {
@@ -589,8 +601,9 @@ namespace majesty {
 			}
 			return false;
 		});
-		if (filt_parents.size() == 0) {
-			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
+		if (filt_parents.size() != 1) {
+			// There is not exactly one uncomplemented child of the grandparent 
+			// that has both a child in common and is a parent of the grandchild.
 			return NULL;
 		}
 
@@ -1001,10 +1014,24 @@ namespace majesty {
 		if (is_pi(gp)) { // Grandparent obviously may not be a PI
 			return false;
 		}
+
+		// It's possible that the grandparent has the parent as input twice! E.g. when the majority
+		// rule applies at the grandparent. In that case, we cannot swap, because swapping would try
+		// to make the parent a child of itself...
 		auto gpchildren = get_children(gp);
+		auto nparentfanin = 0;
+		for (auto& gpchild : gpchildren) {
+			if (gpchild.first == pid) {
+				++nparentfanin;
+			}
+		}
+		if (nparentfanin > 1) {
+			return false;
+		}
+
 		auto filt_parents = filter_nodes(gpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
 			auto parent = nodes[np.first];
-			// Note that we make that the parent is not complemented. If it is, associativity doesn't apply and
+			// Note that we make sure that the parent is not complemented. If it is, associativity doesn't apply and
 			// we should try applying inverter propagation first.
 			if (np.first == pid && !np.second && !is_pi(parent) && share_input_polarity(gp, parent)) {
 				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
@@ -1013,8 +1040,10 @@ namespace majesty {
 			}
 			return false;
 		});
-		if (filt_parents.size() == 0) {
-			// There is no child of the grandparent that has both a child in common and is a parent of the grandchild.
+
+		if (filt_parents.size() != 1) {
+			// There is not exactly one uncomplemented child of the grandparent that has both a child in 
+			// common and is a parent of the grandchild.
 			return false;
 		}
 		const auto parentnp = filt_parents[0];
