@@ -703,7 +703,7 @@ namespace majesty {
 		return res;
 	}
 
-	pair<nodeid, bool> relevance(xmg& xmg, nodeid nid, input x, input y, bool yc) {
+	pair<nodeid, bool> node_relevance(xmg& xmg, nodeid nid, input x, input y, bool yc) {
 		const auto node = xmg.nodes()[nid];
 		if (is_pi(node)) {
 			if (x.first == nid) {
@@ -712,9 +712,9 @@ namespace majesty {
 				return make_pair(nid, false);
 			}
 		} else {
-			auto in1 = relevance(xmg, node.in1, x, y, yc);
-			auto in2 = relevance(xmg, node.in2, x, y, yc);
-			auto in3 = relevance(xmg, node.in3, x, y, yc);
+			auto in1 = node_relevance(xmg, node.in1, x, y, yc);
+			auto in2 = node_relevance(xmg, node.in2, x, y, yc);
+			auto in3 = node_relevance(xmg, node.in3, x, y, yc);
 			return xmg.create(in1.first, in1.second != is_c1(node),
 				in2.first, in2.second != is_c2(node),
 				in3.first, in3.second != is_c3(node));
@@ -762,8 +762,8 @@ namespace majesty {
 
 					auto unode = nodemap[u];
 					auto vnode = nodemap[v];
-					auto vu_node = relevance(tmp_res, orig_node.first, vnode, unode, false);
-					auto vup_node = relevance(tmp_res, orig_node.first, vnode, unode, true);
+					auto vu_node = node_relevance(tmp_res, orig_node.first, vnode, unode, false);
+					auto vup_node = node_relevance(tmp_res, orig_node.first, vnode, unode, true);
 
 					auto first_inner = tmp_res.create(vnode.first, vnode.second != true,
 						vu_node.first, vu_node.second, unode.first, unode.second);
@@ -824,6 +824,99 @@ namespace majesty {
 		auto dup_res = remove_duplicates(*res);
 		delete res;
 		return dup_res;
+	}
+
+	bool relevance_applies(const vector<node>& nodes, nodeid nid, nodeid x, nodeid y) {
+		// We make sure of the following:
+		// (1) the node is not a PI
+		// (2) the specified x and y is indeed a child of the parent
+		// (3) x != y, otherwise the operation is not interesting
+		// Note that for now we don't allow construction of nodes when u > nid because it's tricky
+		// to mainain topological order.
+		const auto& node = nodes[nid];
+		if (is_pi(node)) {
+			return false;
+		}
+
+		if (x > nid || y > nid || x != y) {
+			return false;
+		}
+
+		auto children = get_children(node);
+		auto x_child = false, y_child = false;
+		for (auto child : children) {
+			if (child.first == x) {
+				x_child = true;
+			} else if (child.first == y) {
+				y_child = true;
+			}
+		}
+		if (!(x_child && y_child)) {
+			return false;
+		}
+	}
+
+	xmg* relevance(const xmg& mig, nodeid nid, nodeid x, nodeid y) {
+		const auto& nodes = mig.nodes();
+		const auto nnodes = mig.nnodes();
+
+		const auto& node = nodes[nid];
+		if (is_pi(node)) {
+			return NULL;
+		}
+		if ((x > nid) || (y > nid) || (x == y)) {
+			return NULL;
+		}
+		const auto children = get_children(node);
+		auto x_childid = -1, y_childid = -1;
+		for (auto i = 0u; i < children.size(); i++) {
+			if (children[i].first == x) {
+				x_childid = i;
+			} else if (children[i].first == y) {
+				y_childid = i;
+			}
+		}
+		if ((x_childid == -1) || (y_childid == -1)) {
+			return NULL;
+		}
+
+		auto x_child = children[x_childid];
+		auto y_child = children[y_childid];
+		auto z_child = drop_child(drop_child(children, x_child), y_child)[0];
+
+		auto res = new xmg;
+		vector<unsigned> nref;
+		nodemap nodemap;
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				auto is_c = is_pi_c(node);
+				nodemap[i] = make_pair(res->create_input(is_c), false);
+			} else if (i == nid) {
+				const auto& x_in = nodemap[x_child.first];
+				const auto& y_in = nodemap[y_child.first];
+				const auto& z_in = nodemap[z_child.first];
+				const auto z_rel_in = node_relevance(*res, z_in.first, x_in, y_in, true);
+				nodemap[i] = res->create(x_in, y_in, z_rel_in);
+			} else {
+				const auto& in1 = nodemap[node.in1];
+				const auto& in2 = nodemap[node.in2];
+				const auto& in3 = nodemap[node.in3];
+				nodemap[i] = res->create(
+					in1.first, in1.second != is_c1(node),
+					in2.first, in2.second != is_c2(node),
+					in3.first, in3.second != is_c3(node));
+			}
+		}
+		const auto& outputs = mig.outputs();
+		const auto& outcompl = mig.outcompl();
+		for (auto i = 0u; i < outputs.size(); i++) {
+			const auto nodeid = outputs[i];
+			const auto np = nodemap[nodeid];
+			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+		}
+
+		return res;
 	}
 
 	bool substitution_applies(const vector<node>& nodes, nodeid nid, nodeid u, nodeid v) {
@@ -1392,6 +1485,14 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
+					if (relevance_applies(nodes, i, j, k)) {
+						move move;
+						move.type = RELEVANCE;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+					}
 					if (substitution_applies(nodes, i, j, k)) {
 						move move;
 						move.type = SUBSTITUTION;
@@ -1466,6 +1567,9 @@ namespace majesty {
 			break;
 		case SUBSTITUTION:
 			return substitution(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			break;
+		case RELEVANCE:
+			return relevance(mig, move.nodeid1, move.nodeid2, move.nodeid3);
 			break;
 		default:
 			return NULL;

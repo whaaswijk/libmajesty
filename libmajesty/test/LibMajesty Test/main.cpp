@@ -32,7 +32,7 @@ TEST_CASE("Exact Synthesis Utility Functions Test", "[exact synthesis]") {
 	REQUIRE(pi_value(5, 32) == true);
 }
 
-TEST_CASE("MIG Moves Test", "[game]") {
+TEST_CASE("MIG Moves Test", "[mig game]") {
 	const auto ninputs = 3;
 	const auto nfuncs = (1u << (1u << ninputs));
 	for (auto i = 0u; i < nfuncs; i++) {
