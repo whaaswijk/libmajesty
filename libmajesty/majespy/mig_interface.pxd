@@ -29,6 +29,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
         DIST_RIGHT_LEFT,
         SWAP_TERNARY,
         DIST_LEFT_RIGHT,
+        SUBSTITUTION,
         MAJ3_XXY,
         MAJ3_XYY
 
