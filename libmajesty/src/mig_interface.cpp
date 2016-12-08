@@ -770,9 +770,7 @@ namespace majesty {
 					auto second_inner = tmp_res.create(vnode.first, vnode.second != true,
 						vup_node.first, vup_node.second, unode.first, unode.second != true);
 
-					nodemap[i] = tmp_res.create(vnode.first, vnode.second,
-						first_inner.first, first_inner.second,
-						second_inner.first, second_inner.second);
+					nodemap[i] = tmp_res.create(vnode, first_inner, second_inner);
 				} else {
 					const auto& in1 = nodemap[node.in1];
 					const auto& in2 = nodemap[node.in2];
@@ -854,6 +852,7 @@ namespace majesty {
 		if (!(x_child && y_child)) {
 			return false;
 		}
+		return true;
 	}
 
 	xmg* relevance(const xmg& mig, nodeid nid, nodeid x, nodeid y) {
@@ -897,7 +896,11 @@ namespace majesty {
 				const auto& y_in = nodemap[y_child.first];
 				const auto& z_in = nodemap[z_child.first];
 				const auto z_rel_in = node_relevance(*res, z_in.first, x_in, y_in, true);
-				nodemap[i] = res->create(x_in, y_in, z_rel_in);
+				nodemap[i] = res->create(
+					x_in.first, x_in.second != x_child.second, 
+					y_in.first, y_in.second != y_child.second,
+					z_rel_in.first, z_rel_in.second != z_child.second
+				);
 			} else {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
