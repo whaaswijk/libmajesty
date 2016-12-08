@@ -26,7 +26,8 @@ _move_type_str = {mig_interface.MAJ3_PROP: 'Majority',
                   mig_interface.DIST_RIGHT_LEFT : 'Distributivity R->L',
                   mig_interface.MAJ3_XXY: 'Majority XXY',
                   mig_interface.MAJ3_XYY: 'Majority XYY',
-                  mig_interface.SUBSTITUTION: 'Substitution'
+                  mig_interface.SUBSTITUTION: 'Substitution',
+                  mig_interface.RELEVANCE: 'Relevance'
                   }
 
 _move_type_color = {mig_interface.MAJ3_PROP : 'brown1',
@@ -36,6 +37,7 @@ _move_type_color = {mig_interface.MAJ3_PROP : 'brown1',
                     mig_interface.SWAP_TERNARY : 'orange',
                     mig_interface.DIST_LEFT_RIGHT : 'green',
                     mig_interface.SUBSTITUTION : 'black',
+                    mig_interface.RELEVANCE : 'yellow',
                     mig_interface.DIST_RIGHT_LEFT : 'brown'}
 
 
