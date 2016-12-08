@@ -32,6 +32,21 @@ TEST_CASE("Exact Synthesis Utility Functions Test", "[exact synthesis]") {
 	REQUIRE(pi_value(5, 32) == true);
 }
 
+TEST_CASE("MIG Moves Test", "[game]") {
+	const auto ninputs = 3;
+	const auto nfuncs = (1u << (1u << ninputs));
+	for (auto i = 0u; i < nfuncs; i++) {
+		auto mig = mig_int_decompose(ninputs, i);
+		auto moves = compute_moves(*mig);
+		for (auto& move : moves) {
+			auto new_mig = apply_move(*mig, move);
+			assert(new_mig->equals(*mig));
+		}
+		std::cout << i << std::endl;
+
+		delete mig;
+	}
+}
 /*
 TEST_CASE("Trivial Exact Synthesis Test", "[exact synthesis]") {
 	auto pi1 = cirkit::tt_nth_var(0);

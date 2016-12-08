@@ -721,7 +721,7 @@ namespace majesty {
 		}
 	}
 
-	void select_node(const xmg& xmg, nodeid nid, vector<unsigned> nref) {
+	void select_node(const xmg& xmg, nodeid nid, vector<unsigned>& nref) {
 		nref[nid]++;
 		const auto& node = xmg.nodes()[nid];
 		if (!is_pi(node)) {
@@ -736,7 +736,7 @@ namespace majesty {
 		if (is_pi(node)) {
 			return NULL;
 		}
-		if (u > nid || v > nid) {
+		if ((u > nid) || (v > nid) || (u == v)) {
 			return NULL;
 		}
 
@@ -827,16 +827,17 @@ namespace majesty {
 	}
 
 	bool substitution_applies(const vector<node>& nodes, nodeid nid, nodeid u, nodeid v) {
-		// We need to make sure of the following:
+		// We make sure of the following:
 		// (1) the node is not a PI
 		// (2) the specified u and v is indeed a child of the parent
+		// (3) u != v, otherwise the operation is not interesting
 		// Note that for now we don't allow construction of nodes when u > nid because it's tricky
 		// to mainain topological order.
 		const auto& node = nodes[nid];
 		if (is_pi(node)) {
 			return false;
 		}
-		return u < nid && v < nid;
+		return (u < nid) && (v < nid) && (u != v);
 	}
 
 	bool swap_applies(const vector<node>& nodes, nodeid gpid, nodeid z) {
@@ -1399,6 +1400,7 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
+					/*
 					if (constructive_maj_applies(nodes, i, j, k)) {
 						move move;
 						move.type = MAJ3_XXY;
@@ -1409,6 +1411,7 @@ namespace majesty {
 						move.type = MAJ3_XYY;
 						moves.push_back(move);
 					}
+					*/
 				}
 			}
 		}
