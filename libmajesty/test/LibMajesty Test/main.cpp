@@ -49,7 +49,7 @@ void iddfs(const xmg* m, int level) {
 
 TEST_CASE("MIG Moves Test", "[mig game]") {
 	const auto ninputs = 3;
-	const auto search_depth = 3;
+	const auto search_depth = 2;
 	const auto nfuncs = (1u << (1u << ninputs));
 	for (auto i = 0u; i < nfuncs; i++) {
 		auto mig = mig_int_decompose(ninputs, i);
