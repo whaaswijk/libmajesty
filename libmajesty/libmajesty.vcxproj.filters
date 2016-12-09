@@ -60,9 +60,6 @@
     <ClCompile Include="src\lut_cover.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\lut_optimize.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cut.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -72,13 +69,13 @@
     <ClCompile Include="src\function_store.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\exact.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\mlpmemory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\logic_network.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\logic_rewriting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -131,9 +128,6 @@
     <ClInclude Include="include\lut_cover.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\lut_optimize.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\function_store.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -180,6 +174,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\minisat\XAlloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\sat_interface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\logic_rewriting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

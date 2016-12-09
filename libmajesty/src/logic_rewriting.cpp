@@ -1,15 +1,56 @@
 #include <iostream>
 #include <stack>
-#include "lut_optimize.h"
+#include <logic_rewriting.h>
 #include "strashmap.h"
-#include "npn_canonization.hpp"
-#include <convert.h>
+#include <exact.h>
+#include <sat_interface.h>
+#include <maj_io.h>
 
 using namespace std;
 using namespace cirkit;
 using boost::optional;
 
 namespace majesty {
+
+	static const auto heuristic_threshold = 5u;
+	optional<string> heuristic_xmg_expression(const tt& func, unsigned ninputs, unsigned timeout, 
+		unsigned last_size, timeout_behavior behavior) {
+		// Get an upper bound for optimization by using ABC's size optimization.
+		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % tt_to_hex(func)).str();
+		auto success = system(optcmd.c_str());
+		if (success != 0) {
+			throw runtime_error("Heuristic optimization through ABC failed");
+		}
+		auto upperbound_xmg = read_verilog("tmp.v");
+		auto start = upperbound_xmg.nnodes() - upperbound_xmg.nin() - 1;
+		// What we do now depends on the specified behavior. If the difference between the heuristic result and the last
+		// is too great it is unlikely that we will find an optimum result by going down from the starting point. We
+		// We also may not want to invoke exact synthesis too often.
+		if (behavior == combine) {
+			if (start - last_size > heuristic_threshold) {
+				return boost::none;
+			}
+		}
+		optional<string> expr = xmg_to_expr(upperbound_xmg);
+		while (true) {
+			auto sat_xmg_expr = min_size_expression(func, timeout, start - 1, "xmg");
+			if (sat_xmg_expr) {
+				auto sat_xmg = xmg_from_string(ninputs, sat_xmg_expr.get());
+				if (sat_xmg.nnodes() == upperbound_xmg.nnodes()) {
+					// The upperbound found by ABC was already optimum (otherwise we would've found and XMG with size start - 1)
+					expr = sat_xmg_expr;
+					break;
+				} else {
+					--start;
+				}
+			} else {
+				// Exact synthesis times out before finding a solution better than the heuristic one.
+				break;
+			}
+		}
+
+		return expr;
+	}
 
 	xmg* ptr_lut_area_strategy(const xmg& m, unsigned lut_size, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
@@ -20,7 +61,7 @@ namespace majesty {
 	xmg lut_area_strategy(const xmg& m, const xmg_params* frparams, unsigned lut_size) {
         return lut_area_timeout_strategy(m, frparams, lut_size, 0, rebuild_cover).value();
 	}
-
+   	
 	xmg* ptr_lut_area_timeout_strategy(const xmg& m, unsigned lut_size, unsigned timeout, unsigned nr_backtracks) {
 		auto frparams = default_xmg_params();
 		frparams->nr_backtracks = nr_backtracks;
@@ -63,6 +104,8 @@ namespace majesty {
 			if (lutxmg) {
 				auto newsize = lutxmg.get_ptr()->nnodes();
 				if (newsize < oldsize) {
+					cout << "oldsize: " << oldsize << endl;
+					cout << "newsize: " << newsize << endl;
 					cmig = std::move(lutxmg.value());
 					continue;
 				} else {
@@ -90,12 +133,6 @@ namespace majesty {
 		}
 	}
 	*/
-
-	inline vector<unsigned> inv(const vector<unsigned>& perm) {
-		vector<unsigned> invperm(perm.size());
-		for ( auto i = 0u; i < perm.size(); ++i ) { invperm[perm[i]] = i; }
-		return invperm;
-	}
 
 	pair<nodeid,bool> frmaj3_from_string(const string& expr, 
 			unsigned offset, const bracket_map_t& majbrackets, 
@@ -310,6 +347,7 @@ namespace majesty {
 		vector<tt> emptyset;
 		return std::move(xmg_from_luts(m, cover, best, funcmap, emptyset, 0).value());
 	}
+	
     /*
 	// NPN canonization function from ABC
 	tt jake_canon(const tt& ttf, unsigned* uCanonPhase, char* pCanonPerm, unsigned num_vars) {
@@ -336,4 +374,6 @@ namespace majesty {
 		return tt_npn;
 	}
     */
+
+
 }

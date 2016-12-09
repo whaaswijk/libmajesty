@@ -9,6 +9,8 @@
 #include "mlpext.h"
 #include <sstream>
 #include <maj_io.h>
+#include <minisat/Solver.h>
+#include <minisat/SolverTypes.h>
 
 using namespace std;
 using boost::optional;
@@ -900,20 +902,19 @@ namespace majesty {
     xmg::xmg(MIG* mig) {
 		unordered_map<MAJ3*, pair<nodeid, bool>> nodemap;
 
-		nodemap[mig->one] = make_pair(create_input(), false);
-		for (auto i = 0u; i < mig->Nin; i++) {
-			const auto& node = mig->in[i];
-			nodemap[node] = make_pair(create_input(), false);
-		}
-		for (auto i = 0u; i < mig->Nnodes; i++) {
-			const auto& node = mig->nodes[i];
-			const auto& p1 = nodemap[node->in1];
-			const auto& p2 = nodemap[node->in2];
-			const auto& p3 = nodemap[node->in3];
-			nodemap[node] = create(
-				p1.first, p1.second != node->compl1,
-				p2.first, p2.second != node->compl2,
-				p3.first, p3.second != node->compl3);
+		auto torder = mig_topsort(mig);
+		for (auto node : torder) {
+			if (node->PI || node == mig->one) {
+				nodemap[node] = make_pair(create_input(), false);
+			} else {
+				const auto& p1 = nodemap[node->in1];
+				const auto& p2 = nodemap[node->in2];
+				const auto& p3 = nodemap[node->in3];
+				nodemap[node] = create(
+					p1.first, p1.second != node->compl1,
+					p2.first, p2.second != node->compl2,
+					p3.first, p3.second != node->compl3);
+			}
         }
         for (auto i = 0u; i < mig->Nin; i++) {
 			_innames.push_back(string(mig->innames[i]));

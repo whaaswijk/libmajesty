@@ -181,8 +181,6 @@ namespace majesty {
 	}
 
 	tt maj_tt_cof0(const tt& t, unsigned i, unsigned ninputs) {
-		auto n = tt_num_vars(t);
-		assert(i < n);
 		auto tv = ~tt_nth_var(i);
 		tv.resize(1u << ninputs);
 		// tt_extend(tv, n);
@@ -194,8 +192,6 @@ namespace majesty {
 	}
 
 	tt maj_tt_cof1(const tt& t, unsigned i, unsigned ninputs) {
-		auto n = tt_num_vars(t);
-		assert(i < n);
 		auto tv = tt_nth_var(i);
 		tv.resize(1u << ninputs);
 
@@ -359,46 +355,6 @@ namespace majesty {
 		return strash(exact_parsed);
 	}
 
-	static const auto heuristic_threshold = 5u;
-	optional<string> heuristic_xmg_expression(const tt& func, unsigned ninputs, unsigned timeout, 
-		unsigned last_size, timeout_behavior behavior) {
-		// Get an upper bound for optimization by using ABC's size optimization.
-		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % tt_to_hex(func)).str();
-		auto success = system(optcmd.c_str());
-		if (success != 0) {
-			throw runtime_error("Heuristic optimization through ABC failed");
-		}
-		auto upperbound_xmg = read_verilog("tmp.v");
-		auto start = upperbound_xmg.nnodes() - upperbound_xmg.nin() - 1;
-		// What we do now depends on the specified behavior. If the difference between the heuristic result and the last
-		// is too great it is unlikely that we will find an optimum result by going down from the starting point. We
-		// We also may not want to invoke exact synthesis too often.
-		if (behavior == combine) {
-			if (start - last_size > heuristic_threshold) {
-				return boost::none;
-			}
-		}
-		optional<string> expr = xmg_to_expr(upperbound_xmg);
-		while (true) {
-			auto sat_xmg_expr = min_size_expression(func, timeout, start - 1, "xmg");
-			if (sat_xmg_expr) {
-				auto sat_xmg = xmg_from_string(ninputs, sat_xmg_expr.get());
-				if (sat_xmg.nnodes() == upperbound_xmg.nnodes()) {
-					// The upperbound found by ABC was already optimum (otherwise we would've found and XMG with size start - 1)
-					expr = sat_xmg_expr;
-					break;
-				} else {
-					--start;
-				}
-			} else {
-				// Exact synthesis times out before finding a solution better than the heuristic one.
-				break;
-			}
-		}
-
-		return expr;
-	}
-
 	void node_to_expr(const vector<node>& nodes, const vector<string> innames, nodeid nodeid, stringstream& os) {
 		const auto& node = nodes[nodeid];
 		if (nodeid == 0) {
@@ -487,30 +443,25 @@ namespace majesty {
 
 		unordered_map<nodeid, nodeid> nodemap;
 
-		const auto& innames = xmg.innames();
-		for (auto i = 0u; i < innames.size(); i++) {
-            const auto& name = innames[i];
-            // Add one because we don't use the constant input
-            nodemap[i+1] = ntk.create_input();
-		}
 		const auto& nodes = xmg.nodes();
-		for (auto i = 0u; i < nodes.size(); i++) {
+		for (auto i = 1u; i < nodes.size(); i++) {
+            vector<nodeid> fanin;
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
+				nodemap[i] = ntk.create_input();
 				continue;
 			}
-            vector<nodeid> fanin;
-            if (is_xor(node)) {
-                fanin.push_back(nodemap[node.in1]);
-                fanin.push_back(nodemap[node.in2]);
-            } else if (is_and(node) || is_or(node)) {
-                fanin.push_back(nodemap[node.in2]);
-                fanin.push_back(nodemap[node.in3]);
-            } else {
-                fanin.push_back(nodemap[node.in1]);
-                fanin.push_back(nodemap[node.in2]);
-                fanin.push_back(nodemap[node.in3]);
-            }
+			if (is_xor(node)) {
+				fanin.push_back(nodemap[node.in1]);
+				fanin.push_back(nodemap[node.in2]);
+			} else if (is_and(node) || is_or(node)) {
+				fanin.push_back(nodemap[node.in2]);
+				fanin.push_back(nodemap[node.in3]);
+			} else {
+				fanin.push_back(nodemap[node.in1]);
+				fanin.push_back(nodemap[node.in2]);
+				fanin.push_back(nodemap[node.in3]);
+			}
 			const auto node_tt = tt_from_node(node);
 			nodemap[i] = ntk.create_node(fanin, node_tt);
 		}
@@ -518,7 +469,25 @@ namespace majesty {
 		const auto& outputs = xmg.outputs();
 		const auto& outcompl = xmg.outcompl();
 		for (auto i = 0u; i < outputs.size(); i++) {
-			ntk.create_output(nodemap[outputs[i]], outcompl[i]);
+			if (outputs[i] == 0u) {
+				if (outcompl[i]) {
+					ntk.create_output(ntk.get_const0_node(), false);
+				} else {
+					ntk.create_output(ntk.get_const1_node(), false);
+
+				}
+			} else {
+				ntk.create_output(nodemap[outputs[i]], outcompl[i]);
+			}
+		}
+
+		const auto& innames = xmg.innames();
+		for (const auto& name : innames) {
+			ntk.add_inname(name);
+		}
+		const auto& outnames = xmg.outnames();
+		for (const auto& name : outnames) {
+			ntk.add_outname(name);
 		}
 		
 		return ntk;
@@ -557,6 +526,16 @@ namespace majesty {
 			ntk.create_output(nodemap[outputs[i]], outcompl[i]);
 		}
 
+        const auto& innames = xmg.innames();
+		for (const auto& name : innames) {
+			ntk.add_inname(name);
+		}
+		
+		const auto& outnames = xmg.outnames();
+		for (const auto& name : outnames) {
+			ntk.add_outname(name);
+		}
+
 		return ntk;
 	}
 
@@ -568,7 +547,7 @@ namespace majesty {
 		for (auto i = 0u; i < nodes.size(); i++) {
 			const auto& node = nodes[i];
 			if (node.pi) {
-				ntk.create_input();
+				nodemap[i] = ntk.create_input();
 				continue;
 			}
 			if (!contains(cover, i)) {
@@ -596,7 +575,7 @@ namespace majesty {
 		
 		const auto& outnames = net.outnames();
 		for (const auto& name : outnames) {
-			ntk.add_inname(name);
+			ntk.add_outname(name);
 		}
 
 		return ntk;
@@ -616,5 +595,120 @@ namespace majesty {
 		xmg res(mig);
 		freemig(mig);
 		return res;
+	}
+	
+	// String format: nin;fanin_1,...fanin_n+gatefunc_1,...,gatefunc_m;...
+	string logic_ntk_to_string(const logic_ntk& ntk) {
+		stringstream buf;
+
+		const auto ninputs = ntk.nin();
+		buf << ninputs;
+
+		const auto nr_funcnodes = ntk.ninternal();
+		if (nr_funcnodes > 0) {
+			buf << ";";
+			const auto& nodes = ntk.nodes();
+			for (auto j = 0u; j < nr_funcnodes - 1; j++) {
+				auto node = nodes[ninputs + j];
+				assert(!node.pi);
+
+				const auto nfanin = node.fanin.size();
+				if (nfanin > 0) {
+					for (auto i = 0u; i < nfanin - 1; i++) {
+						buf << node.fanin[i] << ",";
+					}
+					buf << node.fanin[nfanin - 1];
+				}
+				buf << "+";
+				const auto funcsize = node.function.size();
+				if (funcsize > 0) {
+					for (auto i = funcsize - 1; i > 0; i--) {
+						buf << node.function[i] << ",";
+					}
+					buf << node.function[0];
+				}
+				buf << ";";
+			}
+			auto node = nodes[ninputs + nr_funcnodes - 1];
+			assert(!node.pi);
+
+			const auto nfanin = node.fanin.size();
+			if (nfanin > 0) {
+				for (auto i = 0u; i < nfanin - 1; i++) {
+					buf << node.fanin[i] << ",";
+				}
+				buf << node.fanin[nfanin - 1];
+			}
+			buf << "+";
+			const auto funcsize = node.function.size();
+			if (funcsize > 0) {
+				for (auto i = funcsize - 1; i > 0; i--) {
+					buf << node.function[i] << ",";
+				}
+				buf << node.function[0];
+			}
+		}
+
+		return buf.str();
+	}
+
+	
+
+	logic_ntk string_to_logic_ntk(const string& str) {
+		logic_ntk ntk;
+
+		const auto tokens = split(str, ';');
+		const auto ntokens = tokens.size();
+		assert(ntokens > 0);
+
+		const auto nin = unsigned(stoi(tokens[0]));
+		for (auto i = 0u; i < nin; i++) {
+			ntk.create_input();
+		}
+
+		if (ntokens > 1) {
+			for (auto i = 1u; i < ntokens; i++) {
+				const auto& token = tokens[i];
+				if (token.size() == 0) { // Split may result in empty tokens
+					continue;
+				}
+				vector<nodeid> fanin;
+				tt func;
+				const auto gate_tokens = split(token, '+');
+
+				const auto& fanin_token = gate_tokens[0];
+				if (fanin_token.size() > 0) {
+					const auto fanins = split(fanin_token, ',');
+					for (auto faninstr : fanins) {
+						if (faninstr.size() > 0) {
+							fanin.push_back(stoi(faninstr));
+						}
+					}
+				}
+
+				const auto& func_token = gate_tokens[1];
+				if (func_token.size() > 0) {
+					// The least significant bit is the last in the sequence!
+					const auto func_tt_tokens = split(func_token, ',');
+					const auto nfunc_tt_tokens = func_tt_tokens.size();
+					for (auto i = nfunc_tt_tokens - 1; i > 0; i--) {
+						const auto& func_tt_token = func_tt_tokens[i];
+						if (func_tt_token.size() > 0) {
+							func.push_back(stoi(func_tt_token));
+						}
+					}
+					const auto& func_tt_token = func_tt_tokens[0];
+					if (func_tt_token.size() > 0) {
+						func.push_back(stoi(func_tt_token));
+					}
+				}
+				ntk.create_node(fanin, func);
+			}
+
+			// For now we only support single-output functions
+			ntk.create_output(ntk.nnodes() - 1);
+		}
+
+		return ntk;
 	}
 }

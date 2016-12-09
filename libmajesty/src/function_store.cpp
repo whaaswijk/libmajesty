@@ -289,5 +289,169 @@ namespace majesty {
 #endif
 		return npn;
 	}
+	
+	/*
+	boost::optional<std::string> function_store::get_size_optimum_ntk_ns(const tt& f, synth_spec* spec, unsigned conflict_limit) {
+		// First see if the optimum xmg has already been computed
+		optional<string> expr;
+#ifndef _WIN32
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "GET %s:expr", to_string(f).c_str());
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
+		switch (reply->type) {
+			case REDIS_REPLY_NIL:
+				freeReplyObject(reply);
+				// Maybe the expression doesn't exist because we've reached the
+				// conflict limit trying to compute it 
+				reply = (redisReply*) redisCommand(_rcontext, "GET %s:limit", to_string(f).c_str());
+				if (reply->type == REDIS_REPLY_STRING) {
+					// We only attempt to synthesize again if our conflict limit is bigger this time
+					auto oldlimit = unsigned(stoi(string(reply->str, reply->len)));
+					freeReplyObject(reply);
+					if (oldlimit >= conflict_limit) {
+						cout << "Skipping because of previous limit breach" << endl;
+						break;
+					}
+				} else {
+					assert(reply->type == REDIS_REPLY_NIL);
+					freeReplyObject(reply);
+				}
+				//auto opt_size_ntk = 
+				expr = logic_ntk_to_string(size_optimum_ntk_ns<CMSat::SATSolver>(f, spec));
+				if (expr) {
+					reply = (redisReply*)redisCommand(_rcontext, "SET %s:expr %s",
+							to_string(f).c_str(), expr.get().c_str());
+					if (reply == NULL) {
+						throw runtime_error("Error connecting to server");
+					}
+					freeReplyObject(reply);
+				} else { // Ensure we don't try to synthesize it again with the same conflict limit
+					reply = (redisReply*)redisCommand(_rcontext, "SET %s:limit %u",
+						to_string(f).c_str(), conflict_limit);
+					if (reply == NULL) {
+						throw runtime_error("Error connecting to server");
+					}
+					freeReplyObject(reply);
+					auto olast_size = last_size_from_file("cirkit.log");
+					assert(olast_size);
+					auto last_size = olast_size.get();
+					reply = (redisReply*)redisCommand(_rcontext, "SET %s:last_size %u",
+						to_string(f).c_str(), last_size);
+					if (reply == NULL) {
+						throw runtime_error("Error connecting to server");
+					}
+					freeReplyObject(reply);
+				}
+				break;
+			case REDIS_REPLY_STRING:
+				expr = string(reply->str, reply->len);
+				freeReplyObject(reply);
+				break;
+			default:
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
+				throw runtime_error(errorstring);
+				break;
+		}
+#else
+		expr = "<ab0>";
+#endif
+		return expr;
 
+	}
+	*/
+
+	store_stats function_store::get_store_stats() {
+		store_stats stats;
+		
+#ifndef _WIN32
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "KEYS *");
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
+		switch (reply->type) {
+			case REDIS_REPLY_NIL:
+				cout << "No keys found" << endl;
+				break;
+			case REDIS_REPLY_ARRAY:
+				cout << "Nr keys: " << reply->elements << endl;
+				for (auto i = 0u; i < reply->elements; i++) {
+					auto element = reply->element[i];
+					//auto key = string(reply->str, reply->len);
+					cout << "reply: " << element->type << endl;
+				}
+				break;
+			default:
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
+				throw runtime_error(errorstring);
+				break;
+		}
+#endif
+		return stats;
+	}
+			
+	void function_store::set_entry(const cirkit::tt& function, const std::string& expr, const bool is_exact, const unsigned conflict_limit) {
+		function_store_entry entry(expr, is_exact, conflict_limit);
+		set_entry(function, entry);
+	}
+
+	void function_store::set_entry(const cirkit::tt& function, const function_store_entry& entry) {
+#ifndef _WIN32
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "SET %s %s", to_string(function).c_str(), entry.to_string().c_str());
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
+		freeReplyObject(reply);
+#else
+#endif
+	}
+
+	boost::optional<function_store_entry> function_store::get_entry(const cirkit::tt& function) {
+		function_store_entry entry;
+		string entry_string;
+#ifndef _WIN32
+		redisReply* reply = (redisReply*) redisCommand(_rcontext, "GET %s", to_string(function).c_str());
+        if (reply == NULL) {
+            throw runtime_error("Error connecting to server");
+        }
+		switch (reply->type) {
+			case REDIS_REPLY_NIL: // This entry doesn't exist yet
+				freeReplyObject(reply);
+				return boost::none;
+				break;
+			case REDIS_REPLY_STRING:
+				entry_string = string(reply->str, reply->len);
+				entry = to_function_store_entry(entry_string);
+				freeReplyObject(reply);
+				return std::move(entry);
+				break;
+			default:
+				auto errorformat = boost::format("Unable to handle reply type: %s") % reply->type;
+				auto errorstring = errorformat.str();
+				freeReplyObject(reply);
+				throw runtime_error(errorstring);
+				break;
+		}
+#endif
+		return std::move(entry);
+	}
+	
+	// Function store entry format: expr-is_exact-conflict_limit
+	function_store_entry to_function_store_entry(const std::string& str) {
+		function_store_entry entry;
+
+		const auto tokens = split(str, '-');
+		const auto ntokens = tokens.size();
+		assert(ntokens == 3);
+
+		entry.expr = tokens[0];
+		entry.is_exact = stoi(tokens[1]);
+		entry.conflict_limit = stoi(tokens[2]);
+
+		return entry;
+	}
 }

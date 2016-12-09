@@ -5,9 +5,9 @@ add_subdirectory(minisat)
 
 set(CMAKE_LIBRARY_APTH ${CMAKE_LIBRARY_PATH} $ENV{HIREDIS_HOME})
 
-set(SOURCE_FILES xmg.cpp mlputil.c mlpmemory.c  mlpext.cpp strashmap.cpp logic_network.cpp exact.cpp
+set(SOURCE_FILES xmg.cpp mlputil.c mlpmemory.c  mlpext.cpp strashmap.cpp logic_network.cpp 
 	mig_interface.cpp convert.cpp bitset_utils.cpp truth_table_utils.cpp npn_canonization.cpp conversion_utils.cpp
-	mig_functional_hashing_constants.cpp cut.cpp lut_cover.cpp lut_optimize.cpp maj_io.cpp function_store.cpp)
+	mig_functional_hashing_constants.cpp cut.cpp lut_cover.cpp logic_rewriting.cpp maj_io.cpp function_store.cpp)
 
 find_package(Boost COMPONENTS filesystem system REQUIRED)
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
@@ -18,5 +18,5 @@ FLEX_TARGET(Lexer lexer.l ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
 ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
 
 
-add_library(libmajesty STATIC ${SOURCE_FILES} ${BISON_Parser_OUTPUTS} ${FLEX_Lexer_OUTPUTS})
-target_link_libraries(libmajesty LINK_PUBLIC MiniSat hiredis ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_library(majesty STATIC ${SOURCE_FILES} ${BISON_Parser_OUTPUTS} ${FLEX_Lexer_OUTPUTS})
+target_link_libraries(majesty LINK_PUBLIC MiniSat hiredis ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

@@ -18,6 +18,8 @@ extern "C" void parse_verilog_string(const char *verilog_string, MIG **m);
 extern "C" unsigned int char_to_int(char *cstr);
 extern "C" void scan_string(const char*);
 extern "C" void delete_buffer(void);
+extern "C" void init_parser(void);
+extern "C" void destroy_parser(void);
 
 typedef unsigned int uint;
 
@@ -73,7 +75,7 @@ std::pair<bool,struct MAJ3*> *pval;
 
 %%
 
-circuit: MODULE NAME '(' tnames ')' ';' inputs outputs wires assignments mig_init ENDMODULE { parse_wrap(); }
+circuit: MODULE NAME '(' tnames ')' ';' inputs outputs wires assignments mig_init ENDMODULE { delete $2; parse_wrap(); }
 ;
 
 tnames: /* empty */
@@ -192,7 +194,9 @@ void handle_wire(string *name) {
 
 pair<bool, MAJ3*> *handle_node(bool cmpl, string* s) {
 	if(*s == "one") {
-		return new pair<bool,MAJ3*>(cmpl, one);
+		auto res = new pair<bool,MAJ3*>(cmpl, one);
+		delete s;
+		return res;
 	}
 	string name = *s;
 	delete s;
@@ -390,9 +394,11 @@ void parse_verilog(FILE *file, MIG **m) {
 	one->PI=1;
 	one->PO = false;
 
+	init_parser();
 	omig = m;
 	yyin = file;
 	yyparse();
+	destroy_parser();
 }
 
 void parse_verilog_string(const char *verilog_string, MIG **m) {
@@ -408,8 +414,8 @@ void parse_verilog_string(const char *verilog_string, MIG **m) {
 	one->PI=1;
 	one->PO = false;
 	
-    omig = m;
+	omig = m;
 	scan_string(verilog_string);
 	yyparse();
-    delete_buffer();
+	delete_buffer();
 }

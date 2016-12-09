@@ -112,7 +112,6 @@ extern LogicCircuit *readaiger(FILE *file);
 
 extern unsigned int writeVerilogLC(FILE *file, LogicCircuit *net);
 extern unsigned int writeVerilogMIG(FILE *file, MIG *net);
-extern unsigned int writeVerilogMIGreduced(FILE *file, MIG *net);
 
 /* cloning functions */
 

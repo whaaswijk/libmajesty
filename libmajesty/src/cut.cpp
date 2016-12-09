@@ -409,12 +409,22 @@ namespace majesty {
 		for (auto i = 0u; i < total_nodes; i++) {
 			cutvec res;
 			const auto& n = nodes[i];
-			if (!n.pi) {
-				res = node_cuts(n, i, cut_map, p);
+			if (!n.pi && n.fanin.size() == 0) { // Constant 0 or 1!
+				if (ntk.has_const0_node() && i == ntk.const0_id()) {
+					unique_ptr<cut> oc(new cut(ntk.const0_id()));
+					res.push_back(move(oc));
+				} else {
+					unique_ptr<cut> oc(new cut(ntk.const1_id()));
+					res.push_back(move(oc));
+				}
+			} else {
+				if (!n.pi) {
+					res = node_cuts(n, i, cut_map, p);
+				}
+				// Always add the trivial cut
+				unique_ptr<cut> c(new cut(i));
+				res.push_back(move(c));
 			}
-			// Always add the trivial cut
-			unique_ptr<cut> c(new cut(i));
-			res.push_back(move(c));
 			cut_map[i] = move(res);
 			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
 			cout << ")\r";
@@ -461,6 +471,52 @@ namespace majesty {
 
 		return cut_map;
 	}
+
+	cutmap enumerate_cuts_eval_funcs(const logic_ntk& m, const cut_params *p, funcmap& fm) {
+		cout << "Enumerating cuts..." << endl;
+		cutmap cut_map(m.nnodes());
+		fm.clear();
+
+		// We assume that the nodes are stored in topological order
+		auto nodes = m.nodes();
+		auto total_nodes = nodes.size();
+		auto processed_nodes = 0u;
+		for (auto i = 0u; i < total_nodes; i++) {
+			cutvec res;
+			const auto& n = nodes[i];
+			if (!n.pi && n.fanin.size() == 0) { // Constant 0 or 1!
+				if (i == m.const0_id()) {
+					unique_ptr<cut> oc(new cut(m.const0_id()));
+					unique_ptr<tt> f(new tt(n.function));
+					fm[oc.get()] = std::move(f);
+					res.push_back(move(oc));
+				} else {
+					unique_ptr<cut> oc(new cut(m.const1_id()));
+					unique_ptr<tt> f(new tt(n.function));
+					fm[oc.get()] = std::move(f);
+					res.push_back(move(oc));
+				}
+			} else {
+				if (!n.pi) {
+					res = node_cuts(n, i, cut_map, p);
+					for (auto& cut : res) {
+						cut->computefunction(i, nodes, fm);
+					}
+				}
+				// Always add the trivial cut
+				unique_ptr<cut> c(new cut(i));
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				fm[c.get()] = std::move(f);
+				res.push_back(move(c));
+			}
+			cut_map[i] = move(res);
+			cout << "Progress: (" << ++processed_nodes << "/" << total_nodes;
+			cout << ")\r";
+		}
+		cout << endl;
+
+		return cut_map;
+	}
 	
 	void cut::computefunction(const node& node, funcmap& fm) { 
 		if (_nodes.size() == 1) {
@@ -478,14 +534,34 @@ namespace majesty {
 	}
 
 	void cut::computefunction(const nodeid nid, const vector<ln_node>& nodes, funcmap& m) {
-		if (_nodes.size() == 1u && _nodes[0] == nid) {
-			// This is a trivial cut, we cannot compute its function
-			// based on its child cuts as it has none
-			unique_ptr<tt> f(new tt(tt_nth_var(0)));
-			m[this] = std::move(f);
-			return;
-		}
 		const auto& node = nodes[nid];
+		if (_nodes.size() == 1u && !node.pi) {
+			if (node.function == tt_const0()) {
+				// Const 0 cut
+				unique_ptr<tt> f(new tt(node.function));
+				m[this] = std::move(f);
+				return;
+			} else if (node.function == tt_const1()) {
+				// Const 1 cut
+				unique_ptr<tt> f(new tt(node.function));
+				m[this] = std::move(f);
+				return;
+			} else if (_nodes[0] == nid) {
+				// This is a trivial cut, we cannot compute its function
+				// based on its child cuts as it has none
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				m[this] = std::move(f);
+				return;
+			} else {
+				// This is a cut of a non-PI node, but should
+				// contain only a PI.
+				assert(nodes[_nodes[0]].pi);
+				unique_ptr<tt> f(new tt(tt_nth_var(0)));
+				m[this] = std::move(f);
+				return;
+			}
+		}
+
 		map<nodeid, unsigned> sigma;
 		for (auto i = 0u; i < _nodes.size(); i++) {
 			sigma[_nodes[i]] = i;

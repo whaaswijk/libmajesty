@@ -1,10 +1,19 @@
 #include <logic_network.h>
 #include <string>
 #include <unordered_map>
+#include <boost/functional/hash.hpp>
+#include <xmg.h>
 
 using namespace cirkit;
 
 namespace majesty {
+
+	logic_ntk::logic_ntk(const logic_ntk& ntk) {
+		_nodes = ntk._nodes;
+		_outputs = ntk._outputs;
+		_innames = ntk._innames;
+		_outnames = ntk._outnames;
+	}
 
 	logic_ntk::logic_ntk(logic_ntk&& ntk) {
 		_nodes = std::move(ntk._nodes);
@@ -24,10 +33,9 @@ namespace majesty {
 	unsigned logic_ntk::nin() const {
 		auto res = 0u;
 		for (const auto& node : _nodes) {
-			if (!node.pi) {
-				break;
+			if (node.pi) {
+				++res;
 			}
-			++res;
 		}
 		return res;
 	}
@@ -56,6 +64,26 @@ namespace majesty {
         _outputs.push_back(id);
         return _outputs.size() - 1;
 	}
+	
+	nodeid logic_ntk::get_const0_node() {
+		if (_has_const0_node) {
+			return _const0_id;
+		}
+		std::vector<nodeid> zerofanin;
+		_const0_id = create_node(zerofanin, tt_const0());
+		_has_const0_node = true;
+		return _const0_id;
+	}
+	
+	nodeid logic_ntk::get_const1_node() {
+		if (_has_const1_node) {
+			return _const1_id;
+		}
+		std::vector<nodeid> zerofanin;
+		_const1_id = create_node(zerofanin, tt_const1());
+		_has_const1_node = true;
+		return _const1_id;
+	}
 
 	nodeid logic_ntk::create_output(nodeid id) {
 		return create_output(id, false);
@@ -70,6 +98,7 @@ namespace majesty {
         return create_output(id, c);
 	}
 
+	
 	nodeid logic_ntk::create_node(const std::vector<nodeid>& fanin, const cirkit::tt& function) {
 		ln_node node;
 		node.pi = false;

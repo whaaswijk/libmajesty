@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <truth_table_utils.hpp>
+#include <unordered_map>
 
 /**
  * A class and note type to represent arbitrary homogenous logic network. Functions of nodes in the
@@ -24,10 +25,14 @@ namespace majesty {
 			std::vector<nodeid> _outputs;
 			std::vector<std::string> _innames;
 			std::vector<std::string> _outnames;
+			bool _has_const0_node = false;
+			nodeid _const0_id = 0u;
+			bool _has_const1_node = false;
+			nodeid _const1_id = 0u;
 			
 		public:
 			logic_ntk() {  }
-			logic_ntk(const logic_ntk&) = delete;
+			logic_ntk(const logic_ntk&);
 			logic_ntk(logic_ntk&&);
 			logic_ntk& operator=(logic_ntk&) = delete;
 			logic_ntk& operator=(logic_ntk&&);
@@ -44,6 +49,11 @@ namespace majesty {
 			const std::vector<ln_node>& nodes() const { return _nodes; }
 			ln_node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
+
+			bool has_const0_node() const { return _has_const0_node; }
+			nodeid const0_id() const { return _const0_id; }
+			bool has_const1_node() const { return _has_const1_node; }
+			nodeid const1_id() const { return _const1_id; }
 
 			const std::vector<std::string>& innames() const { 
 				return _innames;
@@ -70,6 +80,9 @@ namespace majesty {
 			nodeid create_output(nodeid, const std::string&, bool);
 
 			nodeid create_node(const std::vector<nodeid>&, const cirkit::tt&);
+
+			nodeid get_const0_node();
+			nodeid get_const1_node();
 
 			void create_dummy_innames();
 			void create_dummy_outnames();

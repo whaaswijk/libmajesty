@@ -5,12 +5,15 @@
 #include <vector>
 #include <limits>
 #include <boost/dynamic_bitset.hpp>
-#include <minisat/Solver.h>
-#include <minisat/SolverTypes.h>
 #include "../src/mlp.h"
 #include <map>
 #include <unordered_map>
 #include <functional>
+
+namespace Minisat {
+	class Solver;
+	typedef int Var;
+}
 
 using nodeid = uint32_t;
 using input = std::pair<nodeid,bool>;
