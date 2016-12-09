@@ -805,7 +805,7 @@ namespace majesty {
 			}
 		}
 
-		xmg* res = new xmg;
+		xmg res;
 		const auto& nodes = tmp_res.nodes();
 		const auto nnodes = tmp_res.nnodes();
 		nodemap nodemap;
@@ -813,12 +813,12 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				auto is_c = is_pi_c(node);
-				nodemap[i] = make_pair(res->create_input(is_c), false);
+				nodemap[i] = make_pair(res.create_input(is_c), false);
 			} else if (nref[i] > 0) {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
 				const auto& in3 = nodemap[node.in3];
-				nodemap[i] = res->create(
+				nodemap[i] = res.create(
 					in1.first, in1.second != is_c1(node),
 					in2.first, in2.second != is_c2(node),
 					in3.first, in3.second != is_c3(node));
@@ -829,12 +829,10 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res.create_output(np.first, np.second != outcompl[i], "out" + i);
 		}
 	
-		auto dup_res = remove_duplicates(*res);
-		delete res;
-		return dup_res;
+		return remove_duplicates(res);
 	}
 
 	bool relevance_applies(const vector<node>& nodes, nodeid nid, nodeid x, nodeid y) {
