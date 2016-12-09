@@ -584,18 +584,6 @@ def write_verilog(PyXmg py_xmg, py_filename) -> None:
     filename = py_filename.encode('UTF-8')
     mig_interface.write_verilog(py_xmg.c_xmg[0], filename)
 
-def lut_area_strategy(PyXmg py_xmg, lut_size, nr_backtracks=4096) -> PyXmg:
-    cdef:
-        xmg* result
-    result = mig_interface.ptr_lut_area_strategy(py_xmg.c_xmg[0], lut_size, nr_backtracks)
-    return PyXmg().set_pt_to(result)
-
-def lut_area_timeout_strategy(PyXmg py_xmg, lut_size, timeout, nr_backtracks=4096) -> PyXmg:
-    cdef:
-        xmg* result
-    result = mig_interface.ptr_lut_area_timeout_strategy(py_xmg.c_xmg[0], lut_size, timeout, nr_backtracks)
-    return PyXmg().set_pt_to(result)
-
 def verilog_to_xmg(str):
     cdef xmg* result = mig_interface.verilog_to_xmg_ptr(str.encode('UTF-8'))
     return PyXmg().set_pt_to(result)
