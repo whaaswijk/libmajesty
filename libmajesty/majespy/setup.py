@@ -10,7 +10,7 @@ INCLUDE_DIRS = [pkg_resources.resource_filename('numpy', 'core/include'),
                 os.environ['BOOST_ROOT']+'/include']
 LIBRARY_DIRS = []
 LIBRARIES = []
-EXTRA_OBJECTS = ["../build/src/liblibmajesty.a",
+EXTRA_OBJECTS = ["../build/src/libmajesty.a",
                "../build/src/minisat/libMiniSat.a",
                os.environ['HIREDIS_HOME']+'/libhiredis.a',
                os.environ['LIBABC_HOME']+'/libabc.a',
