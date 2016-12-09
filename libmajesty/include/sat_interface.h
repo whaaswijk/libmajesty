@@ -7,6 +7,7 @@ extern "C" {
 #include <sat/bsat/satSolver.h>
 }
 
+#ifdef USE_CMSAT
 #include <cryptominisat5/cryptominisat.h>
 // A hack to undefine the CryptoMiniSat lbool definitions, 
 // as they conflict with those defined by ABC.
@@ -14,6 +15,7 @@ extern "C" {
 #undef l_False
 #undef l_Undef
 #include <thread>
+#endif
 
 namespace majesty {
 
@@ -91,6 +93,7 @@ namespace majesty {
 		return sat_solver_nconflicts(abc_solver);
 	}
 
+#ifdef USE_CMSAT
 	static CMSat::SATSolver* cms_solver = nullptr;
 	template<>
 	inline void init_solver<CMSat::SATSolver>(unsigned climit) {
@@ -164,5 +167,6 @@ namespace majesty {
 	inline unsigned nr_conflicts<CMSat::SATSolver>() {
 		return 0u;
 	}
+#endif
 }
 
