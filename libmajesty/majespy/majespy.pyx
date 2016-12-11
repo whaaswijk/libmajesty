@@ -485,10 +485,10 @@ def get_nr_ternary_moves() -> int:
 def get_nr_edge_types() -> int:
     return mig_interface.get_nr_edge_types()
 
-def apply_move(PyXmg py_xmg, PyMove move, strash=True) -> Union[None, PyXmg]:
+def apply_move(PyXmg py_xmg, PyMove move, remove_duplicates=True, strash=True, strash_if_substitution=True) -> Union[None, PyXmg]:
     cdef:
         xmg* result
-        xmg* strashed_result
+        xmg* new_result
     for node_id in move.get_involved_nodes():
         if node_id not in range(py_xmg.get_total_nr_nodes()):
             return None
@@ -496,10 +496,14 @@ def apply_move(PyXmg py_xmg, PyMove move, strash=True) -> Union[None, PyXmg]:
     if result == NULL:
         return None
     else:
-        if (strash):
-            strashed_result = mig_interface.remove_duplicates(result[0])
+        if strash or (strash_if_substitution and move.get_move_type() == mig_interface.SUBSTITUTION):
+            new_result = mig_interface.strash_xmg(result[0])
             del result
-            return PyXmg().set_pt_to(strashed_result)
+            return PyXmg().set_pt_to(new_result)
+        elif remove_duplicates:
+            new_result = mig_interface.remove_duplicates(result[0])
+            del result
+            return PyXmg().set_pt_to(new_result)
         else:
             return PyXmg().set_pt_to(result)
 
@@ -588,18 +592,6 @@ def write_verilog(PyXmg py_xmg, py_filename) -> None:
         string filename
     filename = py_filename.encode('UTF-8')
     mig_interface.write_verilog(py_xmg.c_xmg[0], filename)
-
-def lut_area_strategy(PyXmg py_xmg, lut_size, nr_backtracks=4096) -> PyXmg:
-    cdef:
-        xmg* result
-    result = mig_interface.ptr_lut_area_strategy(py_xmg.c_xmg[0], lut_size, nr_backtracks)
-    return PyXmg().set_pt_to(result)
-
-def lut_area_timeout_strategy(PyXmg py_xmg, lut_size, timeout, nr_backtracks=4096) -> PyXmg:
-    cdef:
-        xmg* result
-    result = mig_interface.ptr_lut_area_timeout_strategy(py_xmg.c_xmg[0], lut_size, timeout, nr_backtracks)
-    return PyXmg().set_pt_to(result)
 
 def verilog_to_xmg(str):
     cdef xmg* result = mig_interface.verilog_to_xmg_ptr(str.encode('UTF-8'))
