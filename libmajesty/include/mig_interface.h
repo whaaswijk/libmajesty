@@ -83,7 +83,7 @@ namespace majesty {
 	xmg* get_npn_representative(const xmg&);
 	unsigned long get_truth_table(const xmg&);
 	xmg* get_optimum_xmg(const xmg&);
-	xmg* strash_xmg(const xmg&);
+	xmg* strash_xmg(const xmg&, bool no_compl=true);
 	xmg* remove_duplicates(const xmg&);
     xmg* verilog_to_xmg_ptr(const std::string&);
 };

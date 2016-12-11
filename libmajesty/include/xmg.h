@@ -331,7 +331,9 @@ namespace majesty {
 			std::pair<nodeid,bool> prop_create(input, input, input);
 			// Creates a node using both strashing and propagation
 			std::pair<nodeid,bool> find_or_create(maj3signature, strashmap&);
+			std::pair<nodeid,bool> find_or_create_no_compl(maj3signature, strashmap&);
 			std::pair<nodeid,bool> find_or_create(std::pair<nodeid,bool>, std::pair<nodeid,bool>, std::pair<nodeid,bool>, strashmap&);
+			std::pair<nodeid,bool> find_or_create_no_compl(std::pair<nodeid,bool>, std::pair<nodeid,bool>, std::pair<nodeid,bool>, strashmap&);
 			std::pair<nodeid,bool> find_or_create_no_prop(maj3signature, strashmap&);
 			std::pair<nodeid,bool> find_or_create_no_prop(std::pair<nodeid,bool>, std::pair<nodeid,bool>, std::pair<nodeid,bool>, strashmap&);
 			std::pair<nodeid,bool> 
@@ -361,6 +363,7 @@ namespace majesty {
 	};
 
 	xmg strash(const xmg&);
+	xmg strash_no_compl(const xmg&);
 	xmg rdup(const xmg&);
 
 	

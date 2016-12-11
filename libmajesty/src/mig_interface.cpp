@@ -1561,10 +1561,13 @@ namespace majesty {
 		return new xmg(exact_xmg(func));
 	}
 
-	xmg* strash_xmg(const xmg& mig) {
-		return new xmg(strash(mig));
+	xmg* strash_xmg(const xmg& mig, bool no_compl) {
+		if (no_compl) {
+			return new xmg(strash_no_compl(mig));
+		} else {
+			return new xmg(strash(mig));
+		}
 	}
-
 
 	xmg* remove_duplicates(const xmg& mig) {
 		return new xmg(rdup(mig));
