@@ -66,6 +66,8 @@ cdef extern from "mig_interface.h" namespace "majesty":
     xmg* mig_int_decompose(unsigned ninputs, unsigned truth_table)
     xmg* get_optimum_mig(const xmg&) except + # Can throw is Cirkit is not found
     xmg* get_optimum_xmg(const xmg&) except + # Can throw is Cirkit is not found
+	xmg* get_npn_representative(const xmg&)
+	unsigned long get_truth_table(const xmg&)
     
     xmg* strash_xmg(const xmg&)
     xmg* remove_duplicates(const xmg&)

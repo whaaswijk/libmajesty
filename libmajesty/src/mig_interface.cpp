@@ -6,6 +6,7 @@
 #include <truth_table_utils.hpp>
 #include <convert.h>
 #include <boost/pending/integer_log2.hpp>
+#include <npn_canonization.hpp>
 
 using namespace std;
 
@@ -1610,4 +1611,15 @@ namespace majesty {
     xmg* verilog_to_xmg_ptr(const string& verilog_string) {
         return new xmg(verilog_to_xmg(verilog_string));
     }
+
+	xmg* get_npn_representative(const xmg& xmg) {
+		const auto tt = simulate_xmg(xmg);
+		vector<unsigned> perm; cirkit::tt phase;
+		auto npn_tt = cirkit::exact_npn_canonization(tt, phase, perm);
+		return mig_int_decompose(xmg.nin(), npn_tt.to_ulong());
+	}
+
+	unsigned long get_truth_table(const xmg& xmg) {
+		return simulate_xmg(xmg).to_ulong();
+	}
 }
