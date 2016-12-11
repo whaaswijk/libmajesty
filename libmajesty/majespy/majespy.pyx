@@ -165,6 +165,15 @@ cdef class PyXmg:
     def is_mig(self) -> bool:
         return self.c_xmg.is_mig()
 
+    def get_npn_representative(self) -> PyXmg:
+        cdef:
+            xmg* result
+        result = mig_interface.get_npn_representative(self.c_xmg[0])
+        return PyXmg().set_pt_to(result)
+
+    def get_truth_table(self) -> int:
+        return mig_interface.get_truth_table(self.c_xmg[0])
+
     def get_outputs(self) -> ( np.ndarray, np.ndarray ):
         cdef:
             vector[nodeid] outputs
@@ -554,7 +563,7 @@ def get_npn_representative(PyXmg py_xmg) -> PyXmg:
     return PyXmg().set_pt_to(result)
 
 def get_npn_representative(PyXmg py_xmg) -> int:
-	return mig_interface.get_truth_table(py_xmg.c_xmg[0])
+    return mig_interface.get_truth_table(py_xmg.c_xmg[0])
 
 def strash_xmg(PyXmg py_xmg) -> PyXmg:
     cdef:
