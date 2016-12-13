@@ -999,14 +999,15 @@ namespace majesty {
 	// We only want gates to implement functions from the specified set of restricted functions
 	void add_gate_restrictions(synth_spec* spec, const std::vector<cirkit::tt>& restricted_functions) {
 		assert(restricted_functions.size() > 0);
-		auto num_vars = tt_num_vars(restricted_functions[0]);
-		auto num_funcs = (1u << num_vars) / 2; // Divide by 2 since we only consider normal functions
+		const auto num_vars = tt_num_vars(restricted_functions[0]);
+		const auto num_funcs = (1u << (1u << num_vars)) / 2; // Divide by 2 since we only consider normal functions
 		std::vector<unsigned> inv_res_funcs(num_funcs);
 		for (auto i = 0u; i < num_funcs; i++) {
 			inv_res_funcs[i] = 1;
 		}
 		for (const auto& func : restricted_functions) {
-			inv_res_funcs[func.to_ulong()] = 0;
+			assert(!func.test(0)); // Must be a normal function
+			inv_res_funcs[func.to_ulong() / 2] = 0;
 		}
 		spec->restricted_functions = inv_res_funcs;
 	}
@@ -1021,7 +1022,6 @@ namespace majesty {
 
 		// The gate's function constraint variables
 		if (spec->restricted_functions.size() > 0) {
-			std::cout << "Using gate restrictions" << std::endl;
 			for (auto i = 0u; i < spec->nr_gates; i++) {
 				restrict_map[0] = gate_variable(i, 0, spec);
 				restrict_map[1] = gate_variable(i, 1, spec);
