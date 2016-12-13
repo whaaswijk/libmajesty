@@ -32,6 +32,7 @@ namespace majesty {
 		unsigned nr_gate_vars;
 		unsigned simulation_var_offset;
 		unsigned nr_simulation_vars;
+		std::vector<unsigned> restricted_functions;
 
 		synth_spec() : verbose(false), use_cegar(false), use_colex_order(true),
 			use_no_triv_ops(true), use_all_gates(true), use_exact_nr_svars(true),
@@ -995,63 +996,102 @@ namespace majesty {
 		return exists_fanin_3_ntk_ns<S>(functt, spec);
 	}
 
+	// We only want gates to implement functions from the specified set of restricted functions
+	void add_gate_restrictions(synth_spec* spec, const std::vector<cirkit::tt>& restricted_functions) {
+		assert(restricted_functions.size() > 0);
+		auto num_vars = tt_num_vars(restricted_functions[0]);
+		auto num_funcs = (1u << num_vars) / 2; // Divide by 2 since we only consider normal functions
+		std::vector<unsigned> inv_res_funcs(num_funcs);
+		for (auto i = 0u; i < num_funcs; i++) {
+			inv_res_funcs[i] = 1;
+		}
+		for (const auto& func : restricted_functions) {
+			inv_res_funcs[func.to_ulong()] = 0;
+		}
+		spec->restricted_functions = inv_res_funcs;
+	}
+
 	// Tries to find a network using the new selection variable implementation
 	template<typename S>
 	lbool exists_fanin_3_ntk_ns(const tt& func, synth_spec* spec) {
 		static lit plits[7];
+		static lit restrict_map[7];
 		
 		create_variables_ns<S>(spec);
 
 		// The gate's function constraint variables
-		if (spec->use_no_triv_ops) {
+		if (spec->restricted_functions.size() > 0) {
+			std::cout << "Using gate restrictions" << std::endl;
 			for (auto i = 0u; i < spec->nr_gates; i++) {
-				const auto func_var0 = gate_variable(i, 0, spec);
-				const auto func_var1 = gate_variable(i, 1, spec);
-				const auto func_var2 = gate_variable(i, 2, spec);
-				const auto func_var3 = gate_variable(i, 3, spec);
-				const auto func_var4 = gate_variable(i, 4, spec);
-				const auto func_var5 = gate_variable(i, 5, spec);
-				const auto func_var6 = gate_variable(i, 6, spec);
+				restrict_map[0] = gate_variable(i, 0, spec);
+				restrict_map[1] = gate_variable(i, 1, spec);
+				restrict_map[2] = gate_variable(i, 2, spec);
+				restrict_map[3] = gate_variable(i, 3, spec);
+				restrict_map[4] = gate_variable(i, 4, spec);
+				restrict_map[5] = gate_variable(i, 5, spec);
+				restrict_map[6] = gate_variable(i, 6, spec);
+				for (auto f = 0u; f < spec->restricted_functions.size(); f++) {
+					if (spec->restricted_functions[f] == 0) {
+						continue; // This is an allowable gate function
+					}
+					for (auto fi = 0u; fi < 8; fi++) {
+						auto sat_var = restrict_map[fi];
+						plits[fi] = Abc_Var2Lit(sat_var, (f >> fi) & 1);
+					}
+					add_clause<S>(plits, plits + 7);
+				}
+			}
+		} else {
+			if (spec->use_no_triv_ops) {
+				for (auto i = 0u; i < spec->nr_gates; i++) {
+					restrict_map[0] = gate_variable(i, 0, spec);
+					restrict_map[1] = gate_variable(i, 1, spec);
+					restrict_map[2] = gate_variable(i, 2, spec);
+					restrict_map[3] = gate_variable(i, 3, spec);
+					restrict_map[4] = gate_variable(i, 4, spec);
+					restrict_map[5] = gate_variable(i, 5, spec);
+					restrict_map[6] = gate_variable(i, 6, spec);
 
-				// Exclude constant 0 function
-				plits[0] = Abc_Var2Lit(func_var0, 0);
-				plits[1] = Abc_Var2Lit(func_var1, 0);
-				plits[2] = Abc_Var2Lit(func_var2, 0);
-				plits[3] = Abc_Var2Lit(func_var3, 0);
-				plits[4] = Abc_Var2Lit(func_var4, 0);
-				plits[5] = Abc_Var2Lit(func_var5, 0);
-				plits[6] = Abc_Var2Lit(func_var6, 0);
-				add_clause<S>(plits, plits + 7);
+					// Exclude constant 0 function
+					plits[0] = Abc_Var2Lit(restrict_map[0], 0);
+					plits[1] = Abc_Var2Lit(restrict_map[1], 0);
+					plits[2] = Abc_Var2Lit(restrict_map[2], 0);
+					plits[3] = Abc_Var2Lit(restrict_map[3], 0);
+					plits[4] = Abc_Var2Lit(restrict_map[4], 0);
+					plits[5] = Abc_Var2Lit(restrict_map[5], 0);
+					plits[6] = Abc_Var2Lit(restrict_map[6], 0);
+					add_clause<S>(plits, plits + 7);
 
-				// Exclude variable 1 identity function
-				plits[0] = Abc_Var2Lit(func_var0, 1);
-				plits[1] = Abc_Var2Lit(func_var1, 0);
-				plits[2] = Abc_Var2Lit(func_var2, 1);
-				plits[3] = Abc_Var2Lit(func_var3, 0);
-				plits[4] = Abc_Var2Lit(func_var4, 1);
-				plits[5] = Abc_Var2Lit(func_var5, 0);
-				plits[6] = Abc_Var2Lit(func_var6, 1);
-				add_clause<S>(plits, plits + 7);
+					// Exclude variable 1 identity function
+					plits[0] = Abc_Var2Lit(restrict_map[0], 1);
+					plits[1] = Abc_Var2Lit(restrict_map[1], 0);
+					plits[2] = Abc_Var2Lit(restrict_map[2], 1);
+					plits[3] = Abc_Var2Lit(restrict_map[3], 0);
+					plits[4] = Abc_Var2Lit(restrict_map[4], 1);
+					plits[5] = Abc_Var2Lit(restrict_map[5], 0);
+					plits[6] = Abc_Var2Lit(restrict_map[6], 1);
+					add_clause<S>(plits, plits + 7);
 
-				// Exclude variable 2 identity function
-				plits[0] = Abc_Var2Lit(func_var0, 0);
-				plits[1] = Abc_Var2Lit(func_var1, 1);
-				plits[2] = Abc_Var2Lit(func_var2, 1);
-				plits[3] = Abc_Var2Lit(func_var3, 0);
-				plits[4] = Abc_Var2Lit(func_var4, 0);
-				plits[5] = Abc_Var2Lit(func_var5, 1);
-				plits[6] = Abc_Var2Lit(func_var6, 1);
-				add_clause<S>(plits, plits + 7);
-				
-				// Exclude variable 3 identity function
-				plits[0] = Abc_Var2Lit(func_var0, 0);
-				plits[1] = Abc_Var2Lit(func_var1, 0);
-				plits[2] = Abc_Var2Lit(func_var2, 0);
-				plits[3] = Abc_Var2Lit(func_var3, 1);
-				plits[4] = Abc_Var2Lit(func_var4, 1);
-				plits[5] = Abc_Var2Lit(func_var5, 1);
-				plits[6] = Abc_Var2Lit(func_var6, 1);
-				add_clause<S>(plits, plits + 7);
+					// Exclude variable 2 identity function
+					plits[0] = Abc_Var2Lit(restrict_map[0], 0);
+					plits[1] = Abc_Var2Lit(restrict_map[1], 1);
+					plits[2] = Abc_Var2Lit(restrict_map[2], 1);
+					plits[3] = Abc_Var2Lit(restrict_map[3], 0);
+					plits[4] = Abc_Var2Lit(restrict_map[4], 0);
+					plits[5] = Abc_Var2Lit(restrict_map[5], 1);
+					plits[6] = Abc_Var2Lit(restrict_map[6], 1);
+					add_clause<S>(plits, plits + 7);
+
+					// Exclude variable 3 identity function
+					plits[0] = Abc_Var2Lit(restrict_map[0], 0);
+					plits[1] = Abc_Var2Lit(restrict_map[1], 0);
+					plits[2] = Abc_Var2Lit(restrict_map[2], 0);
+					plits[3] = Abc_Var2Lit(restrict_map[3], 1);
+					plits[4] = Abc_Var2Lit(restrict_map[4], 1);
+					plits[5] = Abc_Var2Lit(restrict_map[5], 1);
+					plits[6] = Abc_Var2Lit(restrict_map[6], 1);
+					add_clause<S>(plits, plits + 7);
+				}
 			}
 		}
 

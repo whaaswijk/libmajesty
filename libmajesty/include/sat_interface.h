@@ -17,7 +17,12 @@ extern "C" {
 #include <thread>
 #endif
 
+#include <vector>
+#include <truth_table_utils.hpp>
+
 namespace majesty {
+
+	
 
 	struct synth_spec;
 
