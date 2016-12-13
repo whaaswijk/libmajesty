@@ -1034,7 +1034,7 @@ namespace majesty {
 					if (spec->restricted_functions[f] == 0) {
 						continue; // This is an allowable gate function
 					}
-					for (auto fi = 0u; fi < 8; fi++) {
+					for (auto fi = 0u; fi < 7; fi++) {
 						auto sat_var = restrict_map[fi];
 						plits[fi] = Abc_Var2Lit(sat_var, (f >> fi) & 1);
 					}
