@@ -1,5 +1,5 @@
-#ifndef xmg_H
-#define xmg_H
+#ifndef XMG_H
+#define XMG_H
 
 #include <bitset>
 #include <vector>

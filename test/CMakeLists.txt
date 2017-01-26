@@ -5,6 +5,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wall -Wextra -std=
 include_directories(${HIREDIS_INCLUDE_DIR} ${ABC_INCLUDE_DIR})
 
 find_package(Boost COMPONENTS filesystem system REQUIRED)
+include_directories( ${Boost_INCLUDE_DIR} )
 find_package(Threads)
 link_directories(${LINK_DIRECTORIES} ${PROJECT_BINARY_DIR}/src)
 link_directories(${LINK_DIRECTORIES} ${PROJECT_BINARY_DIR}/src/minisat)
