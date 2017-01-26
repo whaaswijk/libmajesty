@@ -17,6 +17,9 @@ BISON_TARGET(Parser parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 FLEX_TARGET(Lexer lexer.l ${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp)
 ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
 
+message("abc include dir ${ABC_INCLUDE_DIR}")
+include_directories(${ABC_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR})
 
 add_library(majesty STATIC ${SOURCE_FILES} ${BISON_Parser_OUTPUTS} ${FLEX_Lexer_OUTPUTS})
-target_link_libraries(majesty LINK_PUBLIC MiniSat hiredis ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(majesty abc-project hiredis-project)
+target_link_libraries(majesty LINK_PUBLIC MiniSat libhiredis libabc ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

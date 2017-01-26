@@ -11,6 +11,7 @@
 #include <maj_io.h>
 #include <convert.h>
 #include <stdexcept>
+#include <exact.h>
 
 namespace majesty {
 
@@ -35,8 +36,8 @@ namespace majesty {
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
 
-	logic_ntk abc_heuristic_logic_ntk(const tt& func) {
-		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % tt_to_hex(func)).str();
+	logic_ntk abc_heuristic_logic_ntk(const cirkit::tt& func) {
+		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % cirkit::tt_to_hex(func)).str();
 		auto success = system(optcmd.c_str());
 		if (success != 0) {
 			throw std::runtime_error("Heuristic optimization through ABC failed");
@@ -73,11 +74,11 @@ namespace majesty {
 				for (auto j = 0u; j < gate_size; j++) {
 					ntk_fanin[j] = nids[node.fanin[j]].first;
 				}
-				tt localfunc(gate_tt_size, 0);
+				cirkit::tt localfunc(gate_tt_size, 0);
 				for (auto j = 0u; j  < gate_tt_size; j++) {
 					auto func_idx = 0u;
 					for (auto k = 0u; k < gate_size; k++) {
-						auto tbit = tt_nth_var(k).test(j);
+						auto tbit = cirkit::tt_nth_var(k).test(j);
 						if (nids[node.fanin[k]].second) {
 							tbit = !tbit;
 						}
@@ -98,13 +99,13 @@ namespace majesty {
 
 	template<typename S>
 	boost::optional<std::pair<nodeid, bool>> decompose_cut(logic_ntk& ntk, const ln_node& node, nodemap& nodemap, 
-		function_store& fstore, std::vector<tt>& timeoutfuncs, const unsigned conflict_limit, timeout_behavior behavior) {
+		function_store& fstore, std::vector<cirkit::tt>& timeoutfuncs, const unsigned conflict_limit, timeout_behavior behavior) {
 		
-		std::vector<unsigned> perm; tt phase, npn;
+		std::vector<unsigned> perm; cirkit::tt phase, npn;
         if (node.fanin.size() < 6) {
-            npn = exact_npn_canonization(node.function, phase, perm);
+            npn = cirkit::exact_npn_canonization(node.function, phase, perm);
         } else {
-            npn = npn_canonization_lucky(node.function, phase, perm);
+            npn = cirkit::npn_canonization_lucky(node.function, phase, perm);
         }
         npn.resize(node.function.size());
 
@@ -174,7 +175,7 @@ namespace majesty {
 	}
 
 	template<typename S>
-	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<tt>& timeoutfuncs, 
+	boost::optional<logic_ntk> logic_ntk_from_luts(const logic_ntk& lut_ntk, std::vector<cirkit::tt>& timeoutfuncs, 
 		const unsigned conflict_limit, timeout_behavior behavior) {
 		bool timeout_occurred = false;
 
@@ -201,7 +202,7 @@ namespace majesty {
 				if (node.function == tt_const1()) {
 					if (!have_const1) {
 						have_const1 = true;
-						const1id = ntk.create_node(emptyfanin, tt(1, 1));
+						const1id = ntk.create_node(emptyfanin, cirkit::tt(1, 1));
 						nodemap[i] = std::make_pair(const1id, false);
 					} else {
 						nodemap[i] = std::make_pair(const1id, false);
@@ -209,7 +210,7 @@ namespace majesty {
 				} else {
 					if (!have_const0) {
 						have_const0 = true;
-						const0id = ntk.create_node(emptyfanin, tt(1, 0));
+						const0id = ntk.create_node(emptyfanin, cirkit::tt(1, 0));
 						nodemap[i] = std::make_pair(const0id, false);
 					} else {
 						nodemap[i] = std::make_pair(const0id, false);
@@ -264,7 +265,7 @@ namespace majesty {
 	logic_ntk lut_area_strategy(const logic_ntk& ntk, unsigned lut_size, unsigned conflict_limit = 0, timeout_behavior tb = optimize_heuristically) {
 		auto cut_params = default_cut_params();
 		cut_params->klut_size = lut_size;
-		std::vector<tt> timeoutfuncs;
+		std::vector<cirkit::tt> timeoutfuncs;
 	
 		logic_ntk cntk(ntk);
 		auto ctu = false;
@@ -401,11 +402,11 @@ namespace majesty {
 				for (auto j = 0u; j < gate_size; j++) {
 					virtfanin.push_back(nids[node.fanin[j]].first);
 				}
-				tt localfunc(gate_tt_size, 0);
+				cirkit::tt localfunc(gate_tt_size, 0);
 				for (auto j = 0u; j < gate_tt_size; j++) {
 					auto func_idx = 0u;
 					for (auto k = 0u; k < gate_size; k++) {
-						auto tbit = tt_nth_var(k).test(j);
+						auto tbit = cirkit::tt_nth_var(k).test(j);
 						if (nids[node.fanin[k]].second) {
 							tbit = !tbit;
 						}
@@ -486,12 +487,12 @@ namespace majesty {
 						break;
 					}
 				} else {
-					std::vector<unsigned> perm; tt phase, npn;
+					std::vector<unsigned> perm; cirkit::tt phase, npn;
 					const auto& cutnodes = cut->nodes();
 					if (cutnodes.size() < 6) {
-						npn = exact_npn_canonization(cutfunc, phase, perm);
+						npn = cirkit::exact_npn_canonization(cutfunc, phase, perm);
 					} else {
-						npn = npn_canonization_lucky(cutfunc, phase, perm);
+						npn = cirkit::npn_canonization_lucky(cutfunc, phase, perm);
 					}
 					npn.resize(cutfunc.size());
 
@@ -560,12 +561,12 @@ namespace majesty {
 			}
 			assert(best_cut != nullptr);
 			const auto& cutfunc = *fm.at(best_cut);
-			std::vector<unsigned> perm; tt phase, npn;
+			std::vector<unsigned> perm; cirkit::tt phase, npn;
 			const auto& cutnodes = best_cut->nodes();
 			if (cutnodes.size() < 6) {
-				npn = exact_npn_canonization(cutfunc, phase, perm);
+				npn = cirkit::exact_npn_canonization(cutfunc, phase, perm);
 			} else {
-				npn = npn_canonization_lucky(cutfunc, phase, perm);
+				npn = cirkit::npn_canonization_lucky(cutfunc, phase, perm);
 			}
 			npn.resize(cutfunc.size());
 

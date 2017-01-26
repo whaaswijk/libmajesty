@@ -1,16 +1,11 @@
 #ifndef FUNCTION_STORE_H
 #define FUNCTION_STORE_H
 
-#ifndef _WIN32
-extern "C" {
-	#include <hiredis.h>
-}
-#endif
+#include <hiredis.h>
 #include "truth_table_utils.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <boost/format.hpp>
-#include <exact.h>
 #include <map>
 
 namespace majesty {

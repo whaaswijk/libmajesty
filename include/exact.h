@@ -1,4 +1,5 @@
-#pragma once
+#ifndef EXACT_H
+#define EXACT_H
 
 #include <logic_network.h>
 #include <truth_table_utils.hpp>
@@ -1444,3 +1445,5 @@ namespace majesty {
 		return stats.nr_conflicts;
 	}
 }
+
+#endif

@@ -34,6 +34,7 @@ void iddfs(const xmg* m, int level) {
 	}
 }
 
+/*
 TEST_CASE("MIG Moves Test", "[mig game]") {
 	const auto ninputs = 3;
 	const auto search_depth = 2;
@@ -45,8 +46,8 @@ TEST_CASE("MIG Moves Test", "[mig game]") {
 		std::cout << i << std::endl;
 	}
 }
+*/
 
-/*
 TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 	auto pi1 = cirkit::tt_nth_var(0);
 	auto pi2 = cirkit::tt_nth_var(1);
@@ -73,33 +74,33 @@ TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 	{
 		spec.nr_vars = 2;
 		auto ntk = size_optimum_ntk<sat_solver>(andfuncint, &spec);
-		REQUIRE(ntk.ninternal() == 1);
+		REQUIRE(ntk->ninternal() == 1);
 	}
 	{
 		spec.nr_vars = 3;
 		auto ntk = size_optimum_ntk<sat_solver>(orfuncint, &spec);
-		REQUIRE(ntk.ninternal() != 1);
+		REQUIRE(ntk->ninternal() != 1);
 	}
 	{
 		spec.nr_vars = 3;
 		auto ntk = size_optimum_ntk<sat_solver>(orfuncint, &spec);
-		REQUIRE(ntk.ninternal() == 2);
+		REQUIRE(ntk->ninternal() == 2);
 	}
 	{
 		spec.nr_vars = 3;
 		auto ntk = size_optimum_ntk<sat_solver>(invorfuncint, &spec);
-		REQUIRE(ntk.ninternal() != 1);
+		REQUIRE(ntk->ninternal() != 1);
 	}
 	{
 		spec.nr_vars = 3;
 		auto ntk = size_optimum_ntk<sat_solver>(invorfuncint, &spec);
-		auto ninternal = ntk.ninternal();
+		auto ninternal = ntk->ninternal();
 		REQUIRE(ninternal == 2);
 	}
 	{
 		spec.nr_vars = 3;
 		auto ntk = size_optimum_ntk<sat_solver>(2, &spec);
-		REQUIRE(ntk.ninternal() == 2);
+		REQUIRE(ntk->ninternal() == 2);
 	}
 }
 
@@ -117,11 +118,11 @@ TEST_CASE("New Selection Variable", "[exact synthesis]") {
 	spec.use_no_reapplication = true;
 	for (auto f = 0u; f < 256; f++) {
 		auto old_ntk = size_optimum_ntk<sat_solver>(f, &spec);
-		auto old_size = old_ntk.ninternal();
-		auto old_simvec = old_ntk.simulate();
+		auto old_size = old_ntk->ninternal();
+		auto old_simvec = old_ntk->simulate();
 		auto new_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
-		auto new_size = new_ntk.ninternal();
-		auto new_simvec = new_ntk.simulate();
+		auto new_size = new_ntk->ninternal();
+		auto new_simvec = new_ntk->simulate();
 		if (old_size != new_size) {
 			std::cout << "hur" << std::endl;
 		}
@@ -142,10 +143,10 @@ TEST_CASE("Logic Ntk String Serialization", "[serialization]") {
 	spec.use_no_reapplication = true;
 	for (auto f = 0u; f < 256; f++) {
 		auto old_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
-		auto old_size = old_ntk.ninternal();
-		auto old_simvec = old_ntk.simulate();
+		auto old_size = old_ntk->ninternal();
+		auto old_simvec = old_ntk->simulate();
 
-		auto ntk_str = logic_ntk_to_string(old_ntk);
+		auto ntk_str = logic_ntk_to_string(*old_ntk);
 
 		auto str_ntk = string_to_logic_ntk(ntk_str);
 		auto str_size = str_ntk.ninternal();
@@ -162,7 +163,7 @@ TEST_CASE("Logic Ntk String Serialization", "[serialization]") {
 }
 
 TEST_CASE("Fanin 3 Ntk Equivalence", "[exact synthesis]") {
-synth_spec spec;
+	synth_spec spec;
 	spec.nr_vars = 3;
 	spec.verbose = false;
 	spec.use_cegar = false;
@@ -174,19 +175,17 @@ synth_spec spec;
 	for (auto f = 0u; f < 256; f++) {
 		spec.gate_size = 2;
 		auto old_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
-		auto old_size = old_ntk.ninternal();
-		auto old_simvec = old_ntk.simulate();
+		auto old_size = old_ntk->ninternal();
+		auto old_simvec = old_ntk->simulate();
 		
 		spec.gate_size = 3;
 		auto new_ntk = size_optimum_ntk_ns<sat_solver>(f, &spec);
-		auto new_size = new_ntk.ninternal();
-		auto new_simvec = new_ntk.simulate();
+		auto new_size = new_ntk->ninternal();
+		auto new_simvec = new_ntk->simulate();
 		REQUIRE(old_simvec == new_simvec);
 		REQUIRE(new_size <= old_size);
-		REQUIRE(new_size == 1);
 	}
 }
-*/
 
 #ifndef _WIN32
 #include <maj_io.h>
@@ -303,10 +302,9 @@ TEST_CASE("XMG LUT Area Optimization", "[optimization]") {
 	std::cout << "lut_mapped size: " << lut_mapped.ninternal() << std::endl;
 	write_blif(lut_mapped, "xmg_adder_opt_4_mapped.blif");
 }
-*/
 
 TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
-    auto xmg = read_verilog("../assets/adder.v");
+    auto xmg = read_verilog("../../test/assets/adder.v");
     auto ntk = xmg_to_logic_ntk(xmg);
     
 	auto cut_params = default_cut_params();
@@ -320,7 +318,6 @@ TEST_CASE("NTK LUT Area Optimization", "[optimization]") {
 	}
 }
 
-/*
 TEST_CASE("Classic Logic Rewriting", "[optimization]") {
 	std::vector<std::string> assets = {
 		"../assets/adder.v",
