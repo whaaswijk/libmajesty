@@ -15,8 +15,8 @@ INCLUDE_DIRS = [pkg_resources.resource_filename('numpy', 'core/include'),
                 os.environ['BOOST_ROOT']+'/include']
 LIBRARY_DIRS = []
 LIBRARIES = []
-EXTRA_OBJECTS = ['../build/src/libmajesty.a',
-               '../build/src/minisat/libMiniSat.a',
+EXTRA_OBJECTS = ['../build/lib/libmajesty.a',
+               '../build/lib/minisat/libMiniSat.a',
                '../build/hiredis/src/hiredis-project/libhiredis.a',
                '../build/abc/src/abc-project/libabc.a',
                os.environ['BOOST_ROOT']+ ('/lib/libboost_filesystem.a' if is_mac else '/lib/libboost_filesystem.so')]

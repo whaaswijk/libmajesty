@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
 
-project(majesty)
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wall -Wextra -std=c++11")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -DLIN64")
@@ -44,12 +42,12 @@ add_library(libhiredis SHARED IMPORTED)
 set_target_properties(libhiredis PROPERTIES IMPORTED_LOCATION ${HIREDIS_LIB_DIR}/libhiredis.a)
 
 # Add the ./src and ./include dirs to the include path 
-include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/lib")
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
 # Add the binary dir to the include path so we can find the config header
 include_directories("${PROJECT_BINARY_DIR}")
 
-add_subdirectory(src)
+add_subdirectory(lib)
 add_subdirectory(test)
-
+add_subdirectory(shell)

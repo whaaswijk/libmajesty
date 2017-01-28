@@ -5,7 +5,7 @@
 #include <vector>
 #include <limits>
 #include <boost/dynamic_bitset.hpp>
-#include "../src/mlp.h"
+#include <mlp.h>
 #include <map>
 #include <unordered_map>
 #include <functional>
