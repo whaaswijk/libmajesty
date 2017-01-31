@@ -34,6 +34,17 @@ namespace majesty
 	}
 
 	int
+	shell_env::print(char const* fmt, ...)
+	{
+		va_list argptr;
+		va_start(argptr, fmt);
+		int ret = vprintf(fmt, argptr);
+		va_end(argptr);
+		return ret;
+	}
+	
+
+	int
 	shell_env::warning(char const* fmt, ...)
 	{
 		if (ll < log_level::warning)
@@ -48,6 +59,7 @@ namespace majesty
 		va_end(argptr);
 		return ret;
 	}
+	
 	
 	int
 	shell_env::error(char const* fmt, ...)

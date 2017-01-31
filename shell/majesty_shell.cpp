@@ -20,7 +20,6 @@ void print_header()
 }
 
 vector<string>* command_names_ref;
-static bool matches_exhausted = false;
 
 void init_shell(shell_env& env)
 {
@@ -112,8 +111,6 @@ char* command_name_generator(const char* text, int state)
 		}
 	}
 
-	matches_exhausted = true;
-	
 	return NULL;
 }
 
@@ -164,36 +161,38 @@ main(void)
 	
 	char *line = NULL;
 	auto stop = false;
-	while (!stop && (line = readline(prompt)) != NULL)
+	while (!stop)
 	{
-		matches_exhausted = false;
-		if (strlen(line) > 0)
+		if ((line = readline(prompt)) == NULL)
 		{
-			string line_str(line);
-			auto trimmed_line_str = trim(line_str);
-			auto trimmed_line = strdup(trimmed_line_str.c_str());
-			add_history(trimmed_line);
-			auto argv = parse_line(trimmed_line);
-			free(trimmed_line);
-			if (argv.size() > 0)
+			break;
+		}
+		string line_str(line);
+		auto trimmed_line_str = trim(line_str);
+		auto trimmed_line = strdup(trimmed_line_str.c_str());
+		add_history(trimmed_line);
+		auto argv = parse_line(trimmed_line);
+		free(trimmed_line);
+		free(line);
+		if (argv.size() > 0)
+		{
+			auto status = env.execute_command(argv[0], argv);
+			switch (status)
 			{
-				auto status = env.execute_command(argv[0], argv);
-				switch (status)
-				{
-				case success:
-					break;
-				case quit:
-					stop = true;
-					break;
-				default:
-					break;
-				}
+			case success:
+				break;
+			case quit:
+				stop = true;
+				break;
+			default:
+				break;
 			}
 		}
-		free(line);
+		
 	}
 	cout << endl;
-	
+
+	free(rl_prompt); // Hack to clean readline prompt seems to be necessary
 	destroy_shell(env);
 		
 	return 0;

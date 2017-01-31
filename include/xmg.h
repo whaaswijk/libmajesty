@@ -291,8 +291,10 @@ namespace majesty {
 			xmg(const xmg&, const xmg_params*);
 			// Counts the nr. of PI nodes
 			unsigned nin() const;
-			// Counts the nr. of non-PI nodes
+			// Counts the total nr. of nodes
 			unsigned nnodes() const { return _nodes.size(); }
+			// Counts the nr. of non-PI nodes
+			unsigned nnodes_proper() const { return nnodes() - nin() - 1; }
 			// Counts the nr. of PO nodes
 			unsigned nout() const { return _outputs.size(); }
 			const std::vector<node>& nodes() const { return _nodes; }

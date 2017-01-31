@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <xmg.h>
 
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -21,7 +22,9 @@ namespace majesty
 	enum command_code
 	{
 		success = 0,
-		quit = 1
+		arg_error = 1, // error in command arguments
+		cmd_error = 2, // error in executing command
+		quit = 3
 	};
 
 	using command =
@@ -46,11 +49,13 @@ namespace majesty
 		bool cfolder_exists;
 		std::string history_file;
 		log_level ll = log_level::warning;
+		std::unique_ptr<xmg> current_ntk = nullptr;
 		
 		int register_command(const std::string& name, command);
 		int execute_command(const std::string& name,
 							const std::vector<std::string>& argv);
 		
+		int print(char const* fmt, ...);
 		int warning(char const* fmt, ...);
 		int error(char const* fmt, ...);
 		int message(char const* fmt, ...);

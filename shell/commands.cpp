@@ -1,4 +1,6 @@
 #include "shell_env.h"
+#include <maj_io.h>
+#include <xmg.h>
 
 using namespace std;
 
@@ -52,11 +54,46 @@ namespace majesty
 		
 		return success;
 	}
-	
-	void
+
+	command_code
+	read_verilog_xmg(shell_env* env, const vector<string>& argv)
+	{
+		if (argv.size() != 2)
+		{
+			env->error("input file not specified\n");
+			return cmd_error;
+		}
+
+		auto input_filename = argv[1];
+		unique_ptr<xmg> xmg(ptr_read_verilog(input_filename));
+		env->current_ntk = std::move(xmg);
+		
+		return success;
+	}
+
+	command_code
+	print_stats(shell_env* env, const vector<string>& argv)
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->print("No network available\n");
+		}
+		else
+		{
+			auto xmg_ptr = env->current_ntk.get();
+			env->print("XMG\ti/o = %u/%u\tnd = %u\n",
+					  xmg_ptr->nin(), xmg_ptr->nout(),
+					  xmg_ptr->nnodes_proper());
+		}
+		return success;
+	}
+
+  	void
 	register_commands(shell_env& env) 
 	{
 		env.register_command("help", help_command);
 		env.register_command("quit", quit_command);
+		env.register_command("read_verilog", read_verilog_xmg);
+		env.register_command("print_stats", print_stats);
 	}
 }
