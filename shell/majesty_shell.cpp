@@ -66,13 +66,6 @@ void init_shell(shell_env& env)
 	command_names_ref = &env.command_names;
 }
 
-void destroy_shell(shell_env& env)
-{
-	if (env.cfolder_exists)
-	{
-		write_history(env.history_file.c_str());
-	}
-}
 
 vector<string>
 parse_line(char* line)
@@ -170,7 +163,8 @@ main(void)
 	rl_attempted_completion_function = command_completion_function;
 	
 	char *line = NULL;
-	while ((line = readline(prompt)) != NULL)
+	auto stop = false;
+	while (!stop && (line = readline(prompt)) != NULL)
 	{
 		matches_exhausted = false;
 		if (strlen(line) > 0)
@@ -183,7 +177,17 @@ main(void)
 			free(trimmed_line);
 			if (argv.size() > 0)
 			{
-				env.execute_command(argv[0], argv);
+				auto status = env.execute_command(argv[0], argv);
+				switch (status)
+				{
+				case success:
+					break;
+				case quit:
+					stop = true;
+					break;
+				default:
+					break;
+				}
 			}
 		}
 		free(line);

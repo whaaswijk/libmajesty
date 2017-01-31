@@ -1,10 +1,10 @@
 #include "shell_env.h"
-
+#include <readline/history.h>
 
 namespace majesty
 {
-	
-	int shell_env::register_command(
+	int
+	shell_env::register_command(
 		const std::string& name,
 		command cmd)
 	{
@@ -20,7 +20,8 @@ namespace majesty
 		return 0;
 	}
 	
-	int shell_env::execute_command(
+	int
+	shell_env::execute_command(
 		const std::string& name,
 		const std::vector<std::string>& argv)
 	{
@@ -32,7 +33,8 @@ namespace majesty
 		return it->second(this, argv);
 	}
 
-	int shell_env::warning(char const* fmt, ...)
+	int
+	shell_env::warning(char const* fmt, ...)
 	{
 		if (ll < log_level::warning)
 		{
@@ -47,7 +49,8 @@ namespace majesty
 		return ret;
 	}
 	
-	int shell_env::error(char const* fmt, ...)
+	int
+	shell_env::error(char const* fmt, ...)
 	{
 		if (ll < log_level::error)
 		{
@@ -62,7 +65,8 @@ namespace majesty
 		return ret;
 	}
 	
-	int shell_env::message(char const* fmt, ...)
+	int
+	shell_env::message(char const* fmt, ...)
 	{
 		if (ll < log_level::error)
 		{
@@ -75,6 +79,15 @@ namespace majesty
 		int ret = vprintf(fmt, argptr);
 		va_end(argptr);
 		return ret;
+	}
+
+	void
+	destroy_shell(shell_env& env)
+	{
+		if (env.cfolder_exists)
+		{
+			write_history(env.history_file.c_str());
+		}
 	}
 	
 }

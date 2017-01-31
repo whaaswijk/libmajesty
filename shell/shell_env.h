@@ -18,9 +18,16 @@ namespace majesty
 {
 	class shell_env;
 	
-	using command =
-		std::function<int(shell_env*, const std::vector<std::string>&)>;
+	enum command_code
+	{
+		success = 0,
+		quit = 1
+	};
 
+	using command =
+		std::function<command_code(shell_env*,
+								   const std::vector<std::string>&)>;
+	
 	enum log_level
 	{
 		silent = 0,
@@ -29,7 +36,6 @@ namespace majesty
 		message = 3
 	};
 	
-
 	class shell_env 
 	{
 	private:
@@ -50,8 +56,8 @@ namespace majesty
 		int message(char const* fmt, ...);
 		
 	};
+
+	void destroy_shell(shell_env& env);
 }
-
-
 
 #endif

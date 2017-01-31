@@ -4,13 +4,15 @@ using namespace std;
 
 namespace majesty
 {
-	int test_command(shell_env* env, const vector<string>& argv)
+	command_code
+	test_command(shell_env* env, const vector<string>& argv)
 	{
 		env->warning("this is a test\n");
-		return 0;
+		return success;
 	}
 
-	int test_command2(shell_env* env, const vector<string>& argv)
+	command_code
+	test_command2(shell_env* env, const vector<string>& argv)
 	{
 		string str(argv[0]);
 		for (auto i = 1u; i < argv.size(); i++)
@@ -19,16 +21,24 @@ namespace majesty
 		}
 		
 		env->message("this is a test two \"%s\"\n", str.c_str());
-		return 0;
+		return success;
 	}
 	
-	int test_command3(shell_env* env, const vector<string>& argv)
+	command_code
+	test_command3(shell_env* env, const vector<string>& argv)
 	{
 		env->error("this is a test\n");
-		return 0;
+		return success;
 	}
 
-	int help_command(shell_env* env, const vector<string>& argv)
+	command_code
+	quit_command(shell_env* env, const vector<string>& argv)
+	{
+		return quit;
+	}
+
+	command_code
+	help_command(shell_env* env, const vector<string>& argv)
 	{
 		printf("\n");
 		
@@ -40,12 +50,13 @@ namespace majesty
 
 		printf("\n");
 		
-		return 0;
+		return success;
 	}
 	
-	void register_commands(shell_env& env) 
+	void
+	register_commands(shell_env& env) 
 	{
 		env.register_command("help", help_command);
-		
+		env.register_command("quit", quit_command);
 	}
 }
