@@ -1,6 +1,7 @@
 #include "shell_env.h"
 #include <maj_io.h>
 #include <xmg.h>
+#include "game_commands.h"
 
 using namespace std;
 
@@ -61,12 +62,32 @@ namespace majesty
 		if (argv.size() != 2)
 		{
 			env->error("input file not specified\n");
-			return cmd_error;
+			return arg_error;
 		}
 
 		auto input_filename = argv[1];
 		unique_ptr<xmg> xmg(ptr_read_verilog(input_filename));
 		env->current_ntk = std::move(xmg);
+		
+		return success;
+	}
+
+	command_code
+	write_verilog_xmg(shell_env* env, const vector<string>& argv)
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->error("no current network available\n");
+			return cmd_error;
+		}
+		if (argv.size() != 2)
+		{
+			env->error("output file not specified\n");
+			return arg_error;
+		}
+
+		auto output_filename = argv[1];
+		write_verilog(*env->current_ntk.get(), output_filename);
 		
 		return success;
 	}
@@ -94,6 +115,8 @@ namespace majesty
 		env.register_command("help", help_command);
 		env.register_command("quit", quit_command);
 		env.register_command("read_verilog", read_verilog_xmg);
+		env.register_command("write_verilog", write_verilog_xmg);
 		env.register_command("print_stats", print_stats);
+		env.register_command("search_improvement", search_improvement);
 	}
 }

@@ -1,0 +1,12 @@
+#ifndef GAME_COMMANDS
+#define GAME_COMMANDS
+
+#include "shell_env.h"
+
+namespace majesty
+{
+	command_code
+		search_improvement(shell_env* env, const std::vector<std::string>& argv);
+}
+
+#endif
