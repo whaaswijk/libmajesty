@@ -1,5 +1,6 @@
 #include "shell_env.h"
 #include <readline/history.h>
+#include <stdarg.h>
 
 namespace majesty
 {
