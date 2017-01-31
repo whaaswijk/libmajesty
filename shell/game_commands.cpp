@@ -16,7 +16,9 @@ namespace majesty
 		for (auto& move : moves)
 		{
 			auto move_xmg = apply_move(*m, move);
-			if (dls(move_xmg, orig_nnodes, depth-1))
+			auto found_improvement = dls(move_xmg, orig_nnodes, depth-1);
+			delete move_xmg;
+			if (found_improvement)
 				return true;
 		}
 		return false;
