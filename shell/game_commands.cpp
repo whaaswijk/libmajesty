@@ -6,7 +6,8 @@ using namespace std;
 
 namespace majesty
 {
-	bool dls(const xmg*m, unsigned orig_nnodes, unsigned depth)
+	bool
+	dfs(const xmg*m, unsigned orig_nnodes, unsigned depth)
 	{
 		if (depth == 0)
 		{
@@ -16,7 +17,7 @@ namespace majesty
 		for (auto& move : moves)
 		{
 			auto move_xmg = apply_move(*m, move);
-			auto found_improvement = dls(move_xmg, orig_nnodes, depth-1);
+			auto found_improvement = dfs(move_xmg, orig_nnodes, depth-1);
 			delete move_xmg;
 			if (found_improvement)
 				return true;
@@ -24,14 +25,10 @@ namespace majesty
 		return false;
 	}
 
-	bool find_improvement(const xmg* m, unsigned orig_size, unsigned depth)
+	bool
+	find_improvement(const xmg* m, unsigned orig_size, unsigned depth)
 	{
-		for (auto i = 1u; i <= depth; i++)
-		{
-			if (dls(m, orig_size, i))
-				return true;
-		}
-		return false;
+		return (dfs(m, orig_size, depth));
 	}
 
 	// Attempts a brute-force search on the MIG action space to find
