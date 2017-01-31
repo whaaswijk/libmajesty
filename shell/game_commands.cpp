@@ -10,13 +10,10 @@ namespace majesty
 	{
 		if (depth == 0)
 		{
-			if (m->nnodes() < orig_nnodes)
-				return true;
-			else
-				return false;
+			return m->nnodes() < orig_nnodes;
 		}
 		auto moves = compute_moves(*m);
-		for (auto move : moves)
+		for (auto& move : moves)
 		{
 			auto move_xmg = apply_move(*m, move);
 			if (dls(move_xmg, orig_nnodes, depth-1))
@@ -27,16 +24,16 @@ namespace majesty
 
 	bool find_improvement(const xmg* m, unsigned orig_size, unsigned depth)
 	{
-		for (auto i = 1u; i <= depth; i++) {
+		for (auto i = 1u; i <= depth; i++)
+		{
 			if (dls(m, orig_size, i))
 				return true;
 		}
 		return false;
 	}
 
-	// Attempts a brute-force search on the MIG action space
-	// to find a possible improvement within the specified
-	// number of steps.
+	// Attempts a brute-force search on the MIG action space to find
+	// an improvement within the specified number of steps.
 	command_code
 	search_improvement(shell_env* env, const vector<string>& argv)
 	{
