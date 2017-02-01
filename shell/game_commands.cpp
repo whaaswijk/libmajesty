@@ -17,7 +17,9 @@ namespace majesty
 		for (auto& move : moves)
 		{
 			auto move_xmg = apply_move(*m, move);
-			auto found_improvement = dfs(move_xmg, orig_nnodes, depth-1);
+			auto strashed_xmg = strash_xmg(*move_xmg, true);
+			auto found_improvement = dfs(strashed_xmg, orig_nnodes, depth-1);
+			delete strashed_xmg;
 			delete move_xmg;
 			if (found_improvement)
 				return true;
@@ -28,7 +30,7 @@ namespace majesty
 	bool
 	find_improvement(const xmg* m, unsigned orig_size, unsigned depth)
 	{
-		return (dfs(m, orig_size, depth));
+		return dfs(m, orig_size, depth);
 	}
 
 	// Attempts a brute-force search on the MIG action space to find
