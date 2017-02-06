@@ -21,8 +21,11 @@ namespace majesty
 			auto found_improvement = dfs(strashed_xmg, orig_nnodes, depth-1);
 			delete strashed_xmg;
 			delete move_xmg;
-			if (found_improvement)
+			if (found_improvement) {
+				printf("move(type=%d,id1=%u,id2=%u,id3=%u)\n",
+					   move.type, move.nodeid1, move.nodeid2, move.nodeid3);
 				return true;
+			}
 		}
 		return false;
 	}
