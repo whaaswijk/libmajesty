@@ -66,8 +66,8 @@ namespace majesty
 		}
 
 		auto input_filename = argv[1];
-		unique_ptr<xmg> xmg(ptr_read_verilog(input_filename));
-		env->current_ntk = std::move(xmg);
+		auto in_xmg = ptr_read_verilog(input_filename);
+		env->current_ntk.reset(in_xmg);
 		
 		return success;
 	}
@@ -87,7 +87,7 @@ namespace majesty
 		}
 
 		auto output_filename = argv[1];
-		write_verilog(*env->current_ntk.get(), output_filename);
+		write_verilog(*env->current_ntk, output_filename);
 		
 		return success;
 	}
@@ -118,5 +118,6 @@ namespace majesty
 		env.register_command("write_verilog", write_verilog_xmg);
 		env.register_command("print_stats", print_stats);
 		env.register_command("search_improvement", search_improvement);
+		env.register_command("apply_move", apply_move);
 	}
 }

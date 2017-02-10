@@ -76,4 +76,118 @@ namespace majesty
 
 		return success;
 	}
+
+	command_code
+	apply_move(shell_env* env, const std::vector<std::string>& argv) 
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->error("no MIG available\n");
+			return cmd_error;
+		}		
+		if (argv.size() < 2)
+		{
+			env->error("specify move type\n");
+			return arg_error;
+		}
+		int move_type = 0;
+		int nodeid1 = -1;
+		int nodeid2 = -1;
+		int nodeid3 = -1;
+		
+		try
+		{
+			move_type = stoi(argv[1]);
+			if (move_type < 0)
+			{
+				env->error("invalid move type\n");
+				return arg_error;
+			}
+		}
+		catch (invalid_argument e)
+		{
+			env->error("invalid move type\n");
+			return arg_error;
+		}
+		if (argv.size() > 2) {
+			try
+			{			
+				nodeid1 = stoi(argv[2]);
+				if (nodeid1 < 0)
+				{
+					env->error("invalid node id\n");
+					return arg_error;
+				}
+			}
+			catch (invalid_argument e)
+			{
+				env->error("invalid node id\n");
+				return arg_error;
+			}		
+		}
+		if (argv.size() > 3) {
+			try
+			{			
+				nodeid2 = stoi(argv[3]);
+				if (nodeid2 < 0)
+				{
+					env->error("invalid node id\n");
+					return arg_error;
+				}
+			}
+			catch (invalid_argument e)
+			{
+				env->error("invalid node id\n");
+				return arg_error;
+			}		
+		}
+		if (argv.size() > 4) {
+			try
+			{			
+				nodeid3 = stoi(argv[4]);
+				if (nodeid3 < 0)
+				{
+					env->error("invalid node id\n");
+					return arg_error;
+				}
+			}
+			catch (invalid_argument e)
+			{
+				env->error("invalid node id\n");
+				return arg_error;
+			}		
+		}
+		
+		move m;
+		m.type = (MoveType)move_type;
+		m.nodeid1 = nodeid1;
+		m.nodeid2 = nodeid2;
+		m.nodeid3 = nodeid3;
+
+		auto res_mig = apply_move(*env->current_ntk, m);
+		if (res_mig == NULL)
+		{
+			env->error("invalid move\n");
+			return arg_error;
+		}
+		
+		auto strash_mig = strash_xmg(*res_mig, true);
+		delete res_mig;
+
+		for (auto inname : env->current_ntk->innames())
+		{
+			strash_mig->add_inname(inname);
+		}
+		for (auto outname : env->current_ntk->outnames())
+		{
+			strash_mig->add_inname(outname);
+		}
+		
+		
+		env->current_ntk.reset(strash_mig);
+		
+		return success;
+	}
+	
+	
 }
