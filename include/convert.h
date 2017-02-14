@@ -37,6 +37,7 @@ namespace majesty {
 	boost::optional<unsigned> last_size_from_file(const std::string&);
 
 	xmg exact_mig(const cirkit::tt&);
+	xmg exact_depth_mig(const cirkit::tt&);
 	xmg exact_xmg(const cirkit::tt&);
 	
 	boost::optional<std::string> xmg_expression_from_file(const std::string& filename);

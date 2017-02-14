@@ -7,6 +7,7 @@
 #include <convert.h>
 #include <boost/pending/integer_log2.hpp>
 #include <npn_canonization.hpp>
+#include <string>
 
 using namespace std;
 
@@ -172,7 +173,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -219,7 +220,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -410,7 +411,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -496,7 +497,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -564,7 +565,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -711,7 +712,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -802,7 +803,7 @@ namespace majesty {
 				const auto nodeid = outputs[i];
 				const auto np = nodemap[nodeid];
 				select_node(tmp_res, np.first, nref);
-				tmp_res.create_output(np.first, np.second != outcompl[i], "out" + i);
+				tmp_res.create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 			}
 		}
 
@@ -830,7 +831,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res.create_output(np.first, np.second != outcompl[i], "out" + i);
+			res.create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 	
 		return remove_duplicates(res);
@@ -928,7 +929,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -1325,7 +1326,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -1452,7 +1453,7 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + i);
+			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
 		}
 
 		return res;
@@ -1551,9 +1552,18 @@ namespace majesty {
 		return moves;
 	}
 	
-	xmg* get_optimum_mig(const xmg& mig) {
+	xmg*
+	get_optimum_mig(const xmg& mig)
+	{
 		auto func = simulate_xmg(mig);
 		return new xmg(exact_mig(func));
+	}
+
+	xmg*
+	get_depth_optimum_mig(const xmg& mig)
+	{
+		auto func = simulate_xmg(mig);
+		return new xmg(exact_depth_mig(func));
 	}
 
 	xmg* get_optimum_xmg(const xmg& mig) {
