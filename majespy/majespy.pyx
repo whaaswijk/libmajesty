@@ -153,6 +153,12 @@ cdef class PyXmg:
         """
         return self.c_xmg.nnodes()
 
+    def get_depth(self) -> int:
+        """
+        :return: the length of the critical path
+        """
+        return self.c_xmg.depth()    	
+
     def get_nr_inputs(self) -> int:
         """
         :return: number of inputs of the graph
@@ -548,6 +554,12 @@ def get_optimum_mig(PyXmg py_xmg) -> PyXmg:
     cdef:
         xmg* result
     result = mig_interface.get_optimum_mig(py_xmg.c_xmg[0])
+    return PyXmg().set_pt_to(result)
+
+def get_depth_optimum_mig(PyXmg py_xmg) -> PyXmg:
+    cdef:
+        xmg* result
+    result = mig_interface.get_depth_optimum_mig(py_xmg.c_xmg[0])
     return PyXmg().set_pt_to(result)
 
 def get_optimum_xmg(PyXmg py_xmg) -> PyXmg:

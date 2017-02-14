@@ -360,6 +360,29 @@ namespace majesty {
 		return res;
 	}
 
+	int xmg::depth() const {
+		auto max_depth = -1;
+		vector<int> depth(_nodes.size());
+		for (auto i = 0u; i < _nodes.size(); i++) {
+			const auto& n = _nodes[i];
+			if (is_pi(n)) {
+				depth[i] = 0;
+			} else {
+				const auto in1_depth = depth[n.in1];
+				const auto in2_depth = depth[n.in2];
+				const auto in3_depth = depth[n.in3];
+				auto max_in = (in1_depth > in2_depth) ? in1_depth : in2_depth;
+				max_in = (max_in > in3_depth) ? max_in : in3_depth;
+				depth[i] = max_in + 1;
+			}
+		}
+		for (auto i = 0u; i < _nodes.size(); i++) {
+			if (depth[i] > max_depth)
+				max_depth = depth[i];
+		}
+		return max_depth;
+	}
+
 	nodeid xmg::create_input() {
 		node in;
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
@@ -909,6 +932,14 @@ namespace majesty {
 		if (c) {
 			set_c(n);
 		}
+	}
+
+	xmg::xmg(const xmg& xmg) {
+		_nodes = xmg._nodes;
+		_outputs = xmg._outputs;
+		_outcompl = xmg._outcompl;
+		_innames = xmg._innames;
+		_outnames = xmg._outnames;
 	}
 	
 	xmg::xmg(xmg&& xmg) {
@@ -1685,10 +1716,7 @@ namespace majesty {
 		create_dummy_outnames();
 	}
 
-	string xmg::to_verilog() {
-        if (_innames.size() == 0) {
-            create_dummy_names();
-        }
+	string xmg::to_verilog() const {
 		stringstream s;
 		write_verilog(*this, s);
 		return s.str();

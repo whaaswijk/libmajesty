@@ -1,13 +1,14 @@
 #include "shell_env.h"
 #include <xmg.h>
 #include <mig_interface.h>
+#include <unordered_set>
 
 using namespace std;
 
 namespace majesty
 {
 	bool
-	dfs(const xmg*m, unsigned orig_nnodes, unsigned depth)
+	dfs(const xmg*m, unsigned orig_nnodes, unsigned depth, unordered_set<xmg>& examined)
 	{
 		if (depth == 0)
 		{
@@ -18,9 +19,18 @@ namespace majesty
 		{
 			auto move_xmg = apply_move(*m, move);
 			auto strashed_xmg = strash_xmg(*move_xmg, true);
-			auto found_improvement = dfs(strashed_xmg, orig_nnodes, depth-1);
+			auto already_examined = examined.find(*strashed_xmg);
+			if (already_examined != examined.end()) {
+				delete strashed_xmg;
+				delete move_xmg;
+				continue;
+			} else {
+				delete move_xmg;
+				examined.insert(*strashed_xmg);
+			}
+			auto found_improvement = dfs(strashed_xmg, orig_nnodes, depth-1, examined);
 			delete strashed_xmg;
-			delete move_xmg;
+
 			if (found_improvement) {
 				printf("move(type=%d,id1=%u,id2=%u,id3=%u)\n",
 					   move.type, move.nodeid1, move.nodeid2, move.nodeid3);
@@ -33,7 +43,8 @@ namespace majesty
 	bool
 	find_improvement(const xmg* m, unsigned orig_size, unsigned depth)
 	{
-		return dfs(m, orig_size, depth);
+		unordered_set<xmg> examined_xmgs;
+		return dfs(m, orig_size, depth, examined_xmgs);
 	}
 
 	// Attempts a brute-force search on the MIG action space to find

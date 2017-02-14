@@ -283,7 +283,7 @@ namespace majesty {
 
 		public:
 			xmg() {  }
-			xmg(const xmg&) = delete;
+			xmg(const xmg&);
 			xmg(xmg&&);
 			xmg& operator=(xmg&&);
 			xmg(MIG* mig);
@@ -297,6 +297,7 @@ namespace majesty {
 			unsigned nnodes_proper() const { return nnodes() - nin() - 1; }
 			// Counts the nr. of PO nodes
 			unsigned nout() const { return _outputs.size(); }
+			int depth() const;
 			const std::vector<node>& nodes() const { return _nodes; }
 			node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
@@ -361,18 +362,29 @@ namespace majesty {
 			void create_dummy_outnames();
 			void create_dummy_names();
 			
-			std::string to_verilog();
+			std::string to_verilog() const;
+
+			bool operator==(const xmg &m) const {
+				return to_verilog() == m.to_verilog();
+			}
 	};
 
 	xmg strash(const xmg&);
 	xmg strash_no_compl(const xmg&);
 	xmg rdup(const xmg&);
 
-	
-
 	// Simulates every possible input vector on an xmg and returns the function it computes
 	boost::dynamic_bitset<> simulate_xmg(const xmg&);
 
+}
+
+namespace std {
+	template<> struct std::hash<majesty::xmg> {
+	public:
+		size_t operator()(const majesty::xmg& m) const {
+			return std::hash<std::string>()(m.to_verilog());
+		}
+	};
 }
 
 #endif

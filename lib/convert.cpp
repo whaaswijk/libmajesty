@@ -320,6 +320,21 @@ namespace majesty {
 		return xmg_expression_from_file("cirkit.log");
 	}
 
+	optional<string> min_depth_expression(const tt& func, unsigned timeout, unsigned start_size, const string& synth_type) {
+		auto cmdstr = "cirkit -l cirkit.log -c \"tt " + to_string(func) + "; exact_" + synth_type + " -o 2";
+		if (timeout > 0) {
+			cmdstr += " --timeout " + to_string(timeout);
+		}
+		if (start_size > 0) {
+			cmdstr += " --start " + to_string(start_size);
+		}
+		cmdstr += "; convert --" + synth_type + "_to_expr; ps -e; quit\" > /dev/null";
+		auto success = system(cmdstr.c_str());
+		if (success != 0) {
+			throw runtime_error("Exact synthesis through Cirkit failed");
+		}
+		return xmg_expression_from_file("cirkit.log");
+	}
 
 	boost::optional<std::string> exact_xmg_expression(const cirkit::tt& func, unsigned timeout, unsigned start_size) {
 		return min_size_expression(func, timeout, start_size, "xmg");
@@ -336,13 +351,28 @@ namespace majesty {
 	optional<string> exact_mig_expression(const tt& func, unsigned timeout) {
 		return min_size_expression(func, timeout, 0, "mig");
 	}
-
+	
 	string exact_mig_expression(const tt& func) {
 		return exact_mig_expression(func, 0).get();
 	}
 
+	optional<string> exact_depth_mig_expression(const tt& func, unsigned timeout) {
+		return min_depth_expression(func, timeout, 0, "mig");
+	}
+
+	string exact_depth_mig_expression(const tt& func) {
+		return exact_depth_mig_expression(func, 0).get();
+	}
+
 	xmg exact_mig(const tt& func) {
 		auto expression = exact_mig_expression(func);
+		auto ninputs = tt_num_vars(func);
+		auto exact_parsed = xmg_from_string(ninputs, expression);
+		return strash(exact_parsed);
+	}
+
+	xmg exact_depth_mig(const tt& func) {
+		auto expression = exact_depth_mig_expression(func);
 		auto ninputs = tt_num_vars(func);
 		auto exact_parsed = xmg_from_string(ninputs, expression);
 		return strash(exact_parsed);
