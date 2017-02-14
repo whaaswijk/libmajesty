@@ -9,4 +9,5 @@ link_directories(${LINK_DIRECTORIES} $ENV{ABC_LIB_DIR})
 link_directories(${LINK_DIRECTORIES} $ENV{HIREDIS_LIB_DIR})
 
 add_executable(majesty_shell majesty_shell.cpp shell_env.cpp commands.cpp game_commands.cpp)
-target_link_libraries(majesty_shell LINK_PUBLIC libmajesty.a MiniSat libabc readline curses dl libhiredis ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(majesty_shell majesty)
+target_link_libraries(majesty_shell LINK_PUBLIC majesty MiniSat libabc readline curses dl libhiredis ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

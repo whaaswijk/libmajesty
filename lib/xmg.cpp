@@ -933,6 +933,14 @@ namespace majesty {
 			set_c(n);
 		}
 	}
+
+	xmg::xmg(const xmg& xmg) {
+		_nodes = xmg._nodes;
+		_outputs = xmg._outputs;
+		_outcompl = xmg._outcompl;
+		_innames = xmg._innames;
+		_outnames = xmg._outnames;
+	}
 	
 	xmg::xmg(xmg&& xmg) {
 		_nodes = std::move(xmg._nodes);
@@ -1708,10 +1716,7 @@ namespace majesty {
 		create_dummy_outnames();
 	}
 
-	string xmg::to_verilog() {
-        if (_innames.size() == 0) {
-            create_dummy_names();
-        }
+	string xmg::to_verilog() const {
 		stringstream s;
 		write_verilog(*this, s);
 		return s.str();

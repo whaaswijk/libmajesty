@@ -145,7 +145,6 @@ namespace majesty {
 	xmg* apply_maj3(const xmg& mig, nodeid id) {
 		auto res = new xmg();
 
-
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
 		unordered_map<nodeid, pair<nodeid, bool>> nodemap;
@@ -173,7 +172,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
 		}
 
 		return res;
@@ -220,7 +226,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
 		}
 
 		return res;
@@ -411,7 +424,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
 		}
 
 		return res;
@@ -497,7 +517,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
 		}
 
 		return res;
@@ -565,7 +592,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
 		}
 
 		return res;
@@ -712,7 +746,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
 		}
 
 		return res;
@@ -803,7 +844,7 @@ namespace majesty {
 				const auto nodeid = outputs[i];
 				const auto np = nodemap[nodeid];
 				select_node(tmp_res, np.first, nref);
-				tmp_res.create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+				tmp_res.create_output(np.first, np.second != outcompl[i]);
 			}
 		}
 
@@ -831,7 +872,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res.create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res.create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res.add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res.add_outname(outname);
 		}
 	
 		return remove_duplicates(res);
@@ -929,8 +977,16 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
 		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
+		}
+	
 
 		return res;
 	}
@@ -1326,7 +1382,14 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
+		}
+
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
 		}
 
 		return res;
@@ -1453,9 +1516,16 @@ namespace majesty {
 		for (auto i = 0u; i < outputs.size(); i++) {
 			const auto nodeid = outputs[i];
 			const auto np = nodemap[nodeid];
-			res->create_output(np.first, np.second != outcompl[i], "out" + to_string(i));
+			res->create_output(np.first, np.second != outcompl[i]);
 		}
 
+		for (const auto& inname : mig.innames()) {
+			res->add_inname(inname);
+		}
+		for (const auto& outname : mig.outnames()) {
+			res->add_outname(outname);
+		}
+		
 		return res;
 	}
 
@@ -1466,18 +1536,20 @@ namespace majesty {
 		const auto nnodes = mig.nnodes();
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
+			move move;
+			move.nodeid1 = 0;
+			move.nodeid2 = 0;
+			move.nodeid3 = 0;
 			if (is_pi(node)) {
 				continue;
 			}
 			{
 				// Note that inverter propagation always applies.
-				move move;
 				move.type = INVERTER_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
 			if (maj3_applies(node)) {
-				move move;
 				move.type = MAJ3_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
@@ -1494,7 +1566,6 @@ namespace majesty {
 				}
 				 */
 				if (dist_right_left_applies(nodes, i, j)) {
-					move move;
 					move.type = DIST_RIGHT_LEFT;
 					move.nodeid1 = i;
 					move.nodeid2 = j;
@@ -1502,7 +1573,6 @@ namespace majesty {
 				}
 				for (auto k = 0u; k < nnodes; k++) {
 					if (swap_ternary_applies(nodes, i, j, k)) {
-						move move;
 						move.type = SWAP_TERNARY;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
@@ -1510,7 +1580,6 @@ namespace majesty {
 						moves.push_back(move);
 					}
 					if (dist_left_right_applies(nodes, i, j, k)) {
-						move move;
 						move.type = DIST_LEFT_RIGHT;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
@@ -1518,7 +1587,6 @@ namespace majesty {
 						moves.push_back(move);
 					}
 					if (relevance_applies(nodes, i, j, k)) {
-						move move;
 						move.type = RELEVANCE;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
@@ -1526,7 +1594,6 @@ namespace majesty {
 						moves.push_back(move);
 					}
 					if (substitution_applies(nodes, i, j, k)) {
-						move move;
 						move.type = SUBSTITUTION;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
@@ -1535,7 +1602,6 @@ namespace majesty {
 					}
 					/*
 					if (constructive_maj_applies(nodes, i, j, k)) {
-						move move;
 						move.type = MAJ3_XXY;
 						move.nodeid1 = i;
 						move.nodeid2 = j;
