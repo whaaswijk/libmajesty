@@ -1588,6 +1588,7 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
+					/*
 					if (relevance_applies(nodes, i, j, k)) {
 						move.type = RELEVANCE;
 						move.nodeid1 = i;
@@ -1595,6 +1596,7 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
+					*/
 					if (substitution_applies(nodes, i, j, k)) {
 						move.type = SUBSTITUTION;
 						move.nodeid1 = i;

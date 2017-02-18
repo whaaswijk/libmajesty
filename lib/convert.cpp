@@ -207,13 +207,13 @@ namespace majesty {
 	pair<nodeid, bool> mig_shannon_decompose_node(xmg& mig, const nodemap& nodemap, const tt& func, const unsigned ninputs, unsigned var_idx) {
 		assert(tt_num_vars(func) == ninputs);
 		auto const0 = maj_tt_const0();
-		tt_extend(const0, 6u);
+		tt_extend(const0, ninputs);
 		auto const1 = maj_tt_const1();
-		tt_extend(const1, 6u);
+		tt_extend(const1, ninputs);
 
 		tt copy(func);
 		tt_to_minbase(copy);
-		tt_extend(copy, 6u);
+		tt_extend(copy, ninputs);
 		auto copystring = to_string(copy);
 		if (copy == const0) {
 			return make_pair(0, true);
@@ -237,7 +237,6 @@ namespace majesty {
 	}
 
 	xmg mig_shannon_decompose(unsigned ninputs, const tt& func) {
-		assert(ninputs <= 6);
 		xmg res;
 
 		nodemap nodemap;
