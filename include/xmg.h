@@ -378,13 +378,4 @@ namespace majesty {
 
 }
 
-namespace std {
-	template<> struct std::hash<majesty::xmg> {
-	public:
-		size_t operator()(const majesty::xmg& m) const {
-			return std::hash<std::string>()(m.to_verilog());
-		}
-	};
-}
-
 #endif

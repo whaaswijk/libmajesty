@@ -102,9 +102,10 @@ namespace majesty
 		else
 		{
 			auto xmg_ptr = env->current_ntk.get();
-			env->print("XMG\ti/o = %u/%u\tnd = %u\n",
-					  xmg_ptr->nin(), xmg_ptr->nout(),
-					  xmg_ptr->nnodes_proper());
+			env->print("XMG\ti/o = %u/%u\tnd = %u\tlevels = %d\n",
+					   xmg_ptr->nin(), xmg_ptr->nout(),
+					   xmg_ptr->nnodes_proper(),
+					   xmg_ptr->depth());
 		}
 		return success;
 	}
@@ -118,6 +119,7 @@ namespace majesty
 		env.register_command("write_verilog", write_verilog_xmg);
 		env.register_command("print_stats", print_stats);
 		env.register_command("search_improvement", search_improvement);
+		env.register_command("search_depth_improvement", search_depth_improvement);
 		env.register_command("apply_move", apply_move);
 	}
 }
