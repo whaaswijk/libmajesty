@@ -95,7 +95,9 @@ namespace majesty {
 
 	xmg* mig_string_decompose(const string& func) {
 		auto ninputs = boost::integer_log2(func.size());
-		return new xmg(mig_decompose(ninputs, func));
+		auto res = new xmg(mig_decompose(ninputs, func));
+		res->create_dummy_names();
+		return res;
 	}
 	
 	xmg* mig_expression_decompose(unsigned ninputs, const string& expr) {
