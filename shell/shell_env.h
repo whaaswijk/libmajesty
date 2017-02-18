@@ -5,6 +5,8 @@
 #include <vector>
 #include <unordered_map>
 #include <xmg.h>
+#include <boost/optional.hpp>
+#include <truth_table_utils.hpp>
 
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -50,6 +52,7 @@ namespace majesty
 		std::string history_file;
 		log_level ll = log_level::warning;
 		std::unique_ptr<xmg> current_ntk = nullptr;
+		boost::optional<cirkit::tt> current_tt;
 		
 		int register_command(const std::string& name, command);
 		int execute_command(const std::string& name,

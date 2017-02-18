@@ -2,6 +2,7 @@
 #include <maj_io.h>
 #include <xmg.h>
 #include "game_commands.h"
+#include <convert.h>
 
 using namespace std;
 
@@ -57,7 +58,7 @@ namespace majesty
 	}
 
 	command_code
-	read_verilog_xmg(shell_env* env, const vector<string>& argv)
+	xmg_read_verilog(shell_env* env, const vector<string>& argv)
 	{
 		if (argv.size() != 2)
 		{
@@ -73,7 +74,7 @@ namespace majesty
 	}
 
 	command_code
-	write_verilog_xmg(shell_env* env, const vector<string>& argv)
+	xmg_write_verilog(shell_env* env, const vector<string>& argv)
 	{
 		if (env->current_ntk == nullptr)
 		{
@@ -98,6 +99,7 @@ namespace majesty
 		if (env->current_ntk == nullptr)
 		{
 			env->print("No network available\n");
+			return cmd_error;
 		}
 		else
 		{
@@ -110,16 +112,64 @@ namespace majesty
 		return success;
 	}
 
-  	void
+	command_code
+	read_truth(shell_env* env, const vector<string>& argv) 
+	{
+		if (argv.size() != 2)
+		{
+			env->error("no truth table provided\n");
+			return cmd_error;
+		}
+
+		cirkit::tt table(argv[1]);
+		env->current_tt = table;
+
+		return success;
+	}
+
+	command_code
+	tt_print_stats(shell_env* env, const vector<string>& argv)
+	{
+		if (!env->current_tt)
+		{
+			env->error("no truth table has been loaded\n");
+			return cmd_error;	
+		}
+		auto num_vars = cirkit::tt_num_vars(*env->current_tt);
+		
+		env->print("Truth Table \tvars = %u\trepr = %s\n",
+				   num_vars, cirkit::to_string(*env->current_tt).c_str());
+		return success;
+	}
+
+	command_code
+	tt_to_mig(shell_env* env, const vector<string>& argv)
+	{
+		if (!env->current_tt)
+		{
+			env->error("no truth table has been loaded\n");
+			return cmd_error;	
+		}
+		auto num_vars = cirkit::tt_num_vars(*env->current_tt);
+		auto decomp_mig = mig_shannon_decompose(num_vars, *env->current_tt);
+		auto copy_mig = new xmg(decomp_mig);
+		env->current_ntk.reset(copy_mig);		
+		return success;
+	}
+	
+ 	void
 	register_commands(shell_env& env) 
 	{
 		env.register_command("help", help_command);
 		env.register_command("quit", quit_command);
-		env.register_command("read_verilog", read_verilog_xmg);
-		env.register_command("write_verilog", write_verilog_xmg);
-		env.register_command("print_stats", print_stats);
+		env.register_command("xmg_read_verilog", xmg_read_verilog);
+		env.register_command("xmg_write_verilog", xmg_write_verilog);
+		env.register_command("xmg_print_stats", print_stats);
 		env.register_command("search_improvement", search_improvement);
 		env.register_command("search_depth_improvement", search_depth_improvement);
 		env.register_command("apply_move", apply_move);
+		env.register_command("tt", read_truth);
+		env.register_command("tt_print_stats", tt_print_stats);
+		env.register_command("tt_to_mig", tt_to_mig);
 	}
 }
