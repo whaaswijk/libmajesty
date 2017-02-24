@@ -1695,19 +1695,29 @@ namespace majesty {
     void xmg::create_dummy_innames() {
         _innames.clear();
 		auto count = 0u;
+		const auto inname = 'a';
+		auto use_simple_names = nin() <= 26;
 		for (const auto& node : _nodes) {
 			if (!is_pi(node)) {
 				break;
 			}
-			_innames.push_back("x" + std::to_string(count));
+			if (use_simple_names)
+				_innames.push_back(std::string(1, (char)(inname + count)));
+			else
+				_innames.push_back("x" + std::to_string(count));
 			++count;
 		}
 	}
 
 	void xmg::create_dummy_outnames() {
         _outnames.clear();
+		auto use_simple_names = _outputs.size() <= 12;
+		const auto outname = 'F';
 		for (auto i = 0u; i < _outputs.size(); i++) {
-			_outnames.push_back("f[" + std::to_string(i) + "]");
+			if (use_simple_names)
+				_outnames.push_back(std::string(1, (char)(outname + i)));
+			else
+				_outnames.push_back("f[" + std::to_string(i) + "]");
 		}
 	}
 

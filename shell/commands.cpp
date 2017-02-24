@@ -5,6 +5,7 @@
 #include <convert.h>
 #include <boost/lexical_cast.hpp>
 #include "maj_utils.h"
+#include "mig_interface.h"
 
 using namespace std;
 
@@ -74,6 +75,20 @@ namespace majesty
 		
 		return success;
 	}
+
+	command_code
+	xmg_strash(shell_env* env, const vector<string>& argv)
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->error("no current network available\n");
+			return cmd_error;
+		}
+		auto in_xmg = strash_xmg(*env->current_ntk, false);
+		env->current_ntk.reset(in_xmg);
+		return success;
+	}
+	
 
 	command_code
 	xmg_write_verilog(shell_env* env, const vector<string>& argv)
@@ -188,9 +203,10 @@ namespace majesty
 		env.register_command("xmg_read_verilog", xmg_read_verilog);
 		env.register_command("xmg_write_verilog", xmg_write_verilog);
 		env.register_command("xmg_print_stats", print_stats);
+		env.register_command("xmg_strash", xmg_strash);
 		env.register_command("search_improvement", search_improvement);
 		env.register_command("search_depth_improvement", search_depth_improvement);
-		env.register_command("apply_move", apply_move);
+		env.register_command("mig_apply_move", mig_apply_move);
 		env.register_command("compute_nr_moves", compute_nr_moves);
 		env.register_command("tt", read_truth);
 		env.register_command("tt_print_stats", tt_print_stats);

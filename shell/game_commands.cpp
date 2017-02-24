@@ -152,7 +152,7 @@ namespace majesty
 	}
 
 	command_code
-	apply_move(shell_env* env, const std::vector<std::string>& argv) 
+	mig_apply_move(shell_env* env, const std::vector<std::string>& argv) 
 	{
 		if (env->current_ntk == nullptr)
 		{
