@@ -180,13 +180,25 @@ namespace majesty {
 		return ~maj_tt_const0();
 	}
 
+	inline void
+	tt_make_size(tt& t, const unsigned ninputs)
+	{
+		if (t.size() > (1u << ninputs))
+			t.resize(1u << ninputs);
+		else
+			tt_extend(t, ninputs);
+	}
+	
+
 	tt maj_tt_cof0(const tt& t, unsigned i, unsigned ninputs) {
 		auto tv = ~tt_nth_var(i);
 		//tv.resize(1u << ninputs);
-		tt_extend(tv, ninputs);
+		//tt_extend(tv, ninputs);
+		tt_make_size(tv, ninputs);
 
 		auto tc = t;
-		// if (n < tt_store::i().width) { tt_extend(tc, tt_store::i().width); }
+		//tt_extend(tc, ninputs);
+		tt_make_size(tc, ninputs);
 
 		return (tc & tv) | ((tc & tv) << (1 << i));
 	}
@@ -194,11 +206,14 @@ namespace majesty {
 	tt maj_tt_cof1(const tt& t, unsigned i, unsigned ninputs) {
 		auto tv = tt_nth_var(i);
 		//tv.resize(1u << ninputs);
-		tt_extend(tv, ninputs);
+		//tt_extend(tv, ninputs);
+		tt_make_size(tv, ninputs);
 
 		auto tc = t;
+		//tt_extend(tc, ninputs);
+		tt_make_size(tc, ninputs);
 		//if (n < tt_store::i().width) { tt_extend(tc, tt_store::i().width); }
-
+		//assert(tv.size() == tc.size());
 		return (tc & tv) | ((tc & tv) >> (1 << i));
 	}
 

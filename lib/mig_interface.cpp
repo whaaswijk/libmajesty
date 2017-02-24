@@ -259,6 +259,21 @@ namespace majesty {
 			);
 	}
 
+	inline bool
+	share_input_polarity(const node& n1, const node& n2, const nodeid gcid) {
+		return ( 
+			(n1.in1 == n2.in1 && n1.in1 != gcid && is_c1(n1) == is_c1(n2)) ||
+			(n1.in1 == n2.in2 && n1.in1 != gcid && is_c1(n1) == is_c2(n2)) ||
+			(n1.in1 == n2.in3 && n1.in1 != gcid && is_c1(n1) == is_c3(n2)) ||
+			(n1.in2 == n2.in1 && n1.in2 != gcid && is_c2(n1) == is_c1(n2)) ||
+			(n1.in2 == n2.in2 && n1.in2 != gcid && is_c2(n1) == is_c2(n2)) ||
+			(n1.in2 == n2.in3 && n1.in2 != gcid && is_c2(n1) == is_c3(n2)) ||
+			(n1.in3 == n2.in1 && n1.in3 != gcid && is_c3(n1) == is_c1(n2)) ||
+			(n1.in3 == n2.in2 && n1.in3 != gcid && is_c3(n1) == is_c2(n2)) ||
+			(n1.in3 == n2.in3 && n1.in3 != gcid && is_c3(n1) == is_c3(n2)) 
+			);
+	}
+	
 	// Returns the id of the common child shared by two nodes. NOTE: fails if no such child exists!
 	inline pair<nodeid,bool> shared_input_polarity(const node& n1, const node& n2) {
 		if (n1.in1 == n2.in1 && is_c1(n1) == is_c1(n2)) {
@@ -1078,21 +1093,24 @@ namespace majesty {
 		const auto& p2_node = nodes[gp.in2];
 		const auto& p3_node = nodes[gp.in3];
 			
-		if (gp.in1 == pid && !is_pi(p1_node) &&	share_input_polarity(gp, p1_node)) {
+		if (gp.in1 == pid && !is_pi(p1_node) &&
+			share_input_polarity(gp, p1_node, gcid)) {
 			if (p1_node.in1 == gcid || p1_node.in2 == gcid || p1_node.in3 == gcid) {
 				++nparentfanin;
 				parentidx = 1;
 				if (!is_c1(gp)) parentcmpl = false;
 			}
 		}
-		if (gp.in2 == pid && !is_pi(p2_node) && share_input_polarity(gp, p2_node)) {
+		if (gp.in2 == pid && !is_pi(p2_node) &&
+			share_input_polarity(gp, p2_node, gcid)) {
 			if (p2_node.in1 == gcid || p2_node.in2 == gcid || p2_node.in3 == gcid) {
 				++nparentfanin;
 				parentidx = 2;
 				if (!is_c2(gp)) parentcmpl = false;
 			}
 		}
-		if (gp.in3 == pid && !is_pi(p3_node) && share_input_polarity(gp, p3_node)) {
+		if (gp.in3 == pid && !is_pi(p3_node) &&
+			share_input_polarity(gp, p3_node, gcid)) {
 			if (p3_node.in1 == gcid || p3_node.in2 == gcid || p3_node.in3 == gcid) {
 				++nparentfanin;
 				parentidx = 3;
@@ -1709,7 +1727,7 @@ namespace majesty {
 		return moves;
 	}
 
-	vector<move> fast_compute_moves(const xmg& mig) {
+	vector<move> compute_moves_fast(const xmg& mig) {
 		vector<move> moves;
 
 		const auto& nodes = mig.nodes();

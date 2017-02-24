@@ -13,4 +13,5 @@ link_directories(${LINK_DIRECTORIES} $ENV{ABC_LIB_DIR})
 link_directories(${LINK_DIRECTORIES} $ENV{HIREDIS_LIB_DIR})
 
 add_executable(majesty_test main.cpp)
+add_dependencies(majesty_test majesty)
 target_link_libraries(majesty_test LINK_PUBLIC libmajesty.a MiniSat libabc readline curses dl libhiredis ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

@@ -48,6 +48,20 @@ TEST_CASE("MIG Moves Test", "[mig game]") {
 }
 */
 
+TEST_CASE("MIG Nr. Moves Test", "[mig game]") {
+	const auto ninputs = 3;
+	const auto nfuncs = (1u << (1u << ninputs));
+	for (auto i = 0u; i < nfuncs; i++) {
+		auto mig = mig_int_decompose(ninputs, i);
+		auto moves_original = compute_moves(*mig);
+		auto moves_fast = compute_moves_fast(*mig);
+		REQUIRE(moves_original.size() == moves_fast.size());
+		delete mig;
+		std::cout << i << std::endl;
+	}
+}
+
+
 TEST_CASE("Trivial Exact Synthesis", "[exact synthesis]") {
 	auto pi1 = cirkit::tt_nth_var(0);
 	auto pi2 = cirkit::tt_nth_var(1);
