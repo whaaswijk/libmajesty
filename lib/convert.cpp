@@ -182,8 +182,8 @@ namespace majesty {
 
 	tt maj_tt_cof0(const tt& t, unsigned i, unsigned ninputs) {
 		auto tv = ~tt_nth_var(i);
-		tv.resize(1u << ninputs);
-		// tt_extend(tv, n);
+		//tv.resize(1u << ninputs);
+		tt_extend(tv, ninputs);
 
 		auto tc = t;
 		// if (n < tt_store::i().width) { tt_extend(tc, tt_store::i().width); }
@@ -193,9 +193,8 @@ namespace majesty {
 
 	tt maj_tt_cof1(const tt& t, unsigned i, unsigned ninputs) {
 		auto tv = tt_nth_var(i);
-		tv.resize(1u << ninputs);
-
-		//tt_extend(tv, n);
+		//tv.resize(1u << ninputs);
+		tt_extend(tv, ninputs);
 
 		auto tc = t;
 		//if (n < tt_store::i().width) { tt_extend(tc, tt_store::i().width); }
@@ -248,6 +247,7 @@ namespace majesty {
 		assert(tt_num_vars(func) == ninputs);
 		auto output = mig_shannon_decompose_node(res, nodemap, func, ninputs, 0);
 		res.create_output(output.first, output.second);
+		res.create_dummy_names();
 
 		return res;
 	}

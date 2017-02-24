@@ -3,6 +3,8 @@
 #include <xmg.h>
 #include "game_commands.h"
 #include <convert.h>
+#include <boost/lexical_cast.hpp>
+#include "maj_utils.h"
 
 using namespace std;
 
@@ -121,8 +123,29 @@ namespace majesty
 			return cmd_error;
 		}
 
-		cirkit::tt table(argv[1]);
-		env->current_tt = table;
+		// Check if the argument is a binary string or an integer
+		auto is_binstring = true;
+		for (auto& c : argv[1])
+		{
+			if (c != '0' && c != '1')
+				is_binstring = false;
+		}
+		if (is_binstring)
+		{
+			cirkit::tt table(argv[1]);
+			env->current_tt = table;
+		}
+		else
+		{
+			auto binstring = hex_to_bool_string(argv[1]);
+			if (!binstring)
+			{
+				env->error("unable to parse hex string\n");
+				return arg_error;
+			}
+			cirkit::tt table(*binstring);
+			env->current_tt = table;
+		}
 
 		return success;
 	}

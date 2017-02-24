@@ -1065,7 +1065,94 @@ namespace majesty {
 		return true;
 	}
 
+	bool swap_ternary_applies_fast(const vector<node>& nodes, nodeid gpid, nodeid pid, nodeid gcid) {
+		const auto& gp = nodes[gpid];
 
+		// It's possible that the grandparent has the parent as input twice! E.g. when the majority
+		// rule applies at the grandparent. In that case, we cannot swap, because swapping would try
+		// to make the parent a child of itself...
+		auto nparentfanin = 0;
+		auto parentidx = -1;
+		auto parentcmpl = true;
+		const auto& p1_node = nodes[gp.in1];
+		const auto& p2_node = nodes[gp.in2];
+		const auto& p3_node = nodes[gp.in3];
+			
+		if (gp.in1 == pid && !is_pi(p1_node) &&	share_input_polarity(gp, p1_node)) {
+			if (p1_node.in1 == gcid || p1_node.in2 == gcid || p1_node.in3 == gcid) {
+				++nparentfanin;
+				parentidx = 1;
+				if (!is_c1(gp)) parentcmpl = false;
+			}
+		}
+		if (gp.in2 == pid && !is_pi(p2_node) && share_input_polarity(gp, p2_node)) {
+			if (p2_node.in1 == gcid || p2_node.in2 == gcid || p2_node.in3 == gcid) {
+				++nparentfanin;
+				parentidx = 2;
+				if (!is_c2(gp)) parentcmpl = false;
+			}
+		}
+		if (gp.in3 == pid && !is_pi(p3_node) && share_input_polarity(gp, p3_node)) {
+			if (p3_node.in1 == gcid || p3_node.in2 == gcid || p3_node.in3 == gcid) {
+				++nparentfanin;
+				parentidx = 3;
+				if (!is_c3(gp)) parentcmpl = false;
+			}
+		}
+		// We need exactly 1 uncomplemented parent node
+		if (nparentfanin != 1 || parentcmpl) {
+			return false;
+		}
+
+		/*
+		auto filt_parents = filter_nodes(gpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
+			auto parent = nodes[np.first];
+			// Note that we make sure that the parent is not complemented. If it is, associativity doesn't apply and
+			// we should try applying inverter propagation first.
+			if (np.first == pid && !np.second && !is_pi(parent) && share_input_polarity(gp, parent)) {
+				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
+					return true;
+				}
+			}
+			return false;
+		});
+
+		if (filt_parents.size() != 1) {
+			// There is not exactly one uncomplemented child of the grandparent that has both a child in 
+			// common and is a parent of the grandchild.
+			return false;
+		}
+		const auto parentnp = filt_parents[0];
+		
+		const auto& parent = nodes[parentnp.first];
+		auto common_childnp = shared_input_polarity(gp, parent);
+		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
+		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
+		auto oldgrandchildren = get_children(parent);
+		auto filtgrandchildren = filter_nodes(drop_child(oldgrandchildren, common_childnp), [gcid](pair<nodeid, bool> child) {
+			if (child.first == gcid) {
+				return true;
+			}
+			return false;
+		});
+		if (filtgrandchildren.size() == 0) { 
+			// After removing the common child, there is no grandchild z (id2) left. Either the common child was the grandchild
+			// to be swapped, or the given grandchild was never actually a grandchild.
+			return false;
+		} else if (filtgrandchildren.size() > 1) {
+			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
+			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
+			// For now we just return the first one.
+			auto filtgp1 = filtgrandchildren[0];
+			auto filtgp2 = filtgrandchildren[1];
+			if (filtgp1.second != filtgp2.second) {
+				return true;
+			}
+		}
+		*/
+
+		return true;
+	}
 
 	bool swap_ternary_applies(const vector<node>& nodes, nodeid gpid, nodeid pid, nodeid gcid) {
 		const auto& gp = nodes[gpid];
@@ -1597,6 +1684,78 @@ namespace majesty {
 						moves.push_back(move);
 					}
 					*/
+					if (substitution_applies(nodes, i, j, k)) {
+						move.type = SUBSTITUTION;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+					}
+					/*
+					if (constructive_maj_applies(nodes, i, j, k)) {
+						move.type = MAJ3_XXY;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+						move.type = MAJ3_XYY;
+						moves.push_back(move);
+					}
+					*/
+				}
+			}
+		}
+
+		return moves;
+	}
+
+	vector<move> fast_compute_moves(const xmg& mig) {
+		vector<move> moves;
+
+		const auto& nodes = mig.nodes();
+		const auto nnodes = mig.nnodes();
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			move move;
+			move.nodeid1 = 0;
+			move.nodeid2 = 0;
+			move.nodeid3 = 0;
+			{
+				// Note that inverter propagation always applies.
+				move.type = INVERTER_PROP;
+				move.nodeid1 = i;
+				moves.push_back(move);
+			}
+			if (maj3_applies(node)) {
+				move.type = MAJ3_PROP;
+				move.nodeid1 = i;
+				moves.push_back(move);
+			}
+			for (auto j = 0u; j < nnodes; j++) {
+				if (dist_right_left_applies(nodes, i, j)) {
+					move.type = DIST_RIGHT_LEFT;
+					move.nodeid1 = i;
+					move.nodeid2 = j;
+					moves.push_back(move);
+				}
+				for (auto k = 0u; k < nnodes; k++) {
+					if (swap_ternary_applies_fast(nodes, i, j, k)) {
+						move.type = SWAP_TERNARY;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+					}
+					if (dist_left_right_applies(nodes, i, j, k)) {
+						move.type = DIST_LEFT_RIGHT;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+					}
 					if (substitution_applies(nodes, i, j, k)) {
 						move.type = SUBSTITUTION;
 						move.nodeid1 = i;
