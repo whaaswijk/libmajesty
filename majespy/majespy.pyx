@@ -338,6 +338,21 @@ cdef class PyXmg:
             move_list.append(m)
         return move_list
 
+    def get_moves_fast(self, subnodelimit=256):
+        cdef:
+            vector[move] possible_moves
+            unsigned int nb_moves
+
+        possible_moves = mig_interface.compute_moves_fast(self.c_xmg[0], subnodelimit)
+        nb_moves = possible_moves.size()
+
+        move_list = list()
+        for i in range(nb_moves):
+            m = PyMove()
+            m.set_data(possible_moves[i])
+            move_list.append(m)
+        return move_list
+
     def plot(self, highlight_action=None):
         """
 

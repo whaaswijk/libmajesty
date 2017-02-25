@@ -61,7 +61,6 @@ TEST_CASE("MIG Nr. Moves Test", "[mig game]") {
 		
 		delete mig;
 		delete strashed_mig;
-		std::cout << i << std::endl;
 	}
 }
 

@@ -1009,17 +1009,13 @@ namespace majesty {
 		return res;
 	}
 
-	bool substitution_applies(const vector<node>& nodes, nodeid nid, nodeid u, nodeid v) {
+	inline bool substitution_applies(const vector<node>& nodes, nodeid nid, nodeid u, nodeid v) {
 		// We make sure of the following:
 		// (1) the node is not a PI
 		// (2) the specified u and v is indeed a child of the parent
 		// (3) u != v, otherwise the operation is not interesting
 		// Note that for now we don't allow construction of nodes when u > nid because it's tricky
 		// to mainain topological order.
-		const auto& node = nodes[nid];
-		if (is_pi(node)) {
-			return false;
-		}
 		return (u < nid) && (v < nid) && (u != v);
 	}
 
@@ -1280,6 +1276,26 @@ namespace majesty {
 		return true;
 	}
 
+	bool dist_left_right_applies_fast(const vector<node>& nodes, nodeid outnodeid, nodeid innodeid, nodeid distnodeid) {
+		const auto& outnode = nodes[outnodeid];
+		const auto& innode = nodes[innodeid];
+		if (is_pi(innode))
+			return false;
+		
+		auto ninnodes = 0;
+		if (outnode.in1 == innodeid && !is_c1(outnode))
+			++ninnodes;
+		if (outnode.in2 == innodeid && !is_c2(outnode))
+			++ninnodes;
+		if (outnode.in3 == innodeid && !is_c3(outnode))
+			++ninnodes;
+		if (ninnodes != 1)
+			return false;
+		
+		return innode.in1 == distnodeid || innode.in2 == distnodeid || innode.in3 == distnodeid;
+	}
+
+	
 	bool dist_right_left_applies(const vector<node>& nodes, nodeid outnodeid, nodeid distnodeid) {
 		const auto& outnode = nodes[outnodeid];
 		if (is_pi(outnode)) { // Grandparent obviously may not be a PI
@@ -1729,11 +1745,12 @@ namespace majesty {
 		return moves;
 	}
 
-	vector<move> compute_moves_fast(const xmg& mig) {
+	vector<move> compute_moves_fast(const xmg& mig, const unsigned subnodelimit) {
 		vector<move> moves;
 
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
+		
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
@@ -1749,51 +1766,191 @@ namespace majesty {
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
+			/*
 			if (maj3_applies(node)) {
 				move.type = MAJ3_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
-			for (auto j = 0u; j < nnodes; j++) {
-				if (dist_right_left_applies(nodes, i, j)) {
-					move.type = DIST_RIGHT_LEFT;
+			*/
+
+			if (dist_right_left_applies(nodes, i, node.in1)) {
+				move.type = DIST_RIGHT_LEFT;
+				move.nodeid1 = i;
+				move.nodeid2 = node.in1;
+				moves.push_back(move);
+			}
+			if (dist_right_left_applies(nodes, i, node.in2)) {
+				move.type = DIST_RIGHT_LEFT;
+				move.nodeid1 = i;
+				move.nodeid2 = node.in2;
+				moves.push_back(move);
+			}
+			if (dist_right_left_applies(nodes, i, node.in3)) {
+				move.type = DIST_RIGHT_LEFT;
+				move.nodeid1 = i;
+				move.nodeid2 = node.in3;
+				moves.push_back(move);
+			}
+			{
+				auto innode1 = nodes[node.in1];
+				if (swap_ternary_applies_fast(nodes, i, node.in1, innode1.in1)) {
+					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
-					move.nodeid2 = j;
+					move.nodeid2 = node.in1;
+					move.nodeid3 = innode1.in1;
 					moves.push_back(move);
 				}
-				for (auto k = 0u; k < nnodes; k++) {
-					if (swap_ternary_applies_fast(nodes, i, j, k)) {
-						move.type = SWAP_TERNARY;
-						move.nodeid1 = i;
-						move.nodeid2 = j;
-						move.nodeid3 = k;
-						moves.push_back(move);
-					}
-					if (dist_left_right_applies(nodes, i, j, k)) {
+				if (swap_ternary_applies_fast(nodes, i, node.in1, innode1.in2)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in1;
+					move.nodeid3 = innode1.in2;
+					moves.push_back(move);
+				}
+				if (swap_ternary_applies_fast(nodes, i, node.in1, innode1.in3)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in1;
+					move.nodeid3 = innode1.in3;
+					moves.push_back(move);
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in1, innode1.in1)) {
 						move.type = DIST_LEFT_RIGHT;
 						move.nodeid1 = i;
-						move.nodeid2 = j;
-						move.nodeid3 = k;
+						move.nodeid2 = node.in1;
+						move.nodeid3 = innode1.in1;
 						moves.push_back(move);
-					}
-					if (substitution_applies(nodes, i, j, k)) {
-						move.type = SUBSTITUTION;
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in1, innode1.in2)) {
+						move.type = DIST_LEFT_RIGHT;
 						move.nodeid1 = i;
-						move.nodeid2 = j;
-						move.nodeid3 = k;
+						move.nodeid2 = node.in1;
+						move.nodeid3 = innode1.in2;
 						moves.push_back(move);
-					}
-					/*
-					if (constructive_maj_applies(nodes, i, j, k)) {
-						move.type = MAJ3_XXY;
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in1, innode1.in3)) {
+						move.type = DIST_LEFT_RIGHT;
 						move.nodeid1 = i;
-						move.nodeid2 = j;
-						move.nodeid3 = k;
+						move.nodeid2 = node.in1;
+						move.nodeid3 = innode1.in3;
 						moves.push_back(move);
-						move.type = MAJ3_XYY;
+				}
+			}
+			{
+				auto innode2 = nodes[node.in2];
+				if (swap_ternary_applies_fast(nodes, i, node.in2, innode2.in1)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in2;
+					move.nodeid3 = innode2.in1;
+					moves.push_back(move);
+				}
+				if (swap_ternary_applies_fast(nodes, i, node.in2, innode2.in2)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in2;
+					move.nodeid3 = innode2.in2;
+					moves.push_back(move);
+				}
+				if (swap_ternary_applies_fast(nodes, i, node.in2, innode2.in3)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in2;
+					move.nodeid3 = innode2.in3;
+					moves.push_back(move);
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in2, innode2.in1)) {
+						move.type = DIST_LEFT_RIGHT;
+						move.nodeid1 = i;
+						move.nodeid2 = node.in2;
+						move.nodeid3 = innode2.in1;
 						moves.push_back(move);
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in2, innode2.in2)) {
+						move.type = DIST_LEFT_RIGHT;
+						move.nodeid1 = i;
+						move.nodeid2 = node.in2;
+						move.nodeid3 = innode2.in2;
+						moves.push_back(move);
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in2, innode2.in3)) {
+						move.type = DIST_LEFT_RIGHT;
+						move.nodeid1 = i;
+						move.nodeid2 = node.in2;
+						move.nodeid3 = innode2.in3;
+						moves.push_back(move);
+				}
+			}
+			{
+				auto innode3 = nodes[node.in3];
+				if (swap_ternary_applies_fast(nodes, i, node.in3, innode3.in1)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in3;
+					move.nodeid3 = innode3.in1;
+					moves.push_back(move);
+				}
+				if (swap_ternary_applies_fast(nodes, i, node.in3, innode3.in2)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in3;
+					move.nodeid3 = innode3.in2;
+					moves.push_back(move);
+				}
+				if (swap_ternary_applies_fast(nodes, i, node.in3, innode3.in3)) {
+					move.type = SWAP_TERNARY;
+					move.nodeid1 = i;
+					move.nodeid2 = node.in3;
+					move.nodeid3 = innode3.in3;
+					moves.push_back(move);
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in3, innode3.in1)) {
+						move.type = DIST_LEFT_RIGHT;
+						move.nodeid1 = i;
+						move.nodeid2 = node.in3;
+						move.nodeid3 = innode3.in1;
+						moves.push_back(move);
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in3, innode3.in2)) {
+						move.type = DIST_LEFT_RIGHT;
+						move.nodeid1 = i;
+						move.nodeid2 = node.in3;
+						move.nodeid3 = innode3.in2;
+						moves.push_back(move);
+				}
+				if (dist_left_right_applies_fast(nodes, i, node.in3, innode3.in3)) {
+						move.type = DIST_LEFT_RIGHT;
+						move.nodeid1 = i;
+						move.nodeid2 = node.in3;
+						move.nodeid3 = innode3.in3;
+						moves.push_back(move);
+				}
+			}
+
+			if (nnodes < subnodelimit)
+			{
+				for (auto j = 0u; j < nnodes; j++) {
+					for (auto k = 0u; k < nnodes; k++) {
+						if (substitution_applies(nodes, i, j, k)) {
+							move.type = SUBSTITUTION;
+							move.nodeid1 = i;
+							move.nodeid2 = j;
+							move.nodeid3 = k;
+							moves.push_back(move);
+						}
+						/*
+						  if (constructive_maj_applies(nodes, i, j, k)) {
+						  move.type = MAJ3_XXY;
+						  move.nodeid1 = i;
+						  move.nodeid2 = j;
+						  move.nodeid3 = k;
+						  moves.push_back(move);
+						  move.type = MAJ3_XYY;
+						  moves.push_back(move);
+						  }
+						*/
 					}
-					*/
 				}
 			}
 		}

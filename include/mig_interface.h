@@ -75,7 +75,7 @@ namespace majesty {
 	xmg* apply_move(const xmg&, move&);
 	float compute_reward(const xmg&, const xmg&);
 	std::vector<move> compute_moves(const xmg&);
-	std::vector<move> compute_moves_fast(const xmg&);
+	std::vector<move> compute_moves_fast(const xmg&, const unsigned subnodelimit = 256);
 
 	xmg* mig_string_decompose(const std::string& truth_table);
 	xmg* mig_expression_decompose(unsigned ninputs, const std::string& expr);
