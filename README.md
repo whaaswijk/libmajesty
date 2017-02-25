@@ -44,9 +44,10 @@ MIG synthesis or resyn2), make sure that the Cirkit and ABC binaries
 are on the path. Note that the ABC binary is automatically built by
 Majesty.
 
-```
+```bash
 # You can find the ABC binary under the Majesty build folder
 cd libmajesty/build/abc/src/abc-project
 pwd
 # Add the output of pwd to the path
 export PATH=$PATH:$(PWD_OUTPUT)
+```
