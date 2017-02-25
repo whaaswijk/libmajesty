@@ -1,4 +1,4 @@
-# Majesty
+# Majesty ♕
 A Logic Synthesis and Optimization package
 
 
