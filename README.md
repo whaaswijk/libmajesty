@@ -1,5 +1,5 @@
-# libmajesty
-Library for Logic Synthesis and Optimization
+# Majesty
+A Logic Synthesis and Optimization package
 
 
 ## Installation
