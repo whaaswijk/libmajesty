@@ -13,7 +13,7 @@ externalproject_add(
 	PREFIX "abc"
 	CONFIGURE_COMMAND ""
 	UPDATE_COMMAND ""
-	BUILD_COMMAND pwd && make ABC_USE_PIC=1 -j8 libabc.a
+	BUILD_COMMAND pwd && make ABC_USE_PIC=1 -j8 libabc.a && make
 	BUILD_IN_SOURCE 1
 	INSTALL_COMMAND ""
 )
