@@ -1117,6 +1117,7 @@ namespace majesty {
 				if (!is_c3(gp)) parentcmpl = false;
 			}
 		}
+		
 		// We need exactly 1 uncomplemented parent node
 		if (nparentfanin != 1 || parentcmpl) {
 			return false;

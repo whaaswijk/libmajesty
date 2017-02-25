@@ -208,6 +208,7 @@ namespace majesty
 		env.register_command("search_depth_improvement", search_depth_improvement);
 		env.register_command("mig_apply_move", mig_apply_move);
 		env.register_command("compute_nr_moves", compute_nr_moves);
+		env.register_command("compute_nr_moves_fast", compute_nr_moves_fast);
 		env.register_command("tt", read_truth);
 		env.register_command("tt_print_stats", tt_print_stats);
 		env.register_command("tt_to_mig", tt_to_mig);

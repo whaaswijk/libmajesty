@@ -13,6 +13,8 @@ namespace majesty
 		mig_apply_move(shell_env* env, const std::vector<std::string>& argv);
 	command_code
 		compute_nr_moves(shell_env* env, const std::vector<std::string>& argv);
+	command_code
+		compute_nr_moves_fast(shell_env* env, const std::vector<std::string>& argv);
 }
 
 #endif

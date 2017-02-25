@@ -278,5 +278,19 @@ namespace majesty
 		return success;
 	}
 	
+	command_code
+	compute_nr_moves_fast(shell_env* env, const vector<string>& argv)
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->error("no MIG available\n");
+			return cmd_error;
+		}
+
+		auto moves = compute_moves_fast(*env->current_ntk);
+		env->print("%d moves available\n", moves.size());
+
+		return success;
+	}
 	
 }

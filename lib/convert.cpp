@@ -386,10 +386,13 @@ namespace majesty {
 	}
 
 	xmg exact_depth_mig(const tt& func) {
-		auto expression = exact_depth_mig_expression(func);
-		auto ninputs = tt_num_vars(func);
-		auto exact_parsed = xmg_from_string(ninputs, expression);
-		return strash(exact_parsed);
+		auto cmdstr = "cirkit -c \"tt " + to_string(func) + "; exact_mig -o 2";
+		cmdstr += "; write_verilog -m cirkit.v; quit\" > /dev/null";
+		auto success = system(cmdstr.c_str());
+		if (success != 0) {
+			throw runtime_error("Exact synthesis through Cirkit failed");
+		}
+		return read_verilog("cirkit.v");
 	}
 
 	xmg exact_xmg(const tt& func) {

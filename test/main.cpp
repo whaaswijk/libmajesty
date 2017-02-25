@@ -53,10 +53,14 @@ TEST_CASE("MIG Nr. Moves Test", "[mig game]") {
 	const auto nfuncs = (1u << (1u << ninputs));
 	for (auto i = 0u; i < nfuncs; i++) {
 		auto mig = mig_int_decompose(ninputs, i);
-		auto moves_original = compute_moves(*mig);
-		auto moves_fast = compute_moves_fast(*mig);
+		auto strashed_mig = strash_xmg(*mig);
+		auto moves_original = compute_moves(*strashed_mig);
+		auto moves_fast = compute_moves_fast(*strashed_mig);
+
 		REQUIRE(moves_original.size() == moves_fast.size());
+		
 		delete mig;
+		delete strashed_mig;
 		std::cout << i << std::endl;
 	}
 }
