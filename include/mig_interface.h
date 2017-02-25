@@ -88,4 +88,6 @@ namespace majesty {
 	xmg* strash_xmg(const xmg&, bool no_compl=true);
 	xmg* remove_duplicates(const xmg&);
     xmg* verilog_to_xmg_ptr(const std::string&);
+
+	xmg* resyn2(const xmg&);
 };

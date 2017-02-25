@@ -166,6 +166,20 @@ namespace majesty
 	}
 
 	command_code
+	resyn2_cmd(shell_env* env, const vector<string>& argv)
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->error("no current network available\n");
+			return cmd_error;
+		}
+		auto resyn2_xmg = resyn2(*env->current_ntk);
+		env->current_ntk.reset(resyn2_xmg);
+		return success;
+	}
+	
+
+	command_code
 	tt_print_stats(shell_env* env, const vector<string>& argv)
 	{
 		if (!env->current_tt)
@@ -212,5 +226,6 @@ namespace majesty
 		env.register_command("tt", read_truth);
 		env.register_command("tt_print_stats", tt_print_stats);
 		env.register_command("tt_to_mig", tt_to_mig);
+		env.register_command("resyn2", resyn2_cmd);
 	}
 }

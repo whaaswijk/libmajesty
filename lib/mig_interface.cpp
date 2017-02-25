@@ -8,6 +8,7 @@
 #include <boost/pending/integer_log2.hpp>
 #include <npn_canonization.hpp>
 #include <string>
+#include "maj_io.h"
 
 using namespace std;
 
@@ -1883,4 +1884,17 @@ namespace majesty {
 	unsigned long get_truth_table(const xmg& xmg) {
 		return simulate_xmg(xmg).to_ulong();
 	}
+
+	xmg*
+	resyn2(const xmg& m)
+	{
+		write_verilog(m, "tmp.v");
+		auto cmdstr = "abc -c \"r tmp.v; st; resyn2; w tmp.v; quit \" > /dev/null";
+		auto success = system(cmdstr);
+		if (success != 0) {
+			throw runtime_error("Exact synthesis through Cirkit failed");
+		}
+		return new xmg(read_verilog("tmp.v"));
+	}
+	
 }
