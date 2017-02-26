@@ -382,6 +382,7 @@ namespace majesty {
 		auto expression = exact_mig_expression(func);
 		auto ninputs = tt_num_vars(func);
 		auto exact_parsed = xmg_from_string(ninputs, expression);
+		exact_parsed.create_dummy_names();
 		return strash(exact_parsed);
 	}
 
