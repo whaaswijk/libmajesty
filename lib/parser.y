@@ -83,7 +83,8 @@ tnames: /* empty */
 ;
 
 
-inputs: INPUT ilist ';'
+inputs: /* No inputs */
+| INPUT ilist ';'
 ;
 
 ilist: /* empty */
@@ -97,7 +98,8 @@ olist: /* empty */
 | olist NAME { handle_output($2); }
 ;
 
-wires: WIRE wnames ';'
+wires: /* no wires */
+| WIRE wnames ';'
 
 wnames: /* empty */
 | wnames NAME { handle_wire($2); }
