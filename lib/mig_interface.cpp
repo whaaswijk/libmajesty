@@ -2051,7 +2051,8 @@ namespace majesty {
 		if (success != 0) {
 			throw runtime_error("Exact synthesis through Cirkit failed");
 		}
-		return new xmg(read_verilog("tmp.v"));
+		auto tmp_xmg = read_verilog("tmp.v");
+		return new xmg(tmp_xmg);
 	}
 	
 }
