@@ -387,8 +387,9 @@ namespace majesty {
 	}
 
 	xmg exact_depth_mig(const tt& func) {
-		auto cmdstr = "cirkit -c \"tt " + to_string(func) + "; exact_mig -o 2";
+		auto cmdstr = "cirkit -c \"tt " + to_string(func) + "; exact_mig -o 2";// --start_depth 4";
 		cmdstr += "; write_verilog -m cirkit.v; quit\" > /dev/null";
+		printf("cmdstr: %s\n", cmdstr.c_str());
 		auto success = system(cmdstr.c_str());
 		if (success != 0) {
 			throw runtime_error("Exact synthesis through Cirkit failed");

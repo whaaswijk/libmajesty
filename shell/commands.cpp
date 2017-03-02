@@ -77,6 +77,20 @@ namespace majesty
 	}
 
 	command_code
+	xmg_to_depth_optimum(shell_env* env, const vector<string>& argv)
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->error("no current network available\n");
+			return cmd_error;
+		}
+		auto func = simulate_xmg(*env->current_ntk);
+		auto opt_mig = new xmg(exact_depth_mig(func));
+		env->current_ntk.reset(opt_mig);
+		return success;
+	}
+
+	command_code
 	xmg_strash(shell_env* env, const vector<string>& argv)
 	{
 		if (env->current_ntk == nullptr)
@@ -218,6 +232,7 @@ namespace majesty
 		env.register_command("xmg_write_verilog", xmg_write_verilog);
 		env.register_command("xmg_print_stats", print_stats);
 		env.register_command("xmg_strash", xmg_strash);
+		env.register_command("xmg_to_depth_optimum", xmg_to_depth_optimum);
 		env.register_command("search_improvement", search_improvement);
 		env.register_command("search_depth_improvement", search_depth_improvement);
 		env.register_command("mig_apply_move", mig_apply_move);

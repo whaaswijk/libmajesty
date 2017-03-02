@@ -25,7 +25,7 @@ whitespace [ \t\n]
 operator [&|()~;=\[\]]
 comment \/\/.*\n
 num [0-9]+
-name (\\)?[a-zA-Z0-9"_"]+(\[[0-9]+\])?
+name (\\)?[a-zA-Z0-9"_"]+
 lit 1'b[0-1]
 comma ,
 
