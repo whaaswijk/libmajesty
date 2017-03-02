@@ -1745,9 +1745,9 @@ namespace majesty {
 		return moves;
 	}
 
-	vector<move> compute_moves_fast(const xmg& mig, const unsigned subnodelimit) {
+	vector<move> compute_moves_fast(const xmg& mig, const unsigned max_nr_moves) {
 		vector<move> moves;
-
+		auto max_nr_moves_exceeded = false;
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
 		
@@ -1928,28 +1928,18 @@ namespace majesty {
 				}
 			}
 
-			if (nnodes < subnodelimit)
-			{
-				for (auto j = 0u; j < nnodes; j++) {
-					for (auto k = 0u; k < nnodes; k++) {
-						if (substitution_applies(nodes, i, j, k)) {
-							move.type = SUBSTITUTION;
-							move.nodeid1 = i;
-							move.nodeid2 = j;
-							move.nodeid3 = k;
-							moves.push_back(move);
-						}
-						/*
-						  if (constructive_maj_applies(nodes, i, j, k)) {
-						  move.type = MAJ3_XXY;
-						  move.nodeid1 = i;
-						  move.nodeid2 = j;
-						  move.nodeid3 = k;
-						  moves.push_back(move);
-						  move.type = MAJ3_XYY;
-						  moves.push_back(move);
-						  }
-						*/
+			for (auto j = 0u; j < nnodes && !max_nr_moves_exceeded; j++) {
+				for (auto k = 0u; k < nnodes && !max_nr_moves_exceeded; k++) {
+					if (max_nr_moves > 0 && moves.size() > max_nr_moves) {
+						max_nr_moves_exceeded = true;
+						break;
+					}
+					if (substitution_applies(nodes, i, j, k)) {
+						move.type = SUBSTITUTION;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
 					}
 				}
 			}

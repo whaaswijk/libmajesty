@@ -269,6 +269,60 @@ cdef class PyXmg:
                 adj_tensor[0, n_id, n.in3] += 1
         return adj_tensor
 
+    def get_move_inds_fast(self, max_nr_moves):
+        cdef:
+            vector[move] possible_moves
+            unsigned int nb_moves
+            unsigned int nb_unary_moves
+            unsigned int nb_binary_moves
+            unsigned int nb_ternary_moves
+            np.ndarray[unsigned int, ndim=2, mode='c'] unary_moves
+            np.ndarray[unsigned int, ndim=2, mode='c'] binary_moves
+            np.ndarray[unsigned int, ndim=2, mode='c'] ternary_moves
+            unsigned int i_unary
+            unsigned int i_binary
+            unsigned int i_ternary
+            move tmp_move
+
+        possible_moves = mig_interface.compute_moves_fast(self.c_xmg[0], max_nr_moves)
+        nb_moves = possible_moves.size()
+
+        nb_unary_moves = 0
+        nb_binary_moves = 0
+        nb_ternary_moves = 0
+        for i in range(nb_moves):
+            if possible_moves[i].type < _nr_unary_move:
+                nb_unary_moves += 1
+            elif possible_moves[i].type < _nr_unary_move+_nr_binary_move:
+                nb_binary_moves += 1
+            else:
+                nb_ternary_moves += 1
+
+        unary_moves = np.empty((nb_unary_moves, 2), dtype=np.uint32, order='C')
+        binary_moves = np.empty((nb_binary_moves, 3), dtype=np.uint32, order='C')
+        ternary_moves = np.empty((nb_ternary_moves, 4), dtype=np.uint32, order='C')
+        i_unary = 0
+        i_binary = 0
+        i_ternary = 0
+        for i in range(nb_moves):
+            tmp_move = possible_moves[i]
+            if tmp_move.type < _nr_unary_move:
+                unary_moves[i_unary, 0] = tmp_move.type
+                unary_moves[i_unary, 1] = tmp_move.nodeid1
+                i_unary +=1
+            elif tmp_move.type < _nr_unary_move+_nr_binary_move:
+                binary_moves[i_binary, 0] = tmp_move.type
+                binary_moves[i_binary, 1] = tmp_move.nodeid1
+                binary_moves[i_binary, 2] = tmp_move.nodeid2
+                i_binary +=1
+            else:
+                ternary_moves[i_ternary, 0] = tmp_move.type
+                ternary_moves[i_ternary, 1] = tmp_move.nodeid1
+                ternary_moves[i_ternary, 2] = tmp_move.nodeid2
+                ternary_moves[i_ternary, 3] = tmp_move.nodeid3
+                i_ternary +=1
+        return unary_moves, binary_moves, ternary_moves
+
     def get_move_inds(self):
         cdef:
             vector[move] possible_moves
@@ -338,12 +392,12 @@ cdef class PyXmg:
             move_list.append(m)
         return move_list
 
-    def get_moves_fast(self, subnodelimit=256):
+    def get_moves_fast(self, max_moves=5000):
         cdef:
             vector[move] possible_moves
             unsigned int nb_moves
 
-        possible_moves = mig_interface.compute_moves_fast(self.c_xmg[0], subnodelimit)
+        possible_moves = mig_interface.compute_moves_fast(self.c_xmg[0], max_moves)
         nb_moves = possible_moves.size()
 
         move_list = list()
