@@ -1929,7 +1929,7 @@ namespace majesty {
 			}
 		}
 
-		for (auto i = 0u; i < nnodes; i++) {
+		for (auto i = 0u; i < nnodes && !max_nr_moves_exceeded; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				continue;
@@ -1941,7 +1941,7 @@ namespace majesty {
 
 			for (auto j = 0u; j < nnodes && !max_nr_moves_exceeded; j++) {
 				for (auto k = 0u; k < nnodes && !max_nr_moves_exceeded; k++) {
-					if (max_nr_moves > 0 && moves.size() > max_nr_moves) {
+					if (max_nr_moves > 0 && moves.size() >= max_nr_moves) {
 						max_nr_moves_exceeded = true;
 						break;
 					}
