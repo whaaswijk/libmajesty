@@ -1927,6 +1927,17 @@ namespace majesty {
 						moves.push_back(move);
 				}
 			}
+		}
+
+		for (auto i = 0u; i < nnodes; i++) {
+			const auto& node = nodes[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			move move;
+			move.nodeid1 = 0;
+			move.nodeid2 = 0;
+			move.nodeid3 = 0;
 
 			for (auto j = 0u; j < nnodes && !max_nr_moves_exceeded; j++) {
 				for (auto k = 0u; k < nnodes && !max_nr_moves_exceeded; k++) {
@@ -1944,7 +1955,7 @@ namespace majesty {
 				}
 			}
 		}
-
+		
 		return moves;
 	}
 	
