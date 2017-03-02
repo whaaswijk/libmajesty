@@ -2054,5 +2054,19 @@ namespace majesty {
 		auto tmp_xmg = read_verilog("tmp.v");
 		return new xmg(tmp_xmg);
 	}
+
+	xmg*
+	resyn2(const xmg& m, const string& tmpfilename)
+	{
+		write_verilog(m, tmpfilename);
+		auto cmdstr = "abc -c \"r " + tmpfilename + "; st; resyn2; w " + tmpfilename + "; quit \" > /dev/null";
+		auto success = system(cmdstr.c_str());
+		if (success != 0) {
+			throw runtime_error("Exact synthesis through Cirkit failed");
+		}
+		auto tmp_xmg = read_verilog(tmpfilename);
+		return new xmg(tmp_xmg);
+	}
+	
 	
 }

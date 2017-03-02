@@ -74,7 +74,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
     
     xmg* strash_xmg(const xmg&)
     xmg* remove_duplicates(const xmg&)
-    xmg* resyn2(const xmg&)
+    xmg* resyn2(const xmg&, const string & tmpfilename)
     xmg* verilog_to_xmg_ptr(const string &)
 
 cdef extern from "maj_io.h" namespace "majesty":

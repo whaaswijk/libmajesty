@@ -589,10 +589,12 @@ def get_npn_representative(PyXmg py_xmg) -> PyXmg:
     result = mig_interface.get_npn_representative(py_xmg.c_xmg[0])
     return PyXmg().set_pt_to(result)
 
-def resyn2(PyXmg py_xmg) -> PyXmg:
+def resyn2(PyXmg py_xmg, py_filename = 'tmp.v') -> PyXmg:
     cdef:
         xmg* result
-    result = mig_interface.resyn2(py_xmg.c_xmg[0])
+        string filename		
+    filename = py_filename.encode('UTF-8')
+    result = mig_interface.resyn2(py_xmg.c_xmg[0], filename)
     return PyXmg().set_pt_to(result)
 
 def get_npn_representative(PyXmg py_xmg) -> int:

@@ -89,5 +89,5 @@ namespace majesty {
 	xmg* remove_duplicates(const xmg&);
     xmg* verilog_to_xmg_ptr(const std::string&);
 
-	xmg* resyn2(const xmg&);
+	xmg* resyn2(const xmg&, const std::string& tmpfilename = "tmp.v");
 };
