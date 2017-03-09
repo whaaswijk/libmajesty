@@ -2050,7 +2050,7 @@ namespace majesty {
 		auto cmdstr = "abc -c \"r tmp.v; st; resyn2; w tmp.v; quit \" > /dev/null";
 		auto success = system(cmdstr);
 		if (success != 0) {
-			throw runtime_error("Exact synthesis through Cirkit failed");
+			throw runtime_error("Synthesis through ABC failed");
 		}
 		auto tmp_xmg = read_verilog("tmp.v");
 		return new xmg(tmp_xmg);
@@ -2063,7 +2063,7 @@ namespace majesty {
 		auto cmdstr = "abc -c \"r " + tmpfilename + "; st; resyn2; w " + tmpfilename + "; quit \" > /dev/null";
 		auto success = system(cmdstr.c_str());
 		if (success != 0) {
-			throw runtime_error("Exact synthesis through Cirkit failed");
+			throw runtime_error("Synthesis through ABC failed");
 		}
 		auto tmp_xmg = read_verilog(tmpfilename);
 		return new xmg(tmp_xmg);
