@@ -59,6 +59,40 @@ cdef class PyMove:
             if node_id3 is not None:
                 self.c_move.nodeid3 = node_id3
 
+    @staticmethod
+    def from_move_inds(tup) -> PyXmg:
+        """
+
+        :param tup: a 4-tuple with padded -1, and with
+                    modified move_type to fit [O,NB_{UNARY,BINARY,TERNARY]_MOVE_TYPES[ range
+        :return:
+        """
+        assert len(tup) == 4
+        result = PyMove()
+        m_type = tup[0]
+        result.c_move.nodeid1 = tup[1]
+        if tup[2] != -1:
+            m_type += _nr_unary_move
+            result.c_move.nodeid2 = tup[2]
+            if tup[3] != -1:
+                m_type += _nr_binary_move
+                result.c_move.nodeid3 = tup[3]
+        result.c_move.type = <MoveType>m_type
+        return result
+
+    def to_move_inds(self):
+        """
+        :return: a 4-tuple with padded -1, and with
+                 modified move_type to fit [O,NB_{UNARY,BINARY,TERNARY]_MOVE_TYPES[ range
+        """
+        if self.c_move.type < _nr_unary_move:
+            return self.c_move.type, self.c_move.nodeid1, -1, -1
+        elif self.c_move.type < _nr_unary_move+_nr_binary_move:
+            return self.c_move.type-_nr_unary_move, self.c_move.nodeid1, self.c_move.nodeid2, -1
+        else:
+            return self.c_move.type-_nr_unary_move-_nr_binary_move, self.c_move.nodeid1,\
+                   self.c_move.nodeid2, self.c_move.nodeid3
+
     cdef set_data(self, move move_data):
         self.c_move = move_data
 
@@ -376,6 +410,44 @@ cdef class PyXmg:
                 ternary_moves[i_ternary, 3] = tmp_move.nodeid3
                 i_ternary +=1
         return unary_moves, binary_moves, ternary_moves
+
+    def get_move_inds_unified(self, max_nr_moves=None):
+        """
+
+        :param max_nr_moves:
+        :return: a int32[Nb_Moves, 4] matrix where unary and binary params are padded with -1, and modified move_type
+        """
+        cdef:
+            vector[move] possible_moves
+            unsigned int nb_moves
+            np.ndarray[int, ndim=2, mode='c'] moves_params
+            unsigned int i_unary
+            unsigned int i_binary
+            unsigned int i_ternary
+            move tmp_move
+
+        if max_nr_moves is None:
+            possible_moves = mig_interface.compute_moves(self.c_xmg[0])
+        else:
+            possible_moves = mig_interface.compute_moves_fast(self.c_xmg[0], max_nr_moves)
+        nb_moves = possible_moves.size()
+
+        moves_params = np.full((nb_moves, 4), -1, dtype=np.int32, order='C')
+        for i in range(nb_moves):
+            tmp_move = possible_moves[i]
+            if tmp_move.type < _nr_unary_move:
+                moves_params[i, 0] = tmp_move.type
+                moves_params[i, 1] = tmp_move.nodeid1
+            elif tmp_move.type < _nr_unary_move+_nr_binary_move:
+                moves_params[i, 0] = tmp_move.type - _nr_unary_move
+                moves_params[i, 1] = tmp_move.nodeid1
+                moves_params[i, 2] = tmp_move.nodeid2
+            else:
+                moves_params[i, 0] = tmp_move.type - (_nr_unary_move+_nr_binary_move)
+                moves_params[i, 1] = tmp_move.nodeid1
+                moves_params[i, 2] = tmp_move.nodeid2
+                moves_params[i, 3] = tmp_move.nodeid3
+        return moves_params
 
     def get_moves(self):
         cdef:
