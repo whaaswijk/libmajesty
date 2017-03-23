@@ -553,9 +553,9 @@ namespace majesty {
 				m[this] = std::move(f);
 				return;
 			} else {
-				// This is a cut of a non-PI node, but should
-				// contain only a PI.
-				assert(nodes[_nodes[0]].pi);
+				// This is a cut of a non-PI node, but
+				// contains just one node
+			  //				assert(nodes[_nodes[0]].pi);
 				unique_ptr<tt> f(new tt(tt_nth_var(0)));
 				m[this] = std::move(f);
 				return;
