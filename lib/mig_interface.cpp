@@ -1674,6 +1674,12 @@ namespace majesty {
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
+			// Always add the identity
+			{
+				move.type = IDENTITY;
+				move.nodeid1 = i;
+				moves.push_back(move);
+			}
 			if (maj3_applies(node)) {
 				move.type = MAJ3_PROP;
 				move.nodeid1 = i;
@@ -1764,6 +1770,12 @@ namespace majesty {
 				// Note that inverter propagation always applies.
 				move.type = INVERTER_PROP;
 				move.nodeid1 = i;
+				moves.push_back(move);
+			}
+			{
+				// Always add the identity
+				move.type = IDENTITY;
+				move.nodeid1 = 0;
 				moves.push_back(move);
 			}
 			/*
@@ -1990,7 +2002,7 @@ namespace majesty {
 		return new xmg(rdup(mig));
 	}
 
-	xmg* apply_move(const xmg& mig, move& move) {
+	xmg* apply_move(const xmg& mig, const move& move) {
 		switch (move.type) {
 		case MAJ3_PROP:
 			if (maj3_applies(mig.nodes()[move.nodeid1])) {
@@ -2022,6 +2034,8 @@ namespace majesty {
 		case RELEVANCE:
 			return relevance(mig, move.nodeid1, move.nodeid2, move.nodeid3);
 			break;
+		case IDENTITY:
+			return new xmg(mig);
 		default:
 			return NULL;
 			break;

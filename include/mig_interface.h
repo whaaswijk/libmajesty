@@ -7,6 +7,7 @@ namespace majesty {
 
 	enum MoveType {
 		MAJ3_PROP = 0,
+		IDENTITY,
 		INVERTER_PROP,
 		DIST_RIGHT_LEFT,
 		SWAP_TERNARY,
@@ -22,9 +23,25 @@ namespace majesty {
 		nodeid nodeid1;
 		nodeid nodeid2;
 		nodeid nodeid3;
+
+		bool operator==(const move &o) const
+		{
+			return type == o.type && nodeid1 == o.nodeid1 && nodeid2 == o.nodeid2 && nodeid3 == o.nodeid3;
+		}
+		
+		bool operator<(const move &o) const
+		{
+			return (type < o.type) ||
+				(type == o.type && nodeid1 < o.nodeid1) ||
+				(type == o.type && nodeid1 == o.nodeid1 && nodeid2 < o.nodeid2) ||
+				(type == o.type && nodeid1 == o.nodeid1 && nodeid2 == o.nodeid2 && nodeid3 < o.nodeid3);
+		}
+
 	};
 
-	const unsigned NR_UNARY_MOVES = 2;
+
+
+	const unsigned NR_UNARY_MOVES = 3;
 	const unsigned NR_BINARY_MOVES = 1;
 	const unsigned NR_TERNARY_MOVES = 6;
 	const unsigned NR_EDGE_TYPES = 2;
@@ -72,7 +89,7 @@ namespace majesty {
 		xmg* random_mig_decomposition(unsigned ninputs);
 	};
 
-	xmg* apply_move(const xmg&, move&);
+	xmg* apply_move(const xmg&, const move&);
 	float compute_reward(const xmg&, const xmg&);
 	std::vector<move> compute_moves(const xmg&);
 	std::vector<move> compute_moves_fast(const xmg&, const unsigned max_nr_moves = 0);
@@ -90,4 +107,24 @@ namespace majesty {
     xmg* verilog_to_xmg_ptr(const std::string&);
 
 	xmg* resyn2(const xmg&, const std::string& tmpfilename = "tmp.v");
+};
+
+namespace std
+{
+
+	template <>
+		struct hash<majesty::move>
+	{
+		std::size_t operator()(const struct majesty::move& k) const
+		{
+			using std::size_t;
+			using std::hash;
+
+			return (hash<nodeid>()((nodeid)k.type)) ^
+				(hash<nodeid>()(k.nodeid1) << 1) ^
+				(hash<nodeid>()(k.nodeid2) << 2) ^
+				(hash<nodeid>()(k.nodeid3) << 3);
+		}
+	};
+
 };

@@ -20,7 +20,8 @@ cdef unsigned _nr_binary_move = mig_interface.get_nr_binary_moves()
 cdef unsigned _nr_ternary_move = mig_interface.get_nr_ternary_moves()
 
 _move_type_str = {mig_interface.MAJ3_PROP: 'Majority',
-                  mig_interface.INVERTER_PROP: 'Inverted Propagation',
+                  mig_interface.IDENTITY: 'Identity',
+                  mig_interface.INVERTER_PROP: 'Inverter Propagation',
                   mig_interface.DIST_LEFT_RIGHT : 'Distributivity L->R',
                   mig_interface.SWAP_TERNARY : 'Swap3',
                   mig_interface.DIST_RIGHT_LEFT : 'Distributivity R->L',
@@ -31,6 +32,7 @@ _move_type_str = {mig_interface.MAJ3_PROP: 'Majority',
                   }
 
 _move_type_color = {mig_interface.MAJ3_PROP : 'brown1',
+                    mig_interface.IDENTITY : 'black',
                     mig_interface.INVERTER_PROP : 'cadetblue1',
                     mig_interface.MAJ3_XXY : 'red',
                     mig_interface.MAJ3_XYY : 'blue',

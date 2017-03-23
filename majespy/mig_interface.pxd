@@ -26,6 +26,7 @@ cdef extern from "xmg.h" namespace "majesty":
 cdef extern from "mig_interface.h" namespace "majesty":
     cdef enum MoveType:
         MAJ3_PROP = 0,
+        IDENTITY,
         INVERTER_PROP,
         DIST_RIGHT_LEFT,
         SWAP_TERNARY,

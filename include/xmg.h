@@ -9,6 +9,7 @@
 #include <map>
 #include <unordered_map>
 #include <functional>
+#include <boost/functional/hash.hpp>
 
 namespace Minisat {
 	class Solver;
@@ -103,6 +104,22 @@ namespace majesty {
 		 */
 		uint8_t flag;
 		nodeid ecrep, ecnext;
+
+		bool operator==(const node &o) const
+		{
+			return in1 == o.in1 && in2 == o.in2 && in3 == o.in3 &&
+			flag == o.flag && ecrep == o.ecrep && ecnext == o.ecnext;
+		}
+		
+		bool operator<(const node &o) const
+		{
+			return (in1 < o.in1) ||
+				(in1 == o.in1 && in2 < o.in2) ||
+				(in1 == o.in2 && in2 == o.in2 && in3 < o.in3) ||
+				(in1 == o.in2 && in2 == o.in2 && in3 == o.in3 && flag < o.flag) ||
+				(in1 == o.in2 && in2 == o.in2 && in3 == o.in3 && flag == o.flag && ecrep < o.ecrep) ||
+				(in1 == o.in2 && in2 == o.in2 && in3 == o.in3 && flag == o.flag && ecrep == o.ecrep && ecnext < o.ecnext);
+		}
 	};
 
 	struct xmg_stats {
@@ -364,8 +381,30 @@ namespace majesty {
 			
 			std::string to_verilog() const;
 
-			bool operator==(const xmg &m) const {
-				return to_verilog() == m.to_verilog();
+			bool operator==(const xmg &o) const
+			{
+				const auto& oout = o.outputs();
+				const auto& ooutcompl = o.outcompl();
+				const auto& onodes = o.nodes();
+				if (nin() != o.nin() || _outputs.size() != oout.size() || _nodes.size() != onodes.size())
+				{
+					return false;
+				}
+				for (auto i = 0u; i < _nodes.size(); i++)
+				{
+					const auto& n = _nodes[i];
+					const auto& on = onodes[i];
+					if (!(n == on))
+						return false;
+				}
+				for (auto i = 0u; i < oout.size(); i++)
+				{
+					if (_outputs[i] != oout[i] || _outcompl[i] != ooutcompl[i])
+					{
+						return false;
+					}
+				}
+				return true;
 			}
 	};
 
@@ -376,6 +415,52 @@ namespace majesty {
 	// Simulates every possible input vector on an xmg and returns the function it computes
 	boost::dynamic_bitset<> simulate_xmg(const xmg&);
 
-}
+};
+
+namespace std
+{
+
+	template <>
+		struct hash<majesty::node>
+	{
+		std::size_t operator()(const struct majesty::node& k) const
+		{
+			using boost::hash_combine;
+
+			/*
+			size_t seed = 0;
+			hash_combine(seed, k.in1);
+			hash_combine(seed, k.in2);
+			hash_combine(seed, k.in3);
+			hash_combine(seed, k.flag);
+			hash_combine(seed, k.ecrep);
+			hash_combine(seed, k.ecnext);
+			return seed;
+			*/
+			return (k.in1 + k.in2 + k.in3 + k.flag + k.ecrep + k.ecnext);
+		}
+	};
+
+	template <>
+		struct hash<majesty::xmg>
+	{
+		std::size_t operator()(const class majesty::xmg& k) const
+		{
+			using boost::hash_combine;
+
+			size_t seed = 0;
+			const auto& nodes = k.nodes();
+			for (auto i = 0u; i < nodes.size(); i++)
+			{
+				const auto& node = nodes[i];
+//				hash_combine(seed, std::hash<majesty::node>()(node));
+				seed += std::hash<majesty::node>{}(node);
+			}
+			return seed;
+		}
+	};
+
+};
+
 
 #endif
