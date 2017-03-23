@@ -449,6 +449,8 @@ cdef class PyXmg:
                 moves_params[i, 1] = tmp_move.nodeid1
                 moves_params[i, 2] = tmp_move.nodeid2
                 moves_params[i, 3] = tmp_move.nodeid3
+
+        assert moves_params.shape[0] > 0, 'Move list should never be empty'
         return moves_params
 
     def get_moves(self):

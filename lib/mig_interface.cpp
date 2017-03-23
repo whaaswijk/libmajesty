@@ -1657,6 +1657,15 @@ namespace majesty {
 	vector<move> compute_moves(const xmg& mig) {
 		vector<move> moves;
 
+        {
+		    // Always add the identity
+		    move move;
+            move.type = IDENTITY;
+            move.nodeid1 = 0;
+			move.nodeid2 = 0;
+			move.nodeid3 = 0;
+            moves.push_back(move);
+        }
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
 		for (auto i = 0u; i < nnodes; i++) {
@@ -1671,12 +1680,6 @@ namespace majesty {
 			{
 				// Note that inverter propagation always applies.
 				move.type = INVERTER_PROP;
-				move.nodeid1 = i;
-				moves.push_back(move);
-			}
-			// Always add the identity
-			{
-				move.type = IDENTITY;
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
@@ -1756,7 +1759,16 @@ namespace majesty {
 		auto max_nr_moves_exceeded = false;
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
-		
+
+		{
+		    // Always add the identity
+		    move move;
+            move.type = IDENTITY;
+            move.nodeid1 = 0;
+			move.nodeid2 = 0;
+			move.nodeid3 = 0;
+            moves.push_back(move);
+        }
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
@@ -1772,12 +1784,7 @@ namespace majesty {
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
-			{
-				// Always add the identity
-				move.type = IDENTITY;
-				move.nodeid1 = 0;
-				moves.push_back(move);
-			}
+
 			/*
 			if (maj3_applies(node)) {
 				move.type = MAJ3_PROP;
