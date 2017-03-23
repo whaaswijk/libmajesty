@@ -6,8 +6,7 @@ A Logic Synthesis and Optimization package
 
 ```bash
 # As root, install the packages needed
-
-# If the include path to Anaconda cannot be found, use the CPATH environment variable
+apt-get install mercurial bison flex libreadline-gplv2-dev
 
 # Boost
 conda install -c conda-forge boost=1.61.0

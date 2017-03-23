@@ -1,5 +1,5 @@
 
-from typing import Union
+from typing import Union, List
 cimport cython
 import numpy as np
 cimport numpy as np
@@ -464,7 +464,7 @@ cdef class PyXmg:
             move_list.append(m)
         return move_list
 
-    def get_moves_fast(self, max_moves=5000):
+    def get_moves_fast(self, max_moves=5000) -> List[PyMove]:
         cdef:
             vector[move] possible_moves
             unsigned int nb_moves
