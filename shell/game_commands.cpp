@@ -37,7 +37,7 @@ namespace majesty
 	{
 		if (search_depth == 0)
 		{
-			return m->depth() < orig_depth - 1;
+			return m->depth() < orig_depth;
 		}
 		auto moves = compute_moves(*m);
 		for (auto& move : moves)
