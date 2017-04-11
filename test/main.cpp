@@ -382,4 +382,33 @@ TEST_CASE("XMG String Serialization", "[serialization]") {
     REQUIRE(mig->equals(dez_mig));
     delete mig;
 }
+
+TEST_CASE("Simple Critical Path Test", "[multi-level]") {
+	xmg m;
+	m.create_input();
+	m.create_input();
+	m.create_input();
+	m.create(0, false, 1, false, 2, false);
+	m.create(1, false, 2, false, 3, false);
+	m.create(2, false, 3, false, 4, false);
+	m.create_output(5, false);
+	auto cpath = m.topological_critical_path();
+	std::vector<nodeid> expected = { 3, 4, 5 };
+	REQUIRE(cpath == expected);
+}
+
+TEST_CASE("Multiple Ouput Critical Path Test", "[multi-level]") {
+	xmg m;
+	m.create_input();
+	m.create_input();
+	m.create_input();
+	m.create(0, false, 1, false, 2, false);
+	m.create(0, true, 1, true, 2, false);
+	m.create_output(3, false);
+	m.create_output(4, false);
+	auto cpath = m.topological_critical_path();
+	std::vector<nodeid> expected = { 3, 4 };
+	REQUIRE(cpath == expected);
+}
+
 #endif

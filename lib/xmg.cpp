@@ -11,6 +11,7 @@
 #include <maj_io.h>
 #include <minisat/Solver.h>
 #include <minisat/SolverTypes.h>
+#include <queue>
 
 using namespace std;
 using boost::optional;
@@ -381,6 +382,74 @@ namespace majesty {
 				max_depth = depth[i];
 		}
 		return max_depth;
+	}
+
+	void mark_critical(nodeid id, vector<node>& nodes, const vector<unsigned>& arrival_times) {
+		auto& node = nodes[id];
+		if (is_flag_set(node) || is_pi(node)) {
+			return;
+		}
+		set_flag(node);
+		const auto atime = arrival_times[id];
+		auto a1 = arrival_times[node.in1];
+		auto a2 = arrival_times[node.in2];
+		auto a3 = arrival_times[node.in3];
+		if (a1 == atime - 1) {
+			mark_critical(node.in1, nodes, arrival_times);
+		}
+		if (a2 == atime - 1) {
+			mark_critical(node.in2, nodes, arrival_times);
+		}
+		if (a3 == atime - 1) {
+			mark_critical(node.in3, nodes, arrival_times);
+		}
+	}
+
+	// Computes which nodes are part of a topological critical path. Assumes
+	// that all nodes have unit propagation delay and that all inputs arrive at t=0.
+	vector<nodeid> xmg::topological_critical_path() {
+		vector<unsigned> arrival_times(_nodes.size());
+		vector<nodeid> critical_nodes;
+		auto max_arrival_time = 0u;
+
+		for (auto i = 0u; i < _nodes.size(); i++) {
+			const auto& node = _nodes[i];
+			if (is_pi(node)) {
+				arrival_times[i] = 0u;
+			} else {
+				auto a1 = arrival_times[node.in1];
+				auto a2 = arrival_times[node.in2];
+				auto a3 = arrival_times[node.in3];
+				arrival_times[i] = std::max({ a1, a2, a3 }) + 1;
+			}
+			if (is_po(node)) {
+				if (arrival_times[i] > max_arrival_time)
+					max_arrival_time = arrival_times[i];
+			}
+		}
+
+		// Work backwards from the output nodes. All outputs with an arrival time
+		// equal to the maximum arrival time are considered part of a topological
+		// critical path.
+		resetflag();
+		for (auto nodeid: _outputs) {
+			const auto atime = arrival_times[nodeid];
+			if (atime == max_arrival_time) {
+				mark_critical(nodeid, _nodes, arrival_times);
+			}
+		}
+		for (auto i = 0u; i < _nodes.size(); i++) {
+			const auto& node = _nodes[i];
+			if (is_pi(node)) {
+				continue;
+			}
+			if (is_flag_set(node)) {
+				critical_nodes.push_back(i);
+			}
+		}
+		resetflag();
+
+		return critical_nodes;
 	}
 
 	nodeid xmg::create_input() {
