@@ -19,6 +19,7 @@ cdef unsigned _nr_unary_move = mig_interface.get_nr_unary_moves()
 cdef unsigned _nr_binary_move = mig_interface.get_nr_binary_moves()
 cdef unsigned _nr_ternary_move = mig_interface.get_nr_ternary_moves()
 
+
 _move_type_str = {mig_interface.MAJ3_PROP: 'Majority',
                   mig_interface.IDENTITY: 'Identity',
                   mig_interface.INVERTER_PROP: 'Inverter Propagation',
@@ -41,6 +42,43 @@ _move_type_color = {mig_interface.MAJ3_PROP : 'brown1',
                     mig_interface.SUBSTITUTION : 'black',
                     mig_interface.RELEVANCE : 'yellow',
                     mig_interface.DIST_RIGHT_LEFT : 'brown'}
+
+
+cdef class PyPartialMove:
+    cdef move c_move
+    cdef int filled
+    def __cinit__(self):
+        self.filled = 0
+
+    cpdef is_complete(self) -> bool:
+        # TODO
+        pass
+
+    def is_empty(self) -> bool:
+        return self.filled == 0
+
+    def upgrade(self, param0, param1=None) -> PyPartialMove:
+        assert not self.is_complete()
+        cdef PyPartialMove result = PyPartialMove()
+        result.c_move = result.c_move
+        if result.filled == 0:
+            assert param1 is not None
+            result.c_move.type = <MoveType>param0
+            result.c_move.nodeid1 = param1
+        else:
+            assert param1 is None
+            if result.filled == 1:
+                result.c_move.nodeid2 = param0
+            else:
+                assert result.filled == 2
+                result.c_move.nodeid3 = param0
+        result.filled = self.filled + 1
+        return result
+
+    def make_pymove(self) -> PyMove:
+        assert not self.is_complete()
+        cdef PyMove result = PyMove()
+        result.set_data(self.c_move)
 
 
 cdef class PyMove:
@@ -72,6 +110,7 @@ cdef class PyMove:
         assert len(tup) == 4
         result = PyMove()
         m_type = tup[0]
+        assert m_type >= 0, tup
         result.c_move.nodeid1 = tup[1]
         if tup[2] != -1:
             m_type += _nr_unary_move
@@ -272,6 +311,48 @@ cdef class PyXmg:
                 edge_type[i, 2] = node_utils.is_c3(nodes[i])
 
         return nodes_id, nodes_inputs, edge_type
+
+    def get_edges(self) -> np.ndarray:
+        """
+
+        :return: [#edges x 3] int32 matrix where each line represent a 'directed' edge (i, j, edge_type \in [0,3])
+        """
+        #TODO
+        pass
+
+    def get_validity(self, PyPartialMove p_m) -> np.ndarray:
+        """
+
+        :return: [#nodes x (#total_nr_moves_type or 1)] bool matrix
+        """
+        #TODO
+        pass
+
+    def get_nodes(self, PyPartialMove p_m) -> np.ndarray:
+        """
+
+        :return: [#nodes] int32 vector where each element represents a different
+        """
+        cdef:
+            unsigned int num_nodes
+            np.ndarray[int, ndim=1, mode='c'] nodes_class
+            vector[node] nodes
+            unsigned int m_type
+        if p_m.is_empty():
+            m_type = 0
+        else:
+            m_type = p_m.c_move.type
+        # Ask for the data
+        nodes = self.c_xmg.nodes()
+        # get number of nodes of the graph
+        num_nodes = nodes.size()
+        nodes_class = np.empty(num_nodes, dtype=np.uint32, order='C')
+        nodes_class.fill(m_type)
+        if p_m.filled>=1:
+            nodes_class[p_m.c_move.nodeid1] = m_type+get_total_nr_moves()
+            if p_m.filled>=2:
+                nodes_class[p_m.c_move.nodeid1] = m_type+2*get_total_nr_moves()
+        return nodes_class
 
     def get_adjacency_tensor(self) -> np.ndarray:
         cdef:
@@ -642,6 +723,10 @@ def get_nr_binary_moves() -> int:
     return mig_interface.get_nr_binary_moves()
 def get_nr_ternary_moves() -> int:
     return mig_interface.get_nr_ternary_moves()
+def get_total_nr_moves() -> int:
+    return mig_interface.get_nr_unary_moves() +\
+           mig_interface.get_nr_binary_moves() +\
+           mig_interface.get_nr_ternary_moves()
 def get_nr_edge_types() -> int:
     return mig_interface.get_nr_edge_types()
 
