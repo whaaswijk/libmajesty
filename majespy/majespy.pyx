@@ -51,8 +51,14 @@ cdef class PyPartialMove:
         self.filled = 0
 
     cpdef is_complete(self) -> bool:
-        # TODO
-        pass
+        if self.filled == 0:
+            return False
+        if self.filled == 1:
+            return self.c_move.type < _nr_unary_move
+        if self.filled == 2:
+            return self.c_move.type < _nr_unary_move + _nr_binary_move
+        assert self.filled == 3
+        return True
 
     def is_empty(self) -> bool:
         return self.filled == 0
@@ -333,7 +339,7 @@ cdef class PyXmg:
     def get_validity(self, PyPartialMove p_m) -> np.ndarray:
         """
 
-        :return: [#nodes x (#total_nr_moves_type or 1)] bool matrix
+        :return: [#nodes x (#total_nr_moves_type or 1)] bool matrix of possible choices at the next step
         """
         #TODO
         pass
@@ -341,7 +347,7 @@ cdef class PyXmg:
     def get_nodes(self, PyPartialMove p_m) -> np.ndarray:
         """
 
-        :return: [#nodes] int32 vector where each element represents a different
+        :return: [#nodes] int32 vector where each node is associated to its class (move-type selected+selected node)
         """
         cdef:
             unsigned int num_nodes
