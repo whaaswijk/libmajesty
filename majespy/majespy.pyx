@@ -358,10 +358,10 @@ cdef class PyXmg:
         num_nodes = nodes.size()
         nodes_class = np.empty(num_nodes, dtype=np.uint32, order='C')
         nodes_class.fill(m_type)
-        if p_m.filled>=1:
+        if p_m.filled>=1:  # First selected node
             nodes_class[p_m.c_move.nodeid1] = m_type+get_total_nr_moves()
-            if p_m.filled>=2:
-                nodes_class[p_m.c_move.nodeid1] = m_type+2*get_total_nr_moves()
+            if p_m.filled>=2:  # Second selected node
+                nodes_class[p_m.c_move.nodeid2] = m_type+2*get_total_nr_moves()
         return nodes_class
 
     def get_adjacency_tensor(self) -> np.ndarray:
