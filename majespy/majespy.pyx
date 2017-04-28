@@ -272,6 +272,16 @@ cdef class PyXmg:
             pyoutcompl[i] = outcompl[i]
         return pyoutputs, pyoutcompl
 
+    def topological_critical_path(self) -> np.ndarray:
+        cdef:
+            vector[nodeid] critical_nodes
+        critical_nodes = self.c_xmg.topological_critical_path();
+        num_critical_nodes = critical_nodes.size()
+        py_cnodes = np.empty(num_critical_nodes, dtype=np.uint32, order='C') 
+        for i in range(num_critical_nodes):
+            py_cnodes[i] = critical_nodes[i]
+        return py_cnodes
+
     def get_data(self) -> (np.ndarray, np.ndarray, np.ndarray):
         """
         Makes a copy of the underlying structure of the graph

@@ -125,7 +125,7 @@ namespace majesty
 	}
 
 	command_code
-	print_stats(shell_env* env, const vector<string>& argv)
+	xmg_print_stats(shell_env* env, const vector<string>& argv)
 	{
 		if (env->current_ntk == nullptr)
 		{
@@ -139,6 +139,22 @@ namespace majesty
 					   xmg_ptr->nin(), xmg_ptr->nout(),
 					   xmg_ptr->nnodes_proper(),
 					   xmg_ptr->depth());
+		}
+		return success;
+	}
+
+	command_code
+	xmg_print_tt(shell_env* env, const vector<string>& argv)
+	{
+		if (env->current_ntk == nullptr)
+		{
+			env->print("No network available\n");
+			return cmd_error;
+		}
+		else
+		{
+			auto xmg_ptr = env->current_ntk.get();
+			env->print("%lu\n", get_truth_table(*xmg_ptr));
 		}
 		return success;
 	}
@@ -230,7 +246,8 @@ namespace majesty
 		env.register_command("quit", quit_command);
 		env.register_command("xmg_read_verilog", xmg_read_verilog);
 		env.register_command("xmg_write_verilog", xmg_write_verilog);
-		env.register_command("xmg_print_stats", print_stats);
+		env.register_command("xmg_print_stats", xmg_print_stats);
+		env.register_command("xmg_print_tt", xmg_print_tt);
 		env.register_command("xmg_strash", xmg_strash);
 		env.register_command("xmg_to_depth_optimum", xmg_to_depth_optimum);
 		env.register_command("search_improvement", search_improvement);
