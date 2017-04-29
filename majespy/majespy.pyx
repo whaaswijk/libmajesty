@@ -140,6 +140,12 @@ cdef class PyMove:
             return self.c_move.type-_nr_unary_move-_nr_binary_move, self.c_move.nodeid1,\
                    self.c_move.nodeid2, self.c_move.nodeid3
 
+    def make_pypartialmove(self, filled) -> PyPartialMove:
+        cdef PyPartialMove result = PyPartialMove()
+        result.c_move = result.c_move
+        result.filled = filled
+        return result
+
     cdef set_data(self, move move_data):
         self.c_move = move_data
 
@@ -339,7 +345,7 @@ cdef class PyXmg:
     def get_validities(self, PyPartialMove p_m) -> np.ndarray:
         """
 
-        :return: [#nodes x (#total_nr_moves_type or 1)] bool matrix of possible choices at the next step
+        :return: [#nodes x (#total_nr_moves_type if p_m.is_empty()  otherwise 1)] bool matrix of possible choices at the next step
         """
         #TODO
         pass
@@ -351,20 +357,17 @@ cdef class PyXmg:
         """
         cdef:
             unsigned int num_nodes
-            np.ndarray[int, ndim=1, mode='c'] nodes_class
+            np.ndarray[unsigned int, ndim=1, mode='c'] nodes_class
             vector[node] nodes
             unsigned int m_type
-        if p_m.is_empty():
-            m_type = 0
-        else:
-            m_type = p_m.c_move.type
         # Ask for the data
         nodes = self.c_xmg.nodes()
         # get number of nodes of the graph
         num_nodes = nodes.size()
         nodes_class = np.empty(num_nodes, dtype=np.uint32, order='C')
-        nodes_class.fill(m_type)
         if p_m.filled>=1:  # First selected node
+            m_type = p_m.c_move.type
+            nodes_class.fill(m_type)
             nodes_class[p_m.c_move.nodeid1] = m_type+get_total_nr_moves()
             if p_m.filled>=2:  # Second selected node
                 nodes_class[p_m.c_move.nodeid2] = m_type+2*get_total_nr_moves()
