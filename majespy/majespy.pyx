@@ -336,7 +336,7 @@ cdef class PyXmg:
         #TODO
         pass
 
-    def get_validity(self, PyPartialMove p_m) -> np.ndarray:
+    def get_validities(self, PyPartialMove p_m) -> np.ndarray:
         """
 
         :return: [#nodes x (#total_nr_moves_type or 1)] bool matrix of possible choices at the next step
