@@ -50,7 +50,7 @@ cdef class PyPartialMove:
     def __cinit__(self):
         self.filled = 0
 
-    cpdef is_complete(self) -> bool:
+    def is_complete(self) -> bool:
         if self.filled == 0:
             return False
         if self.filled == 1:
@@ -140,7 +140,8 @@ cdef class PyMove:
             return self.c_move.type-_nr_unary_move-_nr_binary_move, self.c_move.nodeid1,\
                    self.c_move.nodeid2, self.c_move.nodeid3
 
-    def make_pypartialmove(self, filled) -> PyPartialMove:
+    def make_pypartialmove(self, int filled) -> PyPartialMove:
+        assert 0<=filled<=3
         cdef PyPartialMove result = PyPartialMove()
         result.c_move = result.c_move
         result.filled = filled
