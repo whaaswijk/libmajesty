@@ -9,7 +9,7 @@ from libcpp.vector cimport vector
 
 from mig_interface cimport mig_manager, xmg, move, MoveType
 cimport mig_interface
-from node_utils cimport node, nodeid 
+from node_utils cimport node, edge, nodeid 
 cimport node_utils
 from graphviz import Digraph
 
@@ -340,8 +340,24 @@ cdef class PyXmg:
 
         :return: [#edges x 3] int32 matrix where each line represent a 'directed' edge (i, j, edge_type \in [0,3])
         """
-        #TODO
-        pass
+        cdef:
+            unsigned int nedges;
+            vector[edge] edges
+            np.ndarray[unsigned int, ndim=2, mode='c'] edge_matrix
+
+        edges = self.c_xmg.edges_gl()
+        nedges = edges.size()
+        edge_matrix = np.empty((nedges, 3), dtype=np.uint32, order='C')
+        for i in range(nedges):
+            edge_matrix[i,0] = edges[i].i
+            edge_matrix[i,1] = edges[i].j
+            # normal, uncompl = 0
+            # normal, compl = 1
+            # virtual, uncompl = 2
+            # virtual, compl = 3
+            edge_matrix[i,2] = (edges[i].is_virtual << 1) | (edges[i].is_complemented) 
+
+        return edge_matrix
 
     def get_validities(self, PyPartialMove p_m) -> np.ndarray:
         """

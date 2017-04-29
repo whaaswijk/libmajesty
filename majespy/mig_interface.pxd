@@ -2,7 +2,7 @@ from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-from node_utils cimport node, nodeid
+from node_utils cimport node, edge, nodeid
 
 cdef extern from "xmg.h" namespace "majesty":
     cdef cppclass xmg:
@@ -16,6 +16,7 @@ cdef extern from "xmg.h" namespace "majesty":
         int depth() const
 
         const vector[node]& nodes() const
+        const vector[edge] edges_gl() const
         const vector[nodeid]& outputs() const
         const vector[bool]& outcompl() const
         bool equals(const xmg &) const
