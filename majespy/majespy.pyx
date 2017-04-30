@@ -106,7 +106,7 @@ cdef class PyMove:
                 self.c_move.nodeid3 = node_id3
 
     @staticmethod
-    def from_move_inds(tup) -> PyXmg:
+    def from_move_inds(tup) -> PyMove:
         """
 
         :param tup: a 4-tuple with padded -1, and with
