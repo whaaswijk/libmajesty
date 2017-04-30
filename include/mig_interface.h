@@ -113,38 +113,39 @@ namespace majesty {
 
 	// Counts the number of shared inputs (with same polarity)
 	inline char count_shared_inputs(const node& n1, const node& n2) {
-		char share1_counter = 0;
-		char share2_counter = 0;
-		char share3_counter = 0;
+		auto n1_children = get_children(n1);
+		auto n2_children = get_children(n2);
 
-		share1_counter += (n1.in1 == n2.in1 && is_c1(n1) == is_c1(n2));
-		share1_counter += (n1.in1 == n2.in2 && is_c1(n1) == is_c2(n2));
-		share1_counter += (n1.in1 == n2.in3 && is_c1(n1) == is_c3(n2));
-		if (share1_counter > 1) share1_counter = 1;
-
-		share2_counter += (n1.in2 == n2.in1 && is_c2(n1) == is_c1(n2));
-		share2_counter += (n1.in2 == n2.in2 && is_c2(n1) == is_c2(n2));
-		share2_counter += (n1.in2 == n2.in3 && is_c2(n1) == is_c3(n2));
-		if (share2_counter > 1) share2_counter = 1;
-
-		share3_counter += (n1.in3 == n2.in1 && is_c3(n1) == is_c1(n2));
-		share3_counter += (n1.in3 == n2.in2 && is_c3(n1) == is_c2(n2));
-		share3_counter += (n1.in3 == n2.in3 && is_c3(n1) == is_c3(n2));
-		if (share3_counter > 1) share3_counter = 1;
+		auto remainder = drop_child(drop_child(drop_child(
+			n2_children, n1_children[0]), n1_children[1]), n1_children[2]);
 		
-		return share1_counter + share2_counter + share3_counter;
+		return 3 - remainder.size();
 	}
 
 	// Checks if two nodes share two inputs with the same polarity
 	inline bool share_input_polarity(const node& n1, const node& n2) {
-		auto nshared = count_shared_inputs(n1, n2);
-		return nshared > 0;
+		return count_shared_inputs(n1, n2) > 0;
 	}
 
 	// Checks if two nodes share two inputs with the same polarity
 	inline bool share_two_input_polarity(const node& n1, const node& n2) {
-		auto nshared = count_shared_inputs(n1, n2);
-		return nshared > 1;
+		return count_shared_inputs(n1, n2) > 1;
+	}
+
+	// Returns whether or not two nodes share the same input with the same polarity
+	inline bool
+	share_input_polarity(const node& n1, const node& n2, const nodeid gcid) {
+		return ( 
+			(n1.in1 == n2.in1 && n1.in1 == gcid && is_c1(n1) == is_c1(n2)) ||
+			(n1.in1 == n2.in2 && n1.in1 == gcid && is_c1(n1) == is_c2(n2)) ||
+			(n1.in1 == n2.in3 && n1.in1 == gcid && is_c1(n1) == is_c3(n2)) ||
+			(n1.in2 == n2.in1 && n1.in2 == gcid && is_c2(n1) == is_c1(n2)) ||
+			(n1.in2 == n2.in2 && n1.in2 == gcid && is_c2(n1) == is_c2(n2)) ||
+			(n1.in2 == n2.in3 && n1.in2 == gcid && is_c2(n1) == is_c3(n2)) ||
+			(n1.in3 == n2.in1 && n1.in3 == gcid && is_c3(n1) == is_c1(n2)) ||
+			(n1.in3 == n2.in2 && n1.in3 == gcid && is_c3(n1) == is_c2(n2)) ||
+			(n1.in3 == n2.in3 && n1.in3 == gcid && is_c3(n1) == is_c3(n2)) 
+			);
 	}
 
 	inline bool maj3_applies(const std::vector<node>& nodes, const node& n) {
@@ -155,16 +156,16 @@ namespace majesty {
 		return !is_pi(n);
 	}
 
-	// Applies if n has 2 child nodes that have 2 nodes in common
+	// Applies if n has 2 uncomplemented child nodes that have 2 nodes in common
 	inline bool pm_start_dist_right_left(const std::vector<node>& nodes, const node& n) {
 		if (is_pi(n))
 			return false;
 		auto in1 = nodes[n.in1];
 		auto in2 = nodes[n.in2];
 		auto in3 = nodes[n.in3];
-		return (!is_pi(in1) && !is_pi(in2) && share_two_input_polarity(in1, in2)) || 
-				(!is_pi(in1) && !is_pi(in3) && share_two_input_polarity(in1, in3)) ||
-				(!is_pi(in2) && !is_pi(in3) && share_two_input_polarity(in2, in3));
+		return (!is_pi(in1) && !is_c1(n) && !is_pi(in2) && !is_c2(n) && share_two_input_polarity(in1, in2)) || 
+				(!is_pi(in1) && !is_c1(n) && !is_pi(in3) && !is_c3(n) && share_two_input_polarity(in1, in3)) ||
+				(!is_pi(in2) && !is_c2(n) && !is_pi(in3) && !is_c3(n) && share_two_input_polarity(in2, in3));
 	}
                 
 	// Applies if n has a child in common with one of its children
@@ -174,19 +175,19 @@ namespace majesty {
 		auto in1 = nodes[n.in1];
 		auto in2 = nodes[n.in2];
 		auto in3 = nodes[n.in3];
-		return (!is_pi(in1) && share_input_polarity(n, in1)) || 
-				(!is_pi(in2) && share_input_polarity(n, in2)) || 
-				(!is_pi(in3) && share_input_polarity(n, in3));
+		return (!is_pi(in1) && !is_c1(n) && share_input_polarity(n, in1)) || 
+				(!is_pi(in2) && !is_c2(n) && share_input_polarity(n, in2)) || 
+				(!is_pi(in3) && !is_c3(n) && share_input_polarity(n, in3));
 	}
     
-	// Applies if the node has a child that is not a PI
+	// Applies if the node has an uncomplemented child that is not a PI
 	inline bool pm_start_dist_left_right(const std::vector<node>& nodes, const node& n) {
 		if (is_pi(n))
 			return false;
 		auto in1 = nodes[n.in1];
 		auto in2 = nodes[n.in2];
 		auto in3 = nodes[n.in3];
-		return !is_pi(in1) || !is_pi(in2) || !is_pi(in3);
+		return (!is_pi(in1) && !is_c1(n)) || (!is_pi(in2) && !is_c2(n)) || (!is_pi(in3) && !is_c3(n));
 	}
 	
 	inline bool pm_start_substitution(const std::vector<node>& nodes, const node& n) {

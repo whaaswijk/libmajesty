@@ -64,17 +64,23 @@ cdef class PyPartialMove:
     def is_empty(self) -> bool:
         return self.filled == 0
 
+    def get_filled(self) -> int:
+        return self.filled
+
+    def get_type(self) -> int:
+        return self.c_move.type
+
     def upgrade(self, param0, param1=None) -> PyPartialMove:
         assert not self.is_complete()
         cdef PyPartialMove result = PyPartialMove()
-        result.c_move = result.c_move
-        if result.filled == 0:
+        result.c_move = self.c_move
+        if self.filled == 0:
             assert param1 is not None
             result.c_move.type = <MoveType>param0
             result.c_move.nodeid1 = param1
         else:
             assert param1 is None
-            if result.filled == 1:
+            if self.filled == 1:
                 result.c_move.nodeid2 = param0
             else:
                 assert result.filled == 2
@@ -363,7 +369,6 @@ cdef class PyXmg:
 
     def get_validities(self, PyPartialMove p_m) -> np.ndarray:
         """
-
         :return: [#nodes x (#total_nr_move_types if p_m.is_empty()  otherwise 1)] bool matrix of possible choices at the next step
         """
         cdef:
@@ -379,7 +384,7 @@ cdef class PyXmg:
         cpm.filled = p_m.filled
         nodes = self.c_xmg.nodes()
         nnodes = nodes.size()
-        total_nmovetypes = get_nr_unary_moves() + get_nr_binary_moves() + get_nr_ternary_moves()
+        total_nmovetypes = _nr_unary_move + _nr_binary_move + _nr_ternary_move
         if p_m.is_empty():
             choice_matrix = np.empty((nnodes, total_nmovetypes), dtype=np.uint32, order='C')
             for i in range(nnodes):
@@ -393,7 +398,7 @@ cdef class PyXmg:
                 choice_matrix[i,6] = pm_start_substitution(nodes, n)
                 choice_matrix[i,7] = pm_start_relevance(nodes, n)
         else:
-            choice_matrix = np.empty((nodes, 1), dtype=np.int32, order='C')
+            choice_matrix = np.empty((nnodes, 1), dtype=np.uint32, order='C')
             for i in range(nnodes):
                 choice_matrix[i,0] = partial_move_applies(nodes, i, cpm)
 

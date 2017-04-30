@@ -271,6 +271,20 @@ namespace majesty {
 		return res;
 	}
 
+	// Drops the first occurrences of a child from a vector of nodes.
+	static inline std::vector<std::pair<nodeid, bool>> drop_child(const std::vector<std::pair<nodeid,bool>> children, nodeid child) {
+		std::vector<std::pair<nodeid, bool>> res;
+		bool dropped = false;
+		for (const auto& c : children) {
+			if (!dropped && c.first == child) {
+				dropped = true;
+				continue;
+			}
+			res.push_back(c);
+		}
+		return res;
+	}
+
 	static inline std::vector<std::pair<nodeid, bool>> filter_nodes(const std::vector<std::pair<nodeid, bool>>& nodes, 
 		std::function<bool(std::pair<nodeid,bool>)> filter) {
 		std::vector<std::pair<nodeid, bool>> res;
