@@ -117,10 +117,6 @@ namespace majesty {
 		return nfnodes / nonodes;
 	}
 
-	inline bool maj3_applies(const node& n) {
-		return (n.in1 == n.in2) || (n.in1 == n.in3) || (n.in2 == n.in3);
-	}
-
 	inline pair<nodeid, bool> maj3_prop(const node& n) {
 		if (n.in1 == n.in2) {
 			if (is_c1(n) == is_c2(n)) {
@@ -240,24 +236,6 @@ namespace majesty {
 		}
 
 		return res;
-	}
-
-	
-
-	// Checks if two nodes share the same input with the same polarity.
-	// Used to implement the associativity axiom.
-	inline bool share_input_polarity(const node& n1, const node& n2) {
-		return ( 
-			(n1.in1 == n2.in1 && is_c1(n1) == is_c1(n2)) ||
-			(n1.in1 == n2.in2 && is_c1(n1) == is_c2(n2)) ||
-			(n1.in1 == n2.in3 && is_c1(n1) == is_c3(n2)) ||
-			(n1.in2 == n2.in1 && is_c2(n1) == is_c1(n2)) ||
-			(n1.in2 == n2.in2 && is_c2(n1) == is_c2(n2)) ||
-			(n1.in2 == n2.in3 && is_c2(n1) == is_c3(n2)) ||
-			(n1.in3 == n2.in1 && is_c3(n1) == is_c1(n2)) ||
-			(n1.in3 == n2.in2 && is_c3(n1) == is_c2(n2)) ||
-			(n1.in3 == n2.in3 && is_c3(n1) == is_c3(n2)) 
-			);
 	}
 
 	inline bool
@@ -901,6 +879,15 @@ namespace majesty {
 		}
 	
 		return remove_duplicates(res);
+	}
+
+	bool partial_move_applies(const vector<node>& nodes, const nodeid nid, const partial_move& pm) {
+		switch (pm.move.type) {
+			case DIST_RIGHT_LEFT:
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	bool relevance_applies(const vector<node>& nodes, nodeid nid, nodeid x, nodeid y) {
@@ -1683,7 +1670,7 @@ namespace majesty {
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
-			if (maj3_applies(node)) {
+			if (maj3_applies(nodes, node)) {
 				move.type = MAJ3_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
@@ -2010,9 +1997,10 @@ namespace majesty {
 	}
 
 	xmg* apply_move(const xmg& mig, const move& move) {
+		const auto& nodes = mig.nodes();
 		switch (move.type) {
 		case MAJ3_PROP:
-			if (maj3_applies(mig.nodes()[move.nodeid1])) {
+			if (maj3_applies(nodes, nodes[move.nodeid1])) {
 				return apply_maj3(mig, move.nodeid1);
 			} else {
 				return NULL;

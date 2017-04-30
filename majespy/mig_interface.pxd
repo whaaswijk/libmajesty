@@ -44,6 +44,10 @@ cdef extern from "mig_interface.h" namespace "majesty":
         nodeid nodeid2
         nodeid nodeid3
 
+    cdef struct partial_move:
+        move move
+        int filled
+
     cdef cppclass mig_manager:
         mig_manager() except +
         mig_manager(unsigned seed) except +
@@ -65,6 +69,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
     float compute_reward(const xmg &, const xmg &)
     vector[move] compute_moves(const xmg&)
     vector[move] compute_moves_fast(const xmg&, unsigned max_nr_moves)
+    bool partial_move_applies(const vector[node]&, const nodeid, const partial_move&)
 
     xmg* mig_string_decompose(const string &)
     xmg* mig_expression_decompose(unsigned ninputs, const string &)
@@ -79,6 +84,14 @@ cdef extern from "mig_interface.h" namespace "majesty":
     xmg* remove_duplicates(const xmg&)
     xmg* resyn2(const xmg&, const string & tmpfilename)
     xmg* verilog_to_xmg_ptr(const string &)
+
+    bool maj3_applies(const vector[node]&, const node&)
+    bool pm_start_inv_prop(const vector[node]&, const node&)
+    bool pm_start_dist_right_left(const vector[node]&, const node&)
+    bool pm_start_ternary_swap(const vector[node]&, const node&)
+    bool pm_start_dist_left_right(const vector[node]&, const node&)
+    bool pm_start_substitution(const vector[node]&, const node&)
+    bool pm_start_relevance(const vector[node]&, const node&)
 
 cdef extern from "maj_io.h" namespace "majesty":
     xmg* ptr_read_bench(const string & filename)

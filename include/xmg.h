@@ -9,7 +9,6 @@
 #include <map>
 #include <unordered_map>
 #include <functional>
-#include <boost/functional/hash.hpp>
 
 namespace Minisat {
 	class Solver;
@@ -424,51 +423,5 @@ namespace majesty {
 	boost::dynamic_bitset<> simulate_xmg(const xmg&);
 
 };
-
-namespace std
-{
-
-	template <>
-		struct hash<majesty::node>
-	{
-		std::size_t operator()(const struct majesty::node& k) const
-		{
-			using boost::hash_combine;
-
-			/*
-			size_t seed = 0;
-			hash_combine(seed, k.in1);
-			hash_combine(seed, k.in2);
-			hash_combine(seed, k.in3);
-			hash_combine(seed, k.flag);
-			hash_combine(seed, k.ecrep);
-			hash_combine(seed, k.ecnext);
-			return seed;
-			*/
-			return (k.in1 + k.in2 + k.in3 + k.flag + k.ecrep + k.ecnext);
-		}
-	};
-
-	template <>
-		struct hash<majesty::xmg>
-	{
-		std::size_t operator()(const class majesty::xmg& k) const
-		{
-			using boost::hash_combine;
-
-			size_t seed = 0;
-			const auto& nodes = k.nodes();
-			for (auto i = 0u; i < nodes.size(); i++)
-			{
-				const auto& node = nodes[i];
-//				hash_combine(seed, std::hash<majesty::node>()(node));
-				seed += std::hash<majesty::node>{}(node);
-			}
-			return seed;
-		}
-	};
-
-};
-
 
 #endif
