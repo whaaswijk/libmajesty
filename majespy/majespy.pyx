@@ -167,7 +167,7 @@ cdef class PyMove:
     def make_pypartialmove(self, int filled) -> PyPartialMove:
         assert 0<=filled<=3
         cdef PyPartialMove result = PyPartialMove()
-        result.c_move = result.c_move
+        result.c_move = self.c_move
         result.filled = filled
         return result
 
