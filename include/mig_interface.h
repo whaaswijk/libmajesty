@@ -40,7 +40,7 @@ namespace majesty {
 	};
 
 	struct partial_move {
-		move move;
+		move c_move;
 		int filled;
 	};
 

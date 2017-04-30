@@ -45,7 +45,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
         nodeid nodeid3
 
     cdef struct partial_move:
-        move move
+        move c_move
         int filled
 
     cdef cppclass mig_manager:
