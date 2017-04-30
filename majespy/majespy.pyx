@@ -70,6 +70,15 @@ cdef class PyPartialMove:
     def get_type(self) -> int:
         return self.c_move.type
 
+    def get_nodeid1(self) -> int:
+        return self.c_move.nodeid1
+
+    def get_nodeid2(self) -> int:
+        return self.c_move.nodeid2
+
+    def get_nodeid3(self) -> int:
+        return self.c_move.nodeid3
+
     def upgrade(self, param0, param1=None) -> PyPartialMove:
         assert not self.is_complete()
         cdef PyPartialMove result = PyPartialMove()
