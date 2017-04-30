@@ -39,11 +39,14 @@ namespace majesty {
 
 	};
 
-
+	struct partial_move {
+		move move;
+		int filled;
+	};
 
 	const unsigned NR_UNARY_MOVES = 3;
 	const unsigned NR_BINARY_MOVES = 1;
-	const unsigned NR_TERNARY_MOVES = 6;
+	const unsigned NR_TERNARY_MOVES = 4;
 	const unsigned NR_EDGE_TYPES = 2;
 	const unsigned DEFAULT_SEED = 100;
 
@@ -93,7 +96,7 @@ namespace majesty {
 	float compute_reward(const xmg&, const xmg&);
 	std::vector<move> compute_moves(const xmg&);
 	std::vector<move> compute_moves_fast(const xmg&, const unsigned max_nr_moves = 0);
-
+	bool partial_move_applies(const std::vector<node>& nodes, const nodeid nid, const partial_move& pm);
 	xmg* mig_string_decompose(const std::string& truth_table);
 	xmg* mig_expression_decompose(unsigned ninputs, const std::string& expr);
 	xmg* mig_int_decompose(unsigned ninputs, unsigned truth_table);
@@ -107,24 +110,92 @@ namespace majesty {
     xmg* verilog_to_xmg_ptr(const std::string&);
 
 	xmg* resyn2(const xmg&, const std::string& tmpfilename = "tmp.v");
-};
 
-namespace std
-{
+	// Counts the number of shared inputs (with same polarity)
+	inline char count_shared_inputs(const node& n1, const node& n2) {
+		auto n1_children = get_children(n1);
+		auto n2_children = get_children(n2);
 
-	template <>
-		struct hash<majesty::move>
-	{
-		std::size_t operator()(const struct majesty::move& k) const
-		{
-			using std::size_t;
-			using std::hash;
+		auto remainder = drop_child(drop_child(drop_child(
+			n2_children, n1_children[0]), n1_children[1]), n1_children[2]);
+		
+		return 3 - remainder.size();
+	}
 
-			return (hash<nodeid>()((nodeid)k.type)) ^
-				(hash<nodeid>()(k.nodeid1) << 1) ^
-				(hash<nodeid>()(k.nodeid2) << 2) ^
-				(hash<nodeid>()(k.nodeid3) << 3);
-		}
-	};
+	// Checks if two nodes share two inputs with the same polarity
+	inline bool share_input_polarity(const node& n1, const node& n2) {
+		return count_shared_inputs(n1, n2) > 0;
+	}
+
+	// Checks if two nodes share two inputs with the same polarity
+	inline bool share_two_input_polarity(const node& n1, const node& n2) {
+		return count_shared_inputs(n1, n2) > 1;
+	}
+
+	// Returns whether or not two nodes share the same input with the same polarity
+	inline bool
+	share_input_polarity(const node& n1, const node& n2, const nodeid gcid) {
+		return ( 
+			(n1.in1 == n2.in1 && n1.in1 == gcid && is_c1(n1) == is_c1(n2)) ||
+			(n1.in1 == n2.in2 && n1.in1 == gcid && is_c1(n1) == is_c2(n2)) ||
+			(n1.in1 == n2.in3 && n1.in1 == gcid && is_c1(n1) == is_c3(n2)) ||
+			(n1.in2 == n2.in1 && n1.in2 == gcid && is_c2(n1) == is_c1(n2)) ||
+			(n1.in2 == n2.in2 && n1.in2 == gcid && is_c2(n1) == is_c2(n2)) ||
+			(n1.in2 == n2.in3 && n1.in2 == gcid && is_c2(n1) == is_c3(n2)) ||
+			(n1.in3 == n2.in1 && n1.in3 == gcid && is_c3(n1) == is_c1(n2)) ||
+			(n1.in3 == n2.in2 && n1.in3 == gcid && is_c3(n1) == is_c2(n2)) ||
+			(n1.in3 == n2.in3 && n1.in3 == gcid && is_c3(n1) == is_c3(n2)) 
+			);
+	}
+
+	inline bool maj3_applies(const std::vector<node>& nodes, const node& n) {
+		return !is_pi(n) && ((n.in1 == n.in2) || (n.in1 == n.in3) || (n.in2 == n.in3));
+	}
+
+	inline bool pm_start_inv_prop(const std::vector<node>& nodes, const node& n) {
+		return !is_pi(n);
+	}
+
+	// Applies if n has 2 uncomplemented child nodes that have 2 nodes in common
+	inline bool pm_start_dist_right_left(const std::vector<node>& nodes, const node& n) {
+		if (is_pi(n))
+			return false;
+		auto in1 = nodes[n.in1];
+		auto in2 = nodes[n.in2];
+		auto in3 = nodes[n.in3];
+		return (!is_pi(in1) && !is_c1(n) && !is_pi(in2) && !is_c2(n) && share_two_input_polarity(in1, in2)) || 
+				(!is_pi(in1) && !is_c1(n) && !is_pi(in3) && !is_c3(n) && share_two_input_polarity(in1, in3)) ||
+				(!is_pi(in2) && !is_c2(n) && !is_pi(in3) && !is_c3(n) && share_two_input_polarity(in2, in3));
+	}
+                
+	// Applies if n has a child in common with one of its children
+	inline bool pm_start_ternary_swap(const std::vector<node>& nodes, const node& n) {
+		if (is_pi(n))
+			return false;
+		auto in1 = nodes[n.in1];
+		auto in2 = nodes[n.in2];
+		auto in3 = nodes[n.in3];
+		return (!is_pi(in1) && !is_c1(n) && share_input_polarity(n, in1)) || 
+				(!is_pi(in2) && !is_c2(n) && share_input_polarity(n, in2)) || 
+				(!is_pi(in3) && !is_c3(n) && share_input_polarity(n, in3));
+	}
+    
+	// Applies if the node has an uncomplemented child that is not a PI
+	inline bool pm_start_dist_left_right(const std::vector<node>& nodes, const node& n) {
+		if (is_pi(n))
+			return false;
+		auto in1 = nodes[n.in1];
+		auto in2 = nodes[n.in2];
+		auto in3 = nodes[n.in3];
+		return (!is_pi(in1) && !is_c1(n)) || (!is_pi(in2) && !is_c2(n)) || (!is_pi(in3) && !is_c3(n));
+	}
+	
+	inline bool pm_start_substitution(const std::vector<node>& nodes, const node& n) {
+		return !is_pi(n);
+	}
+        
+	inline bool pm_start_relevance(const std::vector<node>& nodes, const node& n) {
+		return !is_pi(n);
+	}
 
 };

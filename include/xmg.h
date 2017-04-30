@@ -9,7 +9,6 @@
 #include <map>
 #include <unordered_map>
 #include <functional>
-#include <boost/functional/hash.hpp>
 
 namespace Minisat {
 	class Solver;
@@ -88,7 +87,13 @@ namespace majesty {
 	struct xmg_params {
 		unsigned nr_backtracks;
 	};	
-	std::unique_ptr<xmg_params> default_xmg_params(); 
+	std::unique_ptr<xmg_params> default_xmg_params();
+
+	struct edge {
+		nodeid i, j;
+		bool is_complemented;
+		bool is_virtual;
+	};
 
 	struct node {
 		nodeid in1, in2, in3;
@@ -266,6 +271,20 @@ namespace majesty {
 		return res;
 	}
 
+	// Drops the first occurrences of a child from a vector of nodes.
+	static inline std::vector<std::pair<nodeid, bool>> drop_child(const std::vector<std::pair<nodeid,bool>> children, nodeid child) {
+		std::vector<std::pair<nodeid, bool>> res;
+		bool dropped = false;
+		for (const auto& c : children) {
+			if (!dropped && c.first == child) {
+				dropped = true;
+				continue;
+			}
+			res.push_back(c);
+		}
+		return res;
+	}
+
 	static inline std::vector<std::pair<nodeid, bool>> filter_nodes(const std::vector<std::pair<nodeid, bool>>& nodes, 
 		std::function<bool(std::pair<nodeid,bool>)> filter) {
 		std::vector<std::pair<nodeid, bool>> res;
@@ -317,6 +336,7 @@ namespace majesty {
 			int depth() const;
 			std::vector<nodeid> topological_critical_path();
 			const std::vector<node>& nodes() const { return _nodes; }
+			const std::vector<edge> edges_gl() const;
 			node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
 			const std::vector<std::string>& innames() const { 
@@ -417,51 +437,5 @@ namespace majesty {
 	boost::dynamic_bitset<> simulate_xmg(const xmg&);
 
 };
-
-namespace std
-{
-
-	template <>
-		struct hash<majesty::node>
-	{
-		std::size_t operator()(const struct majesty::node& k) const
-		{
-			using boost::hash_combine;
-
-			/*
-			size_t seed = 0;
-			hash_combine(seed, k.in1);
-			hash_combine(seed, k.in2);
-			hash_combine(seed, k.in3);
-			hash_combine(seed, k.flag);
-			hash_combine(seed, k.ecrep);
-			hash_combine(seed, k.ecnext);
-			return seed;
-			*/
-			return (k.in1 + k.in2 + k.in3 + k.flag + k.ecrep + k.ecnext);
-		}
-	};
-
-	template <>
-		struct hash<majesty::xmg>
-	{
-		std::size_t operator()(const class majesty::xmg& k) const
-		{
-			using boost::hash_combine;
-
-			size_t seed = 0;
-			const auto& nodes = k.nodes();
-			for (auto i = 0u; i < nodes.size(); i++)
-			{
-				const auto& node = nodes[i];
-//				hash_combine(seed, std::hash<majesty::node>()(node));
-				seed += std::hash<majesty::node>{}(node);
-			}
-			return seed;
-		}
-	};
-
-};
-
 
 #endif

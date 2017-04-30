@@ -30,3 +30,8 @@ cdef extern from "xmg.h" namespace "majesty":
     bool is_and(const node& n)
     bool is_or(const node& n)
     bool is_maj(const node& n)
+
+    cdef struct edge:
+        nodeid i, j
+        bool is_complemented
+        bool is_virtual

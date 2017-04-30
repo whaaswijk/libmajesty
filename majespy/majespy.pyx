@@ -7,9 +7,10 @@ from libcpp cimport bool as cppbool
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-from mig_interface cimport mig_manager, xmg, move, MoveType
+from mig_interface cimport mig_manager, xmg, move, partial_move, MoveType, partial_move_applies
+from mig_interface cimport maj3_applies, pm_start_inv_prop, pm_start_dist_right_left, pm_start_ternary_swap, pm_start_dist_left_right, pm_start_substitution, pm_start_relevance
 cimport mig_interface
-from node_utils cimport node, nodeid 
+from node_utils cimport node, edge, nodeid 
 cimport node_utils
 from graphviz import Digraph
 
@@ -63,17 +64,23 @@ cdef class PyPartialMove:
     def is_empty(self) -> bool:
         return self.filled == 0
 
+    def get_filled(self) -> int:
+        return self.filled
+
+    def get_type(self) -> int:
+        return self.c_move.type
+
     def upgrade(self, param0, param1=None) -> PyPartialMove:
         assert not self.is_complete()
         cdef PyPartialMove result = PyPartialMove()
-        result.c_move = result.c_move
-        if result.filled == 0:
+        result.c_move = self.c_move
+        if self.filled == 0:
             assert param1 is not None
             result.c_move.type = <MoveType>param0
             result.c_move.nodeid1 = param1
         else:
             assert param1 is None
-            if result.filled == 1:
+            if self.filled == 1:
                 result.c_move.nodeid2 = param0
             else:
                 assert result.filled == 2
@@ -340,16 +347,62 @@ cdef class PyXmg:
 
         :return: [#edges x 3] int32 matrix where each line represent a 'directed' edge (i, j, edge_type \in [0,3])
         """
-        #TODO
-        pass
+        cdef:
+            unsigned int nedges;
+            vector[edge] edges
+            np.ndarray[unsigned int, ndim=2, mode='c'] edge_matrix
+            unsigned int i
+
+        edges = self.c_xmg.edges_gl()
+        nedges = edges.size()
+        edge_matrix = np.empty((nedges, 3), dtype=np.uint32, order='C')
+        for i in range(nedges):
+            edge_matrix[i,0] = edges[i].i
+            edge_matrix[i,1] = edges[i].j
+            # normal, uncompl = 0
+            # normal, compl = 1
+            # virtual, uncompl = 2
+            # virtual, compl = 3
+            edge_matrix[i,2] = (edges[i].is_virtual << 1) | (edges[i].is_complemented) 
+
+        return edge_matrix
 
     def get_validities(self, PyPartialMove p_m) -> np.ndarray:
         """
-
-        :return: [#nodes x (#total_nr_moves_type if p_m.is_empty()  otherwise 1)] bool matrix of possible choices at the next step
+        :return: [#nodes x (#total_nr_move_types if p_m.is_empty()  otherwise 1)] bool matrix of possible choices at the next step
         """
-        #TODO
-        pass
+        cdef:
+            np.ndarray[unsigned int, ndim=2, mode='c'] choice_matrix
+            vector[node] nodes
+            node n
+            unsigned int i
+            unsigned int nnodes
+            partial_move cpm
+            unsigned total_nmovetypes
+
+        cpm.move = p_m.c_move
+        cpm.filled = p_m.filled
+        nodes = self.c_xmg.nodes()
+        nnodes = nodes.size()
+        total_nmovetypes = _nr_unary_move + _nr_binary_move + _nr_ternary_move
+        if p_m.is_empty():
+            choice_matrix = np.empty((nnodes, total_nmovetypes), dtype=np.uint32, order='C')
+            for i in range(nnodes):
+                n = nodes[i]
+                choice_matrix[i,0] = maj3_applies(nodes, n)
+                choice_matrix[i,1] = 1 if i == 0 else 0 # Only enable identity on zero node
+                choice_matrix[i,2] = pm_start_inv_prop(nodes, n)
+                choice_matrix[i,3] = pm_start_dist_right_left(nodes, n)
+                choice_matrix[i,4] = pm_start_ternary_swap(nodes, n)
+                choice_matrix[i,5] = pm_start_dist_left_right(nodes, n)
+                choice_matrix[i,6] = pm_start_substitution(nodes, n)
+                choice_matrix[i,7] = pm_start_relevance(nodes, n)
+        else:
+            choice_matrix = np.empty((nnodes, 1), dtype=np.uint32, order='C')
+            for i in range(nnodes):
+                choice_matrix[i,0] = partial_move_applies(nodes, i, cpm)
+
+        return choice_matrix
 
     def get_nodes(self, PyPartialMove p_m) -> np.ndarray:
         """

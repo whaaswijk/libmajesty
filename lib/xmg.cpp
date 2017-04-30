@@ -361,6 +361,52 @@ namespace majesty {
 		return res;
 	}
 
+	inline edge make_edge(nodeid i, nodeid j, bool is_virtual, bool is_complemented) {
+		edge e;
+		
+		e.is_virtual = is_virtual;
+		if (is_virtual) {
+			e.i = i;
+			e.j = j;
+		} else {
+			e.i = j;
+			e.j = i;
+		}
+		e.is_complemented = is_complemented;
+
+		return e;
+	}
+
+	// Designed to be used in a graph learning context. Returns a vector
+	// of edges of the XMG. These may include virtual edges (to emulate 
+	// an undirected graph) and/or complemented.
+	const std::vector<edge> xmg::edges_gl() const {
+		vector<edge> res;
+
+		const auto nnodes = _nodes.size();
+		for (auto nodeid = 0u; nodeid < nnodes; nodeid++) {
+			const auto& node = _nodes[nodeid];
+			if (is_pi(node)) {
+				continue;
+			}
+			// Make a normal/virtual (un)complemented edge for every actual edge
+			auto e = make_edge(nodeid, node.in1, false, is_c1(node));
+			res.push_back(e);
+			e = make_edge(nodeid, node.in1, true, is_c1(node));
+			res.push_back(e);
+			e = make_edge(nodeid, node.in2, false, is_c2(node));
+			res.push_back(e);
+			e = make_edge(nodeid, node.in2, true, is_c2(node));
+			res.push_back(e);
+			e = make_edge(nodeid, node.in3, false, is_c3(node));
+			res.push_back(e);
+			e = make_edge(nodeid, node.in3, true, is_c3(node));
+			res.push_back(e);
+		}
+
+		return res;
+	}
+
 	int xmg::depth() const {
 		auto max_depth = -1;
 		vector<int> depth(_nodes.size());
