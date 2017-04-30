@@ -69,6 +69,7 @@ cdef extern from "mig_interface.h" namespace "majesty":
     float compute_reward(const xmg &, const xmg &)
     vector[move] compute_moves(const xmg&)
     vector[move] compute_moves_fast(const xmg&, unsigned max_nr_moves)
+    vector[move] compute_partial_moves_exhaustive(const xmg&)
     bool partial_move_applies(const vector[node]&, const nodeid, const partial_move&)
 
     xmg* mig_string_decompose(const string &)

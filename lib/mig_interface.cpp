@@ -944,7 +944,8 @@ namespace majesty {
 			}
 		} else if (pm.c_move.type == SUBSTITUTION) {
 			if (pm.filled == 1) {
-				return nid < pm.c_move.nodeid1;
+				// > 0 because otherwise we cannot select a third argument
+				return nid > 0 && nid < pm.c_move.nodeid1;
 			} else if (pm.filled == 2) {
 				return nid < pm.c_move.nodeid1 && nid < pm.c_move.nodeid2;
 			} else {
@@ -952,7 +953,8 @@ namespace majesty {
 			}
 		} else if (pm.c_move.type == RELEVANCE) {
 			if (pm.filled == 1) {
-				return nid < pm.c_move.nodeid1;
+				// > 0 because otherwise we cannot select a third argument
+				return nid > 0 && nid < pm.c_move.nodeid1;
 			} else if (pm.filled == 2) {
 				return nid < pm.c_move.nodeid1 && nid < pm.c_move.nodeid2;
 			} else {
@@ -1810,6 +1812,41 @@ namespace majesty {
 				}
 			}
 		}
+
+		return moves;
+	}
+
+	vector<move> compute_partial_moves_exhaustive(const xmg& mig) {
+		vector<move> moves;
+		partial_move pm;
+
+		{
+			move m;
+			m.type = IDENTITY;
+			m.nodeid1 = 0;
+			moves.push_back(m);
+		}
+
+		const auto& nodes = mig.nodes();
+		for (auto i = 0u; i < nodes.size(); i++) {
+			const auto& n = nodes[i];
+			if (maj3_applies(nodes, n)) {
+				move m;
+				m.type = MAJ3_PROP;
+				m.nodeid1 = i;
+				moves.push_back(m);
+			}
+			if (pm_start_inv_prop(nodes, n)) {
+				move m;
+				m.type = IDENTITY;
+				m.nodeid1 = i;
+				moves.push_back(m);
+			}
+			for (auto j = 0u; j < nodes.size(); j++) {
+
+			}
+		}
+
 
 		return moves;
 	}
