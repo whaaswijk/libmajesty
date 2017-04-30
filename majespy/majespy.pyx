@@ -83,13 +83,13 @@ cdef class PyPartialMove:
             if self.filled == 1:
                 result.c_move.nodeid2 = param0
             else:
-                assert result.filled == 2
+                assert self.filled == 2
                 result.c_move.nodeid3 = param0
         result.filled = self.filled + 1
         return result
 
     def make_pymove(self) -> PyMove:
-        assert not self.is_complete()
+        assert self.is_complete()
         cdef PyMove result = PyMove()
         result.set_data(self.c_move)
 
@@ -350,12 +350,12 @@ cdef class PyXmg:
         cdef:
             unsigned int nedges;
             vector[edge] edges
-            np.ndarray[unsigned int, ndim=2, mode='c'] edge_matrix
+            np.ndarray[int, ndim=2, mode='c'] edge_matrix
             unsigned int i
 
         edges = self.c_xmg.edges_gl()
         nedges = edges.size()
-        edge_matrix = np.empty((nedges, 3), dtype=np.uint32, order='C')
+        edge_matrix = np.empty((nedges, 3), dtype=np.int32, order='C')
         for i in range(nedges):
             edge_matrix[i,0] = edges[i].i
             edge_matrix[i,1] = edges[i].j
