@@ -380,7 +380,7 @@ cdef class PyXmg:
             partial_move cpm
             unsigned total_nmovetypes
 
-        cpm.move = p_m.c_move
+        cpm.c_move = p_m.c_move
         cpm.filled = p_m.filled
         nodes = self.c_xmg.nodes()
         nnodes = nodes.size()

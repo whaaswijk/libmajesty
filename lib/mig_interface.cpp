@@ -867,13 +867,13 @@ namespace majesty {
 	}
 
 	bool partial_move_applies(const vector<node>& nodes, const nodeid nid, const partial_move& pm) {
-		if (pm.move.type == DIST_RIGHT_LEFT) {
+		if (pm.c_move.type == DIST_RIGHT_LEFT) {
 				// Only applies if the specified nid is a child of the node that has already been selected
 				// AND the other two (uncomplemented) children share 2 inputs
 				if (pm.filled != 1)
 					return false;
 
-				const auto& snode = nodes[pm.move.nodeid1];
+				const auto& snode = nodes[pm.c_move.nodeid1];
 				auto children = get_children(snode);
 				// To allow for more cases, try to drop the complemented version of the child first.
 				// If another, uncomplemented child remains, we might be able use it, but we can never
@@ -892,12 +892,12 @@ namespace majesty {
 				const auto& ochild1 = nodes[ochildp1.first];
 				const auto& ochild2 = nodes[ochildp2.first];
 				return !is_pi(ochild1) && !is_pi(ochild2) && share_two_input_polarity(ochild1, ochild2);
-		} else if (pm.move.type == SWAP_TERNARY) {
+		} else if (pm.c_move.type == SWAP_TERNARY) {
 			if (pm.filled == 1) {
 				// A node has been selected to swap on, we want to check if the
 				// specified nid corresponds to an uncomplemented(!) child of that node with which
 				// it has a grandchild in common
-				const auto& snode = nodes[pm.move.nodeid1];
+				const auto& snode = nodes[pm.c_move.nodeid1];
 				const auto& pnode = nodes[nid];
 				if (is_pi(pnode)) {
 					return false;
@@ -911,20 +911,20 @@ namespace majesty {
 				// It's possible that the grandparent has the parent as input twice! E.g. when the majority
 				// rule applies at the grandparent. In that case, we cannot swap, because swapping would try
 				// to make the parent a child of itself...
-				if (pm.move.nodeid2 == nid) {
+				if (pm.c_move.nodeid2 == nid) {
 					return false;
 				}
-				const auto& outnode = nodes[pm.move.nodeid1];
-				const auto& innode = nodes[pm.move.nodeid2];
+				const auto& outnode = nodes[pm.c_move.nodeid1];
+				const auto& innode = nodes[pm.c_move.nodeid2];
 				return share_input_polarity(outnode, innode, nid);
 			} else {
 				return false;
 			}
-		} else if (pm.move.type == DIST_LEFT_RIGHT) {
+		} else if (pm.c_move.type == DIST_LEFT_RIGHT) {
 			if (pm.filled == 1) {
 				// The specified nid should correspond to a non-complemented non-PI child
 				// of the selected node.
-				const auto& snode = nodes[pm.move.nodeid1];
+				const auto& snode = nodes[pm.c_move.nodeid1];
 				auto children = get_children(snode);
 				auto ochildren = drop_child(children, make_pair(nid, false));
 				if (ochildren.size() != 2) // Not an uncomplemented child
@@ -935,26 +935,26 @@ namespace majesty {
 				// This may be ambiguous: the distchild could occur multiple times in the inner node. In that case
 				// there is ambiguity if the child occurs in different polarities. We select the first one
 				// appear in the list of child nodes.
-				const auto& innode = nodes[pm.move.nodeid2];
+				const auto& innode = nodes[pm.c_move.nodeid2];
 				auto children = get_children(innode);
 				auto ochildren = drop_child(children, nid);
 				return ochildren.size() == 2;
 			} else {
 				return false;
 			}
-		} else if (pm.move.type == SUBSTITUTION) {
+		} else if (pm.c_move.type == SUBSTITUTION) {
 			if (pm.filled == 1) {
-				return nid < pm.move.nodeid1;
+				return nid < pm.c_move.nodeid1;
 			} else if (pm.filled == 2) {
-				return nid < pm.move.nodeid1 && nid < pm.move.nodeid2;
+				return nid < pm.c_move.nodeid1 && nid < pm.c_move.nodeid2;
 			} else {
 				return false;
 			}
-		} else if (pm.move.type == RELEVANCE) {
+		} else if (pm.c_move.type == RELEVANCE) {
 			if (pm.filled == 1) {
-				return nid < pm.move.nodeid1;
+				return nid < pm.c_move.nodeid1;
 			} else if (pm.filled == 2) {
-				return nid < pm.move.nodeid1 && nid < pm.move.nodeid2;
+				return nid < pm.c_move.nodeid1 && nid < pm.c_move.nodeid2;
 			} else {
 				return false;
 			}
