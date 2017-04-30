@@ -641,6 +641,21 @@ cdef class PyXmg:
             move_list.append(m)
         return move_list
 
+    def get_partial_moves_exhaustive(self):
+        cdef:
+            vector[move] possible_moves
+            unsigned int nb_moves
+
+        possible_moves = mig_interface.compute_partial_moves_exhaustive(self.c_xmg[0])
+        nb_moves = possible_moves.size()
+
+        move_list = list()
+        for i in range(nb_moves):
+            m = PyMove()
+            m.set_data(possible_moves[i])
+            move_list.append(m)
+        return move_list
+
     def get_moves_fast(self, max_moves=5000) -> List[PyMove]:
         cdef:
             vector[move] possible_moves

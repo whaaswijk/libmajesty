@@ -914,9 +914,8 @@ namespace majesty {
 				if (pm.c_move.nodeid2 == nid) {
 					return false;
 				}
-				const auto& outnode = nodes[pm.c_move.nodeid1];
 				const auto& innode = nodes[pm.c_move.nodeid2];
-				return share_input_polarity(outnode, innode, nid);
+				return innode.in1 == nid || innode.in2 == nid || innode.in3 == nid;
 			} else {
 				return false;
 			}
@@ -945,18 +944,20 @@ namespace majesty {
 		} else if (pm.c_move.type == SUBSTITUTION) {
 			if (pm.filled == 1) {
 				// > 0 because otherwise we cannot select a third argument
-				return nid > 0 && nid < pm.c_move.nodeid1;
+				return nid < pm.c_move.nodeid1;
 			} else if (pm.filled == 2) {
-				return nid < pm.c_move.nodeid1 && nid < pm.c_move.nodeid2;
+				return nid < pm.c_move.nodeid1 && nid != pm.c_move.nodeid2;
 			} else {
 				return false;
 			}
 		} else if (pm.c_move.type == RELEVANCE) {
 			if (pm.filled == 1) {
-				// > 0 because otherwise we cannot select a third argument
-				return nid > 0 && nid < pm.c_move.nodeid1;
+				// We need the specified nid to actually be a child of the selected node
+				const auto& snode = nodes[pm.c_move.nodeid1];
+				return snode.in1 == nid || snode.in2 == nid || snode.in3 == nid;
 			} else if (pm.filled == 2) {
-				return nid < pm.c_move.nodeid1 && nid < pm.c_move.nodeid2;
+				const auto& snode = nodes[pm.c_move.nodeid1];
+				return (snode.in1 == nid || snode.in2 == nid || snode.in3 == nid) && nid != pm.c_move.nodeid2;
 			} else {
 				return false;
 			}
@@ -977,7 +978,7 @@ namespace majesty {
 			return false;
 		}
 
-		if (x > nid || y > nid || x != y) {
+		if (x > nid || y > nid || x == y) {
 			return false;
 		}
 
@@ -1782,7 +1783,7 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
-					/*
+
 					if (relevance_applies(nodes, i, j, k)) {
 						move.type = RELEVANCE;
 						move.nodeid1 = i;
@@ -1790,7 +1791,7 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
-					*/
+
 					if (substitution_applies(nodes, i, j, k)) {
 						move.type = SUBSTITUTION;
 						move.nodeid1 = i;
@@ -1818,7 +1819,6 @@ namespace majesty {
 
 	vector<move> compute_partial_moves_exhaustive(const xmg& mig) {
 		vector<move> moves;
-		partial_move pm;
 
 		{
 			move m;
@@ -1838,12 +1838,100 @@ namespace majesty {
 			}
 			if (pm_start_inv_prop(nodes, n)) {
 				move m;
-				m.type = IDENTITY;
+				m.type = INVERTER_PROP;
 				m.nodeid1 = i;
 				moves.push_back(m);
 			}
 			for (auto j = 0u; j < nodes.size(); j++) {
-
+				if (pm_start_dist_right_left(nodes, n)) {
+					partial_move pm;
+					pm.c_move.type = DIST_RIGHT_LEFT;
+					pm.c_move.nodeid1 = i;
+					pm.filled = 1;
+					if (partial_move_applies(nodes, j, pm)) {
+						move m;
+						m.type = DIST_RIGHT_LEFT;
+						m.nodeid1 = pm.c_move.nodeid1;
+						m.nodeid2 = j;
+						moves.push_back(m);
+					}
+				}
+				if (pm_start_ternary_swap(nodes, n)) {
+					partial_move pm;
+					pm.c_move.type = SWAP_TERNARY;
+					pm.c_move.nodeid1 = i;
+					pm.filled = 1;
+					if (partial_move_applies(nodes, j, pm)) {
+						partial_move pmm;
+						pmm.c_move = pm.c_move;
+						pmm.c_move.nodeid2 = j;
+						pmm.filled = 2;
+						for (auto k = 0u; k < nodes.size(); k++) {
+							if (partial_move_applies(nodes, k, pmm)) {
+								move m = pmm.c_move;
+								m.nodeid3 = k;
+								moves.push_back(m);
+							}
+						}
+					}
+				}
+				if (pm_start_dist_left_right(nodes, n)) {
+					partial_move pm;
+					pm.c_move.type = DIST_LEFT_RIGHT;
+					pm.c_move.nodeid1 = i;
+					pm.filled = 1;
+					if (partial_move_applies(nodes, j, pm)) {
+						partial_move pmm;
+						pmm.c_move = pm.c_move;
+						pmm.c_move.nodeid2 = j;
+						pmm.filled = 2;
+						for (auto k = 0u; k < nodes.size(); k++) {
+							if (partial_move_applies(nodes, k, pmm)) {
+								move m = pmm.c_move;
+								m.nodeid3 = k;
+								moves.push_back(m);
+							}
+						}
+					}
+				}
+				if (pm_start_substitution(nodes, n)) {
+					partial_move pm;
+					pm.c_move.type = SUBSTITUTION;
+					pm.c_move.nodeid1 = i;
+					pm.filled = 1;
+					if (partial_move_applies(nodes, j, pm)) {
+						partial_move pmm;
+						pmm.c_move = pm.c_move;
+						pmm.c_move.nodeid2 = j;
+						pmm.filled = 2;
+						for (auto k = 0u; k < nodes.size(); k++) {
+							if (partial_move_applies(nodes, k, pmm)) {
+								move m = pmm.c_move;
+								m.nodeid3 = k;
+								moves.push_back(m);
+							}
+						}
+					}
+				}
+				if (pm_start_relevance(nodes, n)) {
+					partial_move pm;
+					pm.c_move.type = RELEVANCE;
+					pm.c_move.nodeid1 = i;
+					pm.filled = 1;
+					if (partial_move_applies(nodes, j, pm)) {
+						partial_move pmm;
+						pmm.c_move = pm.c_move;
+						pmm.c_move.nodeid2 = j;
+						pmm.filled = 2;
+						for (auto k = 0u; k < nodes.size(); k++) {
+							if (partial_move_applies(nodes, k, pmm)) {
+								move m = pmm.c_move;
+								m.nodeid3 = k;
+								moves.push_back(m);
+							}
+						}
+					}
+				}
 			}
 		}
 
