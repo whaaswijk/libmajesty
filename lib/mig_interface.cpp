@@ -740,21 +740,18 @@ namespace majesty {
 		return res;
 	}
 
-	pair<nodeid, bool> node_relevance(xmg& xmg, nodeid nid, input x, input y, bool yc) {
-		const auto node = xmg.nodes()[nid];
+	pair<nodeid, bool> node_relevance(xmg& xmg, input z, input x, input y, bool yc) {	
+		if (z.first == x.first) { // Relevance applies!
+			return make_pair(y.first, x.second != y.second != z.second != yc);
+		}
+		const auto node = xmg.nodes()[z.first];
 		if (is_pi(node)) {
-			if (x.first == nid) {
-				return make_pair(y.first, x.second != y.second != yc);
-			} else {
-				return make_pair(nid, false);
-			}
+			return z;
 		} else {
-			auto in1 = node_relevance(xmg, node.in1, x, y, yc);
-			auto in2 = node_relevance(xmg, node.in2, x, y, yc);
-			auto in3 = node_relevance(xmg, node.in3, x, y, yc);
-			return xmg.create(in1.first, in1.second != is_c1(node),
-				in2.first, in2.second != is_c2(node),
-				in3.first, in3.second != is_c3(node));
+			auto in1 = node_relevance(xmg, make_pair(node.in1, is_c1(node)), x, y, yc);
+			auto in2 = node_relevance(xmg, make_pair(node.in2, is_c2(node)), x, y, yc);
+			auto in3 = node_relevance(xmg, make_pair(node.in3, is_c3(node)), x, y, yc);
+			return xmg.create(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second);
 		}
 	}
 
@@ -799,8 +796,8 @@ namespace majesty {
 
 					auto unode = nodemap[u];
 					auto vnode = nodemap[v];
-					auto vu_node = node_relevance(tmp_res, orig_node.first, vnode, unode, false);
-					auto vup_node = node_relevance(tmp_res, orig_node.first, vnode, unode, true);
+					auto vu_node = node_relevance(tmp_res, orig_node, vnode, unode, false);
+					auto vup_node = node_relevance(tmp_res, orig_node, vnode, unode, true);
 
 					auto first_inner = tmp_res.create(vnode.first, vnode.second != true,
 						vu_node.first, vu_node.second, unode.first, unode.second);
@@ -997,7 +994,7 @@ namespace majesty {
 		return true;
 	}
 
-	xmg* relevance(const xmg& mig, nodeid nid, nodeid x, nodeid y) {
+	xmg* apply_relevance(const xmg& mig, nodeid nid, nodeid x, nodeid y) {
 		const auto& nodes = mig.nodes();
 		const auto nnodes = mig.nnodes();
 
@@ -1010,11 +1007,16 @@ namespace majesty {
 		}
 		const auto children = get_children(node);
 		auto x_childid = -1, y_childid = -1;
-		for (auto i = 0u; i < children.size(); i++) {
+		for (auto i = 0u; i < 3; i++) {
 			if (children[i].first == x) {
 				x_childid = i;
-			} else if (children[i].first == y) {
+				break;
+			}
+		}
+		for (auto i = 0u; i < 3; i++) {
+			if (children[i].first == y) {
 				y_childid = i;
+				break;
 			}
 		}
 		if ((x_childid == -1) || (y_childid == -1)) {
@@ -1034,10 +1036,13 @@ namespace majesty {
 				auto is_c = is_pi_c(node);
 				nodemap[i] = make_pair(res->create_input(is_c), false);
 			} else if (i == nid) {
+				
 				const auto& x_in = nodemap[x_child.first];
 				const auto& y_in = nodemap[y_child.first];
 				const auto& z_in = nodemap[z_child.first];
-				const auto z_rel_in = node_relevance(*res, z_in.first, x_in, y_in, true);
+				const auto z_rel_in = node_relevance(*res, z_in, 
+					make_pair(x_in.first, x_in.second != x_child.second), 
+					make_pair(y_in.first, y_in.second != y_child.second), true);
 				nodemap[i] = res->create(
 					x_in.first, x_in.second != x_child.second, 
 					y_in.first, y_in.second != y_child.second,
@@ -2232,7 +2237,7 @@ namespace majesty {
 			return substitution(mig, move.nodeid1, move.nodeid2, move.nodeid3);
 			break;
 		case RELEVANCE:
-			return relevance(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			return apply_relevance(mig, move.nodeid1, move.nodeid2, move.nodeid3);
 			break;
 		case IDENTITY:
 			return new xmg(mig);

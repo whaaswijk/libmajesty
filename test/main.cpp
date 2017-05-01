@@ -411,4 +411,17 @@ TEST_CASE("Multiple Ouput Critical Path Test", "[multi-level]") {
 	REQUIRE(cpath == expected);
 }
 
+TEST_CASE("Relevance test", "[game]") {
+	auto m = mig_int_decompose(3, 1);
+	move mv;
+	mv.type = RELEVANCE;
+	mv.nodeid1 = 4;
+	mv.nodeid2 = 0;
+	mv.nodeid3 = 1;
+	auto m2 = apply_move(*m, mv);
+	REQUIRE(m->equals(*m2));
+	delete m2;
+	delete m;
+}
+
 #endif
