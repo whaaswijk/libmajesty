@@ -751,7 +751,9 @@ namespace majesty {
 			auto in1 = node_relevance(xmg, make_pair(node.in1, is_c1(node)), x, y, yc);
 			auto in2 = node_relevance(xmg, make_pair(node.in2, is_c2(node)), x, y, yc);
 			auto in3 = node_relevance(xmg, make_pair(node.in3, is_c3(node)), x, y, yc);
-			return xmg.create(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second);
+			auto res = xmg.create(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second);
+			res.second = (res.second != z.second);
+			return res;
 		}
 	}
 
@@ -765,7 +767,7 @@ namespace majesty {
 		}
 	}
 
-	xmg* substitution(const xmg& mig, nodeid nid, nodeid u, nodeid v) {
+	xmg* apply_substitution(const xmg& mig, nodeid nid, nodeid u, nodeid v) {
 		const auto& node = mig.nodes()[nid];
 		if (is_pi(node)) {
 			return NULL;
@@ -783,8 +785,7 @@ namespace majesty {
 			for (auto i = 0u; i < nnodes; i++) {
 				const auto& node = nodes[i];
 				if (is_pi(node)) {
-					auto is_c = is_pi_c(node);
-					nodemap[i] = make_pair(tmp_res.create_input(is_c), false);
+					nodemap[i] = make_pair(tmp_res.create_input(), false);
 				} else if (i == nid) {
 					const auto& in1 = nodemap[node.in1];
 					const auto& in2 = nodemap[node.in2];
@@ -833,8 +834,7 @@ namespace majesty {
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
-				auto is_c = is_pi_c(node);
-				nodemap[i] = make_pair(res.create_input(is_c), false);
+				nodemap[i] = make_pair(res.create_input(), false);
 			} else if (nref[i] > 0) {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
@@ -2234,7 +2234,7 @@ namespace majesty {
 			return maj_xyy(mig, move.nodeid1, move.nodeid2, move.nodeid3);
 			break;
 		case SUBSTITUTION:
-			return substitution(mig, move.nodeid1, move.nodeid2, move.nodeid3);
+			return apply_substitution(mig, move.nodeid1, move.nodeid2, move.nodeid3);
 			break;
 		case RELEVANCE:
 			return apply_relevance(mig, move.nodeid1, move.nodeid2, move.nodeid3);

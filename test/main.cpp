@@ -424,4 +424,16 @@ TEST_CASE("Relevance test", "[game]") {
 	delete m;
 }
 
+TEST_CASE("Substitution test", "[game]") {
+	auto m = verilog_to_xmg("// Written by the Majesty Logic Package\nmodule top (\n\t\t\ta , b , c , \n\t\t\tF ) ;\ninput a , b , c ;\noutput F ;\nwire w4 , w5 , w6 , w7 , w8 , w9 , w10 , w11 , w12 , w13 ;\nassign w4 = ~b & ~c ;\nassign w5 = ~a & w4 ;\nassign w6 = b & ~c ;\nassign w7 = ~b & c ;\nassign w8 = w6 | w7 ;\nassign w9 = a & w8 ;\nassign w10 = ~w5 | w9 ;\nassign w11 = ~w5 & w9 ;\nassign w12 = ( w5 & w10 ) | ( w5 & w11 ) | ( w10 & w11 ) ;\nassign w13 = w5 | w12 ;\nassign F = w13 ;\nendmodule\n");
+	move mv;
+	mv.type = SUBSTITUTION;
+	mv.nodeid1 = 13;
+	mv.nodeid2 = 6;
+	mv.nodeid3 = 10;
+	auto m2 = apply_move(m, mv);
+	REQUIRE(m.equals(*m2));
+	delete m2;
+}
+
 #endif
