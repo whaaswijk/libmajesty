@@ -2156,6 +2156,13 @@ namespace majesty {
 						move.nodeid3 = k;
 						moves.push_back(move);
 					}
+					if (relevance_applies(nodes, i, j, k)) {
+						move.type = RELEVANCE;
+						move.nodeid1 = i;
+						move.nodeid2 = j;
+						move.nodeid3 = k;
+						moves.push_back(move);
+					}
 				}
 			}
 		}
