@@ -80,28 +80,36 @@ cdef class PyPartialMove:
         return self.c_move.nodeid3
 
     def upgrade(self, param0, param1=None) -> PyPartialMove:
-        assert not self.is_complete()
+        assert not self.is_complete(), "Move already complete"
         cdef PyPartialMove result = PyPartialMove()
         result.c_move = self.c_move
         if self.filled == 0:
-            assert param1 is not None
+            assert param1 is not None, "Need argument 1"
+            assert param0 < get_total_nr_moves(), "Invalid move type"
             result.c_move.type = <MoveType>param0
             result.c_move.nodeid1 = param1
         else:
-            assert param1 is None
+            assert param1 is None, "Invalid argument 1"
             if self.filled == 1:
                 result.c_move.nodeid2 = param0
             else:
-                assert result.filled == 2
+                assert self.filled == 2
                 result.c_move.nodeid3 = param0
         result.filled = self.filled + 1
         return result
 
     def make_pymove(self) -> PyMove:
-        assert not self.is_complete()
+        assert self.is_complete(), "PyPartialMove is not complete to be converted into PyMove"
         cdef PyMove result = PyMove()
         result.set_data(self.c_move)
+        return result
 
+    def __repr__(self):
+        return "PartialMove({}:{},{})".format(self.c_move.type if self.filled>0 else "?",
+                                              _move_type_str[self.c_move.type] if self.filled>0 else "?",
+                                              (self.c_move.nodeid1 if self.filled>0 else "?",
+                                                    self.c_move.nodeid2 if self.filled>1 else "?",
+                                                    self.c_move.nodeid3 if self.filled>2 else "?"))
 
 cdef class PyMove:
     cdef move c_move
@@ -122,7 +130,7 @@ cdef class PyMove:
                 self.c_move.nodeid3 = node_id3
 
     @staticmethod
-    def from_move_inds(tup) -> PyXmg:
+    def from_move_inds(tup) -> PyMove:
         """
 
         :param tup: a 4-tuple with padded -1, and with
@@ -159,7 +167,7 @@ cdef class PyMove:
     def make_pypartialmove(self, int filled) -> PyPartialMove:
         assert 0<=filled<=3
         cdef PyPartialMove result = PyPartialMove()
-        result.c_move = result.c_move
+        result.c_move = self.c_move
         result.filled = filled
         return result
 
@@ -359,12 +367,12 @@ cdef class PyXmg:
         cdef:
             unsigned int nedges;
             vector[edge] edges
-            np.ndarray[unsigned int, ndim=2, mode='c'] edge_matrix
+            np.ndarray[int, ndim=2, mode='c'] edge_matrix
             unsigned int i
 
         edges = self.c_xmg.edges_gl()
         nedges = edges.size()
-        edge_matrix = np.empty((nedges, 3), dtype=np.uint32, order='C')
+        edge_matrix = np.empty((nedges, 3), dtype=np.int32, order='C')
         for i in range(nedges):
             edge_matrix[i,0] = edges[i].i
             edge_matrix[i,1] = edges[i].j
@@ -431,9 +439,11 @@ cdef class PyXmg:
         if p_m.filled>=1:  # First selected node
             m_type = p_m.c_move.type
             nodes_class.fill(m_type)
-            nodes_class[p_m.c_move.nodeid1] = m_type+get_total_nr_moves()
+            nodes_class[p_m.c_move.nodeid1] += get_total_nr_moves()
             if p_m.filled>=2:  # Second selected node
-                nodes_class[p_m.c_move.nodeid2] = m_type+2*get_total_nr_moves()
+                nodes_class[p_m.c_move.nodeid2] += 2*get_total_nr_moves()
+        else:  # Empty
+            nodes_class.fill(0)
         return nodes_class
 
     def get_adjacency_tensor(self) -> np.ndarray:
