@@ -312,7 +312,7 @@ cdef class PyXmg:
     def topological_critical_path(self) -> np.ndarray:
         cdef:
             vector[nodeid] critical_nodes
-        critical_nodes = self.c_xmg.topological_critical_path();
+        critical_nodes = self.c_xmg.topological_critical_path()
         num_critical_nodes = critical_nodes.size()
         py_cnodes = np.empty(num_critical_nodes, dtype=np.uint32, order='C') 
         for i in range(num_critical_nodes):
@@ -384,6 +384,24 @@ cdef class PyXmg:
 
         return edge_matrix
 
+    def get_random_move(self) -> PyMove :
+        p_m = PyPartialMove()
+        validities = self.get_validities(p_m)
+        # Remove the identity choice
+        validities[:, mig_interface.IDENTITY] = 0
+        available_move_types = np.where(np.sum(validities, axis=0) > 0)[0]
+        # If nothing available, return identity
+        if len(available_move_types) == 0:
+            return PyMove(mig_interface.IDENTITY, 0)
+        m_type = np.random.choice(available_move_types)
+        id_1 = np.random.choice(np.where(validities[:,m_type])[0])
+        p_m = p_m.upgrade(m_type, id_1)
+        while not p_m.is_complete():
+            validities = self.get_validities(p_m)
+            id_n = np.random.choice(np.where(validities)[0])
+            p_m = p_m.upgrade(id_n)
+        return p_m.make_pymove()
+
     def get_validities(self, PyPartialMove p_m) -> np.ndarray:
         """
         :return: [#nodes x (#total_nr_move_types if p_m.is_empty()  otherwise 1)] bool matrix of possible choices at the next step
@@ -396,7 +414,7 @@ cdef class PyXmg:
             unsigned int nnodes
             partial_move cpm
             unsigned total_nmovetypes
-
+        assert not p_m.is_complete(), "p_m is a complete PartialMove"
         cpm.c_move = p_m.c_move
         cpm.filled = p_m.filled
         nodes = self.c_xmg.nodes()
@@ -431,6 +449,8 @@ cdef class PyXmg:
             np.ndarray[unsigned int, ndim=1, mode='c'] nodes_class
             vector[node] nodes
             unsigned int m_type
+            vector[nodeid] critical_nodes
+            unsigned int num_critical_nodes
         # Ask for the data
         nodes = self.c_xmg.nodes()
         # get number of nodes of the graph
@@ -444,6 +464,14 @@ cdef class PyXmg:
                 nodes_class[p_m.c_move.nodeid2] += 2*get_total_nr_moves()
         else:  # Empty
             nodes_class.fill(0)
+
+        # Add critical path encoding
+        nodes_class *= 2
+        critical_nodes = self.c_xmg.topological_critical_path()
+        num_critical_nodes = critical_nodes.size()
+        for i in range(num_critical_nodes):
+            nodes_class[critical_nodes[i]] += 1
+
         return nodes_class
 
     def get_adjacency_tensor(self) -> np.ndarray:
