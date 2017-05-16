@@ -6,6 +6,7 @@
 #include <truth_table_utils.hpp>
 #include <convert.h>
 #include <boost/pending/integer_log2.hpp>
+#include <boost/optional.hpp>
 #include <npn_canonization.hpp>
 #include <string>
 #include "maj_io.h"
@@ -260,6 +261,30 @@ namespace majesty {
 			return make_pair(n1.in3, is_c3(n1));
 		} else {
 			throw runtime_error("Error: shared input not found");
+		}
+	}
+
+	inline boost::optional<pair<nodeid,bool>> shared_input_polarity(const node& n1, const node& n2, const nodeid gcid) {
+		if (n1.in1 == n2.in1 && is_c1(n1) == is_c1(n2) && n1.in1 != gcid) {
+			return make_pair(n1.in1, is_c1(n1));
+		} else if (n1.in1 == n2.in2 && is_c1(n1) == is_c2(n2) && n1.in1 != gcid) {
+			return make_pair(n1.in1, is_c1(n1));
+		} else if (n1.in1 == n2.in3 && is_c1(n1) == is_c3(n2) && n1.in1 != gcid) {
+			return make_pair(n1.in1, is_c1(n1));
+		} else if (n1.in2 == n2.in1 && is_c2(n1) == is_c1(n2) && n1.in2 != gcid) {
+			return make_pair(n1.in2, is_c2(n1));
+		} else if (n1.in2 == n2.in2 && is_c2(n1) == is_c2(n2) && n1.in2 != gcid) {
+			return make_pair(n1.in2, is_c2(n1));
+		} else if (n1.in2 == n2.in3 && is_c2(n1) == is_c3(n2) && n1.in2 != gcid) {
+			return make_pair(n1.in2, is_c2(n1));
+		} else if (n1.in3 == n2.in1 && is_c3(n1) == is_c1(n2) && n1.in3 != gcid) {
+			return make_pair(n1.in3, is_c3(n1));
+		} else if (n1.in3 == n2.in2 && is_c3(n1) == is_c2(n2) && n1.in3 != gcid) {
+			return make_pair(n1.in3, is_c3(n1));
+		} else if (n1.in3 == n2.in3 && is_c3(n1) == is_c3(n2) && n1.in3 != gcid) {
+			return make_pair(n1.in3, is_c3(n1));
+		} else {
+			return boost::none;
 		}
 	}
 
@@ -863,105 +888,7 @@ namespace majesty {
 		return remove_duplicates(res);
 	}
 
-	bool partial_move_applies(const vector<node>& nodes, const nodeid nid, const partial_move& pm) {
-		if (pm.c_move.type == DIST_RIGHT_LEFT) {
-				// Only applies if the specified nid is a child of the node that has already been selected
-				// AND the other two (uncomplemented) children share 2 inputs
-				if (pm.filled != 1)
-					return false;
-
-				const auto& snode = nodes[pm.c_move.nodeid1];
-				auto children = get_children(snode);
-				// To allow for more cases, try to drop the complemented version of the child first.
-				// If another, uncomplemented child remains, we might be able use it, but we can never
-				// use complemented children.
-				auto dchildren = drop_child(children, make_pair(nid, true));
-				if (dchildren.size() == 3)
-					dchildren = drop_child(children, nid);					
-				if (dchildren.size() != 2) // Specified nid is not a child of selected node
-					return false;
-				
-				const auto& ochildp1 = dchildren[0];
-				const auto& ochildp2 = dchildren[1];
-				// The children may not be complemented
-				if (ochildp1.second || ochildp2.second)
-					return false;
-				const auto& ochild1 = nodes[ochildp1.first];
-				const auto& ochild2 = nodes[ochildp2.first];
-				return !is_pi(ochild1) && !is_pi(ochild2) && share_two_input_polarity(ochild1, ochild2);
-		} else if (pm.c_move.type == SWAP_TERNARY) {
-			if (pm.filled == 1) {
-				// A node has been selected to swap on, we want to check if the
-				// specified nid corresponds to an uncomplemented(!) child of that node with which
-				// it has a grandchild in common
-				const auto& snode = nodes[pm.c_move.nodeid1];
-				const auto& pnode = nodes[nid];
-				if (is_pi(pnode)) {
-					return false;
-				}
-				auto children = get_children(snode);
-				auto ochildren = drop_child(children, make_pair(nid, false));
-				if (ochildren.size() != 2) // Not an uncomplemented child
-					return false;
-				return share_input_polarity(snode, pnode);
-			} else if (pm.filled == 2) {
-				// It's possible that the grandparent has the parent as input twice! E.g. when the majority
-				// rule applies at the grandparent. In that case, we cannot swap, because swapping would try
-				// to make the parent a child of itself...
-				if (pm.c_move.nodeid2 == nid) {
-					return false;
-				}
-				const auto& innode = nodes[pm.c_move.nodeid2];
-				return innode.in1 == nid || innode.in2 == nid || innode.in3 == nid;
-			} else {
-				return false;
-			}
-		} else if (pm.c_move.type == DIST_LEFT_RIGHT) {
-			if (pm.filled == 1) {
-				// The specified nid should correspond to a non-complemented non-PI child
-				// of the selected node.
-				const auto& snode = nodes[pm.c_move.nodeid1];
-				auto children = get_children(snode);
-				auto ochildren = drop_child(children, make_pair(nid, false));
-				if (ochildren.size() != 2) // Not an uncomplemented child
-					return false;
-				const auto& innode = nodes[nid];
-				return !is_pi(innode);
-			} else if (pm.filled == 2) {
-				// This may be ambiguous: the distchild could occur multiple times in the inner node. In that case
-				// there is ambiguity if the child occurs in different polarities. We select the first one
-				// appear in the list of child nodes.
-				const auto& innode = nodes[pm.c_move.nodeid2];
-				auto children = get_children(innode);
-				auto ochildren = drop_child(children, nid);
-				return ochildren.size() == 2;
-			} else {
-				return false;
-			}
-		} else if (pm.c_move.type == SUBSTITUTION) {
-			if (pm.filled == 1) {
-				// > 0 because otherwise we cannot select a third argument
-				return nid < pm.c_move.nodeid1;
-			} else if (pm.filled == 2) {
-				return nid < pm.c_move.nodeid1 && nid != pm.c_move.nodeid2;
-			} else {
-				return false;
-			}
-		} else if (pm.c_move.type == RELEVANCE) {
-			if (pm.filled == 1) {
-				// We need the specified nid to actually be a child of the selected node
-				const auto& snode = nodes[pm.c_move.nodeid1];
-				return snode.in1 == nid || snode.in2 == nid || snode.in3 == nid;
-			} else if (pm.filled == 2) {
-				const auto& snode = nodes[pm.c_move.nodeid1];
-				return (snode.in1 == nid || snode.in2 == nid || snode.in3 == nid) && nid != pm.c_move.nodeid2;
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
-	}
+	
 
 	bool relevance_applies(const vector<node>& nodes, nodeid nid, nodeid x, nodeid y) {
 		// We make sure of the following:
@@ -1145,98 +1072,51 @@ namespace majesty {
 		return true;
 	}
 
+	/*
 	bool swap_ternary_applies_fast(const vector<node>& nodes, nodeid gpid, nodeid pid, nodeid gcid) {
 		const auto& gp = nodes[gpid];
+		const auto& pnode = nodes[pid];
+		if (is_pi(pnode)) {
+			return false;
+		}
 
 		// It's possible that the grandparent has the parent as input twice! E.g. when the majority
 		// rule applies at the grandparent. In that case, we cannot swap, because swapping would try
 		// to make the parent a child of itself...
 		auto nparentfanin = 0;
-		auto parentidx = -1;
+
 		auto parentcmpl = true;
-		const auto& p1_node = nodes[gp.in1];
-		const auto& p2_node = nodes[gp.in2];
-		const auto& p3_node = nodes[gp.in3];
-			
-		if (gp.in1 == pid && !is_pi(p1_node) &&
-			share_input_polarity(gp, p1_node, gcid)) {
-			if (p1_node.in1 == gcid || p1_node.in2 == gcid || p1_node.in3 == gcid) {
+
+		if (gp.in1 == pid) {
+			if (pnode.in1 == gcid || pnode.in2 == gcid || pnode.in3 == gcid) {
 				++nparentfanin;
-				parentidx = 1;
-				if (!is_c1(gp)) parentcmpl = false;
+				parentcmpl = is_c1(gp);
 			}
 		}
-		if (gp.in2 == pid && !is_pi(p2_node) &&
-			share_input_polarity(gp, p2_node, gcid)) {
-			if (p2_node.in1 == gcid || p2_node.in2 == gcid || p2_node.in3 == gcid) {
+		if (gp.in2 == pid) {
+			if (pnode.in1 == gcid || pnode.in2 == gcid || pnode.in3 == gcid) {
 				++nparentfanin;
-				parentidx = 2;
-				if (!is_c2(gp)) parentcmpl = false;
+				parentcmpl = is_c2(gp);
 			}
 		}
-		if (gp.in3 == pid && !is_pi(p3_node) &&
-			share_input_polarity(gp, p3_node, gcid)) {
-			if (p3_node.in1 == gcid || p3_node.in2 == gcid || p3_node.in3 == gcid) {
+		if (gp.in3 == pid) {
+			if (pnode.in1 == gcid || pnode.in2 == gcid || pnode.in3 == gcid) {
 				++nparentfanin;
-				parentidx = 3;
-				if (!is_c3(gp)) parentcmpl = false;
+				parentcmpl = is_c3(gp);
 			}
 		}
-		
-		// We need exactly 1 uncomplemented parent node
+
 		if (nparentfanin != 1 || parentcmpl) {
 			return false;
 		}
 
-		/*
-		auto filt_parents = filter_nodes(gpchildren, [&nodes, &gp, pid, gcid](pair<nodeid,bool> np) {
-			auto parent = nodes[np.first];
-			// Note that we make sure that the parent is not complemented. If it is, associativity doesn't apply and
-			// we should try applying inverter propagation first.
-			if (np.first == pid && !np.second && !is_pi(parent) && share_input_polarity(gp, parent)) {
-				if (parent.in1 == gcid || parent.in2 == gcid || parent.in3 == gcid) {
-					return true;
-				}
-			}
-			return false;
-		});
-
-		if (filt_parents.size() != 1) {
-			// There is not exactly one uncomplemented child of the grandparent that has both a child in 
-			// common and is a parent of the grandchild.
+		auto shared = shared_input_polarity(gp, pnode, gcid);
+		if (shared) {
+			return true;
+		} else {
 			return false;
 		}
-		const auto parentnp = filt_parents[0];
-		
-		const auto& parent = nodes[parentnp.first];
-		auto common_childnp = shared_input_polarity(gp, parent);
-		// Thew new inner (parent) node should retain the same nodes except for the grandchild. We should also add the swap child to it.
-		// Similarly, the new outer (grandparent) should retain the same nodes except for the swap node. We add to grandchild to it.
-		auto oldgrandchildren = get_children(parent);
-		auto filtgrandchildren = filter_nodes(drop_child(oldgrandchildren, common_childnp), [gcid](pair<nodeid, bool> child) {
-			if (child.first == gcid) {
-				return true;
-			}
-			return false;
-		});
-		if (filtgrandchildren.size() == 0) { 
-			// After removing the common child, there is no grandchild z (id2) left. Either the common child was the grandchild
-			// to be swapped, or the given grandchild was never actually a grandchild.
-			return false;
-		} else if (filtgrandchildren.size() > 1) {
-			// NOTE: This may be ambiguous: removing the common child from the parent leaves us with M(y, - , z) where
-			// z is id2. Now, if y = z, we're not sure which node we're referring to if they have opposite polarities.
-			// For now we just return the first one.
-			auto filtgp1 = filtgrandchildren[0];
-			auto filtgp2 = filtgrandchildren[1];
-			if (filtgp1.second != filtgp2.second) {
-				return true;
-			}
-		}
-		*/
-
-		return true;
-	}
+		}*/
 
 	bool swap_ternary_applies(const vector<node>& nodes, nodeid gpid, nodeid pid, nodeid gcid) {
 		const auto& gp = nodes[gpid];
@@ -1975,13 +1855,11 @@ namespace majesty {
 				moves.push_back(move);
 			}
 
-			/*
-			if (maj3_applies(node)) {
+			if (maj3_applies(nodes, node)) {
 				move.type = MAJ3_PROP;
 				move.nodeid1 = i;
 				moves.push_back(move);
 			}
-			*/
 
 			if (dist_right_left_applies(nodes, i, node.in1)) {
 				move.type = DIST_RIGHT_LEFT;
@@ -2003,21 +1881,21 @@ namespace majesty {
 			}
 			{
 				auto innode1 = nodes[node.in1];
-				if (swap_ternary_applies_fast(nodes, i, node.in1, innode1.in1)) {
+				if (swap_ternary_applies(nodes, i, node.in1, innode1.in1)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in1;
 					move.nodeid3 = innode1.in1;
 					moves.push_back(move);
 				}
-				if (swap_ternary_applies_fast(nodes, i, node.in1, innode1.in2)) {
+				if (swap_ternary_applies(nodes, i, node.in1, innode1.in2)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in1;
 					move.nodeid3 = innode1.in2;
 					moves.push_back(move);
 				}
-				if (swap_ternary_applies_fast(nodes, i, node.in1, innode1.in3)) {
+				if (swap_ternary_applies(nodes, i, node.in1, innode1.in3)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in1;
@@ -2048,21 +1926,21 @@ namespace majesty {
 			}
 			{
 				auto innode2 = nodes[node.in2];
-				if (swap_ternary_applies_fast(nodes, i, node.in2, innode2.in1)) {
+				if (swap_ternary_applies(nodes, i, node.in2, innode2.in1)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in2;
 					move.nodeid3 = innode2.in1;
 					moves.push_back(move);
 				}
-				if (swap_ternary_applies_fast(nodes, i, node.in2, innode2.in2)) {
+				if (swap_ternary_applies(nodes, i, node.in2, innode2.in2)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in2;
 					move.nodeid3 = innode2.in2;
 					moves.push_back(move);
 				}
-				if (swap_ternary_applies_fast(nodes, i, node.in2, innode2.in3)) {
+				if (swap_ternary_applies(nodes, i, node.in2, innode2.in3)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in2;
@@ -2093,21 +1971,21 @@ namespace majesty {
 			}
 			{
 				auto innode3 = nodes[node.in3];
-				if (swap_ternary_applies_fast(nodes, i, node.in3, innode3.in1)) {
+				if (swap_ternary_applies(nodes, i, node.in3, innode3.in1)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in3;
 					move.nodeid3 = innode3.in1;
 					moves.push_back(move);
 				}
-				if (swap_ternary_applies_fast(nodes, i, node.in3, innode3.in2)) {
+				if (swap_ternary_applies(nodes, i, node.in3, innode3.in2)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in3;
 					move.nodeid3 = innode3.in2;
 					moves.push_back(move);
 				}
-				if (swap_ternary_applies_fast(nodes, i, node.in3, innode3.in3)) {
+				if (swap_ternary_applies(nodes, i, node.in3, innode3.in3)) {
 					move.type = SWAP_TERNARY;
 					move.nodeid1 = i;
 					move.nodeid2 = node.in3;
@@ -2173,6 +2051,94 @@ namespace majesty {
 		}
 		
 		return moves;
+	}
+
+	bool partial_move_applies(const vector<node>& nodes, const nodeid nid, const partial_move& pm) {
+		if (pm.c_move.type == DIST_RIGHT_LEFT) {
+				// Only applies if the specified nid is a child of the node that has already been selected
+				// AND the other two (uncomplemented) children share 2 inputs
+				if (pm.filled != 1)
+					return false;
+
+				const auto& snode = nodes[pm.c_move.nodeid1];
+				auto children = get_children(snode);
+				// To allow for more cases, try to drop the complemented version of the child first.
+				// If another, uncomplemented child remains, we might be able use it, but we can never
+				// use complemented children.
+				auto dchildren = drop_child(children, make_pair(nid, true));
+				if (dchildren.size() == 3)
+					dchildren = drop_child(children, nid);					
+				if (dchildren.size() != 2) // Specified nid is not a child of selected node
+					return false;
+				
+				const auto& ochildp1 = dchildren[0];
+				const auto& ochildp2 = dchildren[1];
+				// The children may not be complemented
+				if (ochildp1.second || ochildp2.second)
+					return false;
+				const auto& ochild1 = nodes[ochildp1.first];
+				const auto& ochild2 = nodes[ochildp2.first];
+				return !is_pi(ochild1) && !is_pi(ochild2) && share_two_input_polarity(ochild1, ochild2);
+		} else if (pm.c_move.type == SWAP_TERNARY) {
+			if (pm.filled == 1) {
+				// A node has been selected to swap on, we want to check if the
+				// specified nid corresponds to an uncomplemented(!) child of that node with which
+				// it has a grandchild in common
+				const auto& snode = nodes[pm.c_move.nodeid1];
+				const auto& pnode = nodes[nid];
+				if (is_pi(pnode)) {
+					return false;
+				}
+				auto children = get_children(snode);
+				auto ochildren = drop_child(children, make_pair(nid, false));
+				if (ochildren.size() != 2) // Not an uncomplemented child
+					return false;
+				return share_input_polarity(snode, pnode);
+			} else if (pm.filled == 2) {
+				return swap_ternary_applies(nodes, pm.c_move.nodeid1, pm.c_move.nodeid2, nid);
+			} else {
+				return false;
+			}
+		} else if (pm.c_move.type == DIST_LEFT_RIGHT) {
+			if (pm.filled == 1) {
+				// The specified nid should correspond to a non-complemented non-PI child
+				// of the selected node.
+				const auto& snode = nodes[pm.c_move.nodeid1];
+				auto children = get_children(snode);
+				auto ochildren = drop_child(children, make_pair(nid, false));
+				if (ochildren.size() != 2) // Not an uncomplemented child
+					return false;
+				const auto& innode = nodes[nid];
+				return !is_pi(innode);
+			} else if (pm.filled == 2) {
+				return dist_left_right_applies(nodes, pm.c_move.nodeid1,
+											   pm.c_move.nodeid2, nid);
+			} else {
+				return false;
+			}
+		} else if (pm.c_move.type == SUBSTITUTION) {
+			if (pm.filled == 1) {
+				// > 0 because otherwise we cannot select a third argument
+				return nid < pm.c_move.nodeid1;
+			} else if (pm.filled == 2) {
+				return nid < pm.c_move.nodeid1 && nid != pm.c_move.nodeid2;
+			} else {
+				return false;
+			}
+		} else if (pm.c_move.type == RELEVANCE) {
+			if (pm.filled == 1) {
+				// We need the specified nid to actually be a child of the selected node
+				const auto& snode = nodes[pm.c_move.nodeid1];
+				return snode.in1 == nid || snode.in2 == nid || snode.in3 == nid;
+			} else if (pm.filled == 2) {
+				const auto& snode = nodes[pm.c_move.nodeid1];
+				return (snode.in1 == nid || snode.in2 == nid || snode.in3 == nid) && nid != pm.c_move.nodeid2;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 	
 	xmg*
