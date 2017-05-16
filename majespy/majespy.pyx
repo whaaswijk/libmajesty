@@ -385,6 +385,10 @@ cdef class PyXmg:
         return edge_matrix
 
     def get_random_move(self) -> PyMove :
+        """
+        WARNING the move is not purely random, the first parameter is uniformly selected, then the second one etc...
+        :return: A random move
+        """
         p_m = PyPartialMove()
         validities = self.get_validities(p_m)
         # Remove the identity choice
@@ -706,6 +710,7 @@ cdef class PyXmg:
         :return: a graphviz.dot.Digraph object.
         """
         g_ids, g_edges, g_edge_type = self.get_data()
+        critical_nodes = set(self.topological_critical_path())
         outputs, outcompl = self.get_outputs()
         nodes_modified = []
         action_type = None
@@ -737,6 +742,8 @@ cdef class PyXmg:
                         attrs['arrowhead'] = 'dot'
                     if n in nodes_modified or g_id in nodes_modified:
                         attrs['color'] = action_color
+                    if n in critical_nodes and g_id in critical_nodes:
+                        attrs['style'] = 'bold'
                     dot.edge(str(n), str(g_id), **attrs)
             for i in range(len(outputs)):
                 if outputs[i] == g_id:
@@ -764,11 +771,98 @@ cdef class PyXmg:
         dot.graph_attr['rankdir'] = "BT"
 
 
-        graph_title = "{} nodes ({}+1 inputs).".format(self.get_total_nr_nodes(), self.get_nr_inputs())
+        graph_title = "{} nodes, {} depth ({}+1 inputs).".format(self.get_total_nr_nodes(),
+                                                                 self.get_depth(), self.get_nr_inputs())
         if action_type is not None:
             graph_title += " Applying {}".format(action_label)
         dot.graph_attr['label'] = graph_title
         dot.graph_attr['labelloc'] = 't'
+
+        return dot
+
+    def plot_2(self, highlight_action=None, main_color='white', background_color='black'):
+        """
+
+        :param highlight_action: tuple of the action to be highlighted (optional)
+        :return: a graphviz.dot.Digraph object.
+        """
+        g_ids, g_edges, g_edge_type = self.get_data()
+        critical_nodes = set(self.topological_critical_path())
+        outputs, outcompl = self.get_outputs()
+        nodes_modified = []
+        action_type = None
+        if highlight_action is not None:
+            assert isinstance(highlight_action, PyMove), "Wrong type argument"
+            nodes_modified = highlight_action.get_involved_nodes()
+            action_type = highlight_action.get_move_type()
+            action_color = _move_type_color[action_type]
+            action_label = str(highlight_action)
+
+        dot = Digraph()
+
+        input_list = []
+        output_list = []
+        output_subgraph = Digraph()
+        output_subgraph.attr('graph', rank='same')
+        for g_id, neighbours, edge_type in zip(g_ids, g_edges, g_edge_type):
+            if (edge_type == -1).all():  # Input
+                input_list.append(g_id)
+            else:
+                dot.node(str(g_id), shape='square', style='filled', color=main_color, label='',
+                         pos="{},{}".format(5, self.get_depth()))
+                if g_id in nodes_modified:
+                    dot.node(str(g_id), color=action_color, style='filled')
+                for n, e_t in zip(neighbours, edge_type):
+                    attrs = {}
+                    attrs['arrowhead'] = 'dot' if e_t==1 else 'none'
+                    if n in nodes_modified or g_id in nodes_modified:
+                        attrs['color'] = action_color
+                    else:
+                        attrs['color'] = main_color
+                    if n in critical_nodes and g_id in critical_nodes:
+                        attrs['style'] = 'bold'
+                    dot.edge(str(n), str(g_id), **attrs)
+            for i in range(len(outputs)):
+                if outputs[i] == g_id:
+                    attrs = {}
+                    if outcompl[i] != 0:
+                        attrs['arrowhead'] = 'dot'
+                    dot.edge(str(g_id), 'o_'+str(i), color=main_color)
+
+        # Inputs subgraph
+        input_subgraph = Digraph()
+        input_subgraph.attr('graph', rank='same')
+        input_list = sorted(input_list)
+        for i_input, g_id in enumerate(input_list):
+            input_subgraph.node(str(g_id), shape='doublecircle', style='filled',
+                                color=main_color, label='', pos="{},{}!".format(i_input, 0))
+
+        input_subgraph.attr('edge', style='invisible', arrowhead='none')
+        for i in range(len(input_list)-1):
+            input_subgraph.edge(str(input_list[i]), str(input_list[i+1]), weight="300")
+        dot.subgraph(input_subgraph)
+
+        # Outputs subgraph
+        for i, g_id in enumerate(outputs):
+            output_subgraph.node('o_' + str(i), shape='doublecircle', style='filled',
+                                 color=main_color, label='', pos="{},{}!".format(i, self.get_depth()))
+        # Add invisible edges to help ordering
+        output_subgraph.attr('edge', style='invisible', arrowhead='none')
+        for i in range(len(outputs)-1):
+            output_subgraph.edge('o_'+str(i), 'o_'+str(i+1), weight="300")
+        dot.subgraph(output_subgraph)
+
+        dot.graph_attr['rankdir'] = "BT"
+
+        #graph_title = "{} nodes, {} depth ({}+1 inputs).".format(graph.get_total_nr_nodes(),
+        #                                                         graph.get_depth(), graph.get_nr_inputs())
+        #if action_type is not None:
+        #    graph_title += " Applying {}".format(action_label)
+        #dot.graph_attr['label'] = graph_title
+        #dot.graph_attr['labelloc'] = 't'
+        dot.graph_attr['splines'] = 'ortho'
+        dot.graph_attr['bgcolor'] = background_color
+        dot.graph_attr['K'] = '0.1'
 
         return dot
 
