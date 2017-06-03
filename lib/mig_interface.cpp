@@ -769,7 +769,7 @@ namespace majesty {
 		if (z.first == x.first) { // Relevance applies!
 			return make_pair(y.first, x.second != y.second != z.second != yc);
 		}
-		const auto node = xmg.nodes()[z.first];
+		const auto& node = xmg.nodes()[z.first];
 		if (is_pi(node)) {
 			return z;
 		} else {
@@ -779,16 +779,6 @@ namespace majesty {
 			auto res = xmg.create(in1.first, in1.second, in2.first, in2.second, in3.first, in3.second);
 			res.second = (res.second != z.second);
 			return res;
-		}
-	}
-
-	void select_node(const xmg& xmg, nodeid nid, vector<unsigned>& nref) {
-		nref[nid]++;
-		const auto& node = xmg.nodes()[nid];
-		if (!is_pi(node)) {
-			select_node(xmg, node.in1, nref);
-			select_node(xmg, node.in2, nref);
-			select_node(xmg, node.in3, nref);
 		}
 	}
 
@@ -802,7 +792,6 @@ namespace majesty {
 		}
 
 		xmg tmp_res;
-		vector<unsigned> nref;
 		{
 			const auto& nodes = mig.nodes();
 			const auto nnodes = mig.nnodes();
@@ -843,11 +832,9 @@ namespace majesty {
 			}
 			const auto& outputs = mig.outputs();
 			const auto& outcompl = mig.outcompl();
-			nref.resize(tmp_res.nnodes());
 			for (auto i = 0u; i < outputs.size(); i++) {
 				const auto nodeid = outputs[i];
 				const auto np = nodemap[nodeid];
-				select_node(tmp_res, np.first, nref);
 				tmp_res.create_output(np.first, np.second != outcompl[i]);
 			}
 		}
@@ -860,7 +847,7 @@ namespace majesty {
 			const auto& node = nodes[i];
 			if (is_pi(node)) {
 				nodemap[i] = make_pair(res.create_input(), false);
-			} else if (nref[i] > 0) {
+			} else if (node.nref > 0) {
 				const auto& in1 = nodemap[node.in1];
 				const auto& in2 = nodemap[node.in2];
 				const auto& in3 = nodemap[node.in3];
@@ -955,7 +942,6 @@ namespace majesty {
 		auto z_child = drop_child(drop_child(children, x_child), y_child)[0];
 
 		auto res = new xmg;
-		vector<unsigned> nref;
 		nodemap nodemap;
 		for (auto i = 0u; i < nnodes; i++) {
 			const auto& node = nodes[i];

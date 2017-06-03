@@ -505,6 +505,9 @@ namespace majesty {
 		set_pi(in);
 		auto idx = _nodes.size();
 		in.ecrep = idx;
+
+		in.nref = 0;
+
 		_nodes.push_back(in);
 		return idx;
 	}
@@ -514,6 +517,7 @@ namespace majesty {
 		in.flag = in.in1 = in.in2 = in.in3 = 0;
 		in.ecnext = EC_NULL;
 		set_pi(in);
+		in.nref = 0;
 		if (c) {
 			set_c1(in);
 		}
@@ -530,6 +534,7 @@ namespace majesty {
 		set_pi(in);
 		auto idx = _nodes.size();
 		in.ecrep = idx;
+		in.nref = 0;
 		_nodes.push_back(in);
 		_innames.push_back(name);
 		return idx;
@@ -542,6 +547,7 @@ namespace majesty {
 		set_pi(in);
 		auto idx = _nodes.size();
 		in.ecrep = idx;
+		in.nref = 0;
 		_nodes.push_back(in);
 		// Make a SAT variable for this input
 		var_map[idx] = solver.newVar();
@@ -555,6 +561,7 @@ namespace majesty {
 		set_pi(in);
 		auto idx = _nodes.size();
 		in.ecrep = idx;
+		in.nref = 0;
 		_nodes.push_back(in);
 		_innames.push_back(name);
 		// Make a SAT variable for this input
@@ -571,7 +578,15 @@ namespace majesty {
 		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
+		n.nref = 0;
 		_nodes.push_back(n);
+
+		auto& n1 = _nodes[in1];
+		n1.nref++;
+		auto& n2 = _nodes[in2];
+		n2.nref++;
+		auto& n3 = _nodes[in3];
+		n3.nref++;
 
 		return idx;
 	}
@@ -607,7 +622,15 @@ namespace majesty {
 		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
+		n.nref = 0;
 		_nodes.push_back(n);
+		
+		auto& n1 = _nodes[in1];
+		n1.nref++;
+		auto& n2 = _nodes[in2];
+		n2.nref++;
+		auto& n3 = _nodes[in3];
+		n3.nref++;
 
 		f[in1].push_back(idx);
 		f[in2].push_back(idx);
@@ -627,7 +650,13 @@ namespace majesty {
 		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
+		n.nref = 0;
 		_nodes.push_back(n);
+		
+		auto& n1 = _nodes[in1];
+		n1.nref++;
+		auto& n2 = _nodes[in2];
+		n2.nref++;
 
 		return idx;
 	}
@@ -658,7 +687,13 @@ namespace majesty {
 		n.ecnext = EC_NULL;
 		auto idx = _nodes.size();
 		n.ecrep = idx;
+		n.nref = 0;
 		_nodes.push_back(n);
+		
+		auto& n1 = _nodes[in1];
+		n1.nref++;
+		auto& n2 = _nodes[in2];
+		n2.nref++;
 
 		f[in1].push_back(idx);
 		f[in2].push_back(idx);
@@ -1102,6 +1137,7 @@ namespace majesty {
 			_outputs.push_back(nodeid);
 			_outcompl.push_back(c != migc);
 			auto& outnode = _nodes[nodeid];
+			outnode.nref++;
 			set_po(outnode);
 			_outnames.push_back(string(mig->outnames[i]));
 		}
@@ -1217,6 +1253,7 @@ namespace majesty {
 			_outputs.push_back(noderep);
 			_outcompl.push_back((c != migc) != nodec);
 			auto& outnode = _nodes[noderep];
+			outnode.nref++;
 			set_po(outnode);
 			_outnames.push_back(string(mig->outnames[i]));
 		}
@@ -1360,6 +1397,7 @@ namespace majesty {
 			_outputs.push_back(noderep);
 			_outcompl.push_back((c != xmgc) != nodec);
 			auto& outnode = _nodes[noderep];
+			outnode.nref++;
 			set_po(outnode);
 			_outnames.push_back(xmg._outnames[i]);
 		}
@@ -1552,6 +1590,7 @@ namespace majesty {
 
 	void xmg::create_output(nodeid nodeid, bool c) {
 		auto& outnode = _nodes[nodeid];
+		outnode.nref++;
 		set_po(outnode);
 		_outputs.push_back(nodeid);
 		_outcompl.push_back(c);

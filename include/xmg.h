@@ -108,6 +108,7 @@ namespace majesty {
 		 * Bit 7: if set this is an XOR node
 		 */
 		uint8_t flag;
+		int nref;
 		nodeid ecrep, ecnext;
 
 		bool operator==(const node &o) const
