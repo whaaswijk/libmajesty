@@ -337,6 +337,7 @@ namespace majesty {
 			int depth() const;
 			std::vector<nodeid> topological_critical_path();
 			const std::vector<node>& nodes() const { return _nodes; }
+			std::vector<node>& mut_nodes() { return _nodes; }
 			const std::vector<edge> edges_gl() const;
 			node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
