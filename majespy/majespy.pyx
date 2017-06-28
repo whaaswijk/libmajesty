@@ -870,6 +870,10 @@ cdef class PyXmg:
         return self.c_xmg.equals(py_xmg.c_xmg[0])
 
     def to_verilog(self):
+        if self.c_xmg.ninnames() == 0:
+            self.c_xmg.create_dummy_innames()
+        if self.c_xmg.noutnames() == 0:
+            self.c_xmg.create_dummy_outnames()
         cdef string vstr = self.c_xmg.to_verilog()
         return vstr.decode('UTF-8')
 

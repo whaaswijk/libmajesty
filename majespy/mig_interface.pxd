@@ -22,6 +22,12 @@ cdef extern from "xmg.h" namespace "majesty":
         bool equals(const xmg &) const
         vector[nodeid] topological_critical_path()
 
+        unsigned ninnames() const
+        unsigned noutnames() const
+
+        void create_dummy_innames()
+        void create_dummy_outnames()
+        void create_dummy_names()
         string to_verilog() 
 
 

@@ -341,6 +341,8 @@ namespace majesty {
 			const std::vector<edge> edges_gl() const;
 			node& get_node(nodeid id) { return _nodes[id]; }
 			const std::vector<nodeid>& outputs() const { return _outputs; }
+			unsigned ninnames() const { return _innames.size(); }
+			unsigned noutnames() const { return _outnames.size(); }
 			const std::vector<std::string>& innames() const { 
 				return _innames;
 		   	}
