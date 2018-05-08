@@ -34,6 +34,24 @@ void iddfs(const xmg* m, int level) {
 	}
 }
 
+TEST_CASE("MIG 3-input moves test", "[mig game]") {
+	for (int i = 0; i < 10; i++) {
+		printf("i=%d\n", i);
+		auto m = mig_int_decompose(3, i);
+		auto moves = compute_moves(*m);
+		for (auto move : moves) {
+			auto n = apply_move(*m, move);
+			auto noves = compute_moves(*n);
+			for (auto nove : noves) {
+				auto o = apply_move(*n, nove);
+				delete o;
+			}
+			delete n;
+		}
+		delete m;
+	}
+}
+
 /*
 TEST_CASE("MIG Moves Test", "[mig game]") {
 	const auto ninputs = 3;
@@ -46,7 +64,6 @@ TEST_CASE("MIG Moves Test", "[mig game]") {
 		std::cout << i << std::endl;
 	}
 }
-*/
 
 TEST_CASE("MIG Nr. Moves Test", "[mig game]") {
 	const auto ninputs = 3;
@@ -203,6 +220,7 @@ TEST_CASE("Fanin 3 Ntk Equivalence", "[exact synthesis]") {
 		REQUIRE(new_size <= old_size);
 	}
 }
+*/
 
 #ifndef _WIN32
 #include <maj_io.h>
@@ -371,7 +389,6 @@ TEST_CASE("Function Store Stats", "[statistics]") {
 	function_store fstore;
 	auto store_stats = fstore.get_store_stats();
 }
-*/
 
 TEST_CASE("XMG String Serialization", "[serialization]") {
     // Get a MIG and use it to test on
@@ -435,5 +452,6 @@ TEST_CASE("Substitution test", "[game]") {
 	REQUIRE(m.equals(*m2));
 	delete m2;
 }
+*/
 
 #endif

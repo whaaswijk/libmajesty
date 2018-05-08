@@ -852,7 +852,9 @@ namespace majesty {
 		if (z.first == x.first) { // Relevance applies!
 			return make_pair(y.first, x.second != y.second != z.second != yc);
 		}
-		const auto& node = xmg.nodes()[z.first];
+		const auto node = xmg.nodes()[z.first];
+		printf("z.first=%u\n", z.first);
+		printf("node.in1=%u,node.in2=%u,node.in3=%u\n", node.in1, node.in2, node.in3);
 		if (is_pi(node)) {
 			return z;
 		} else {
