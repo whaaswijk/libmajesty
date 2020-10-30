@@ -1,3 +1,4 @@
+project(libmajesty)
 cmake_minimum_required(VERSION 2.8)
 
 include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
@@ -9,7 +10,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -DLIN64")
 
 externalproject_add(
 	abc-project
-	HG_REPOSITORY "https://bitbucket.org/alanmi/abc"
+	GIT_REPOSITORY "https://github.com/berkeley-abc/abc.git"
 	PREFIX "abc"
 	CONFIGURE_COMMAND ""
 	UPDATE_COMMAND ""
