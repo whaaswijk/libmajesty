@@ -36,7 +36,7 @@ namespace majesty {
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned);
 	boost::optional<xmg> xmg_from_luts(const xmg&, const cover&, const bestmap&, const funcmap&, std::vector<cirkit::tt>&, unsigned, timeout_behavior);
 
-	logic_ntk abc_heuristic_logic_ntk(const cirkit::tt& func) {
+	inline logic_ntk abc_heuristic_logic_ntk(const cirkit::tt& func) {
 		auto optcmd = (boost::format("abc -c \"read_truth %s; strash; resyn2; write_verilog tmp.v\"") % cirkit::tt_to_hex(func)).str();
 		auto success = system(optcmd.c_str());
 		if (success != 0) {
@@ -58,7 +58,7 @@ namespace majesty {
 	}
 
 	std::pair<nodeid, bool> 
-		parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, 
+	inline parse_into_logic_ntk(logic_ntk& ntk, const logic_ntk& opt_ntk, 
 				const input_map_t& imap, bool invert_output) {
 		const auto& opt_nodes = opt_ntk.nodes();
 		std::vector<std::pair<nodeid,bool>> nids(opt_nodes.size());
@@ -301,7 +301,7 @@ namespace majesty {
 		return cntk;
 	}
 
-	int recursive_deselect(const nodeid nid, const std::vector<ln_node>& nodes, std::unordered_map<nodeid,unsigned>& nref) {
+       inline int recursive_deselect(const nodeid nid, const std::vector<ln_node>& nodes, std::unordered_map<nodeid,unsigned>& nref) {
 		const auto& node = nodes[nid];
 		if (node.pi) {
 			return 0;
@@ -316,7 +316,7 @@ namespace majesty {
 		return area;
 	}
 
-	int recursive_select(const nodeid nid, const std::vector<ln_node>& nodes, std::unordered_map<nodeid,unsigned>& nref) {
+	inline int recursive_select(const nodeid nid, const std::vector<ln_node>& nodes, std::unordered_map<nodeid,unsigned>& nref) {
 		const auto& node = nodes[nid];
 		if (node.pi) {
 			return 0;
@@ -332,7 +332,7 @@ namespace majesty {
 		return area;
 	}
 
-	int virtual_recursive_deselect(const logic_ntk& ntk, const logic_ntk& opt_ntk, 
+	inline int virtual_recursive_deselect(const logic_ntk& ntk, const logic_ntk& opt_ntk, 
 			const std::vector<nodeid>& fanin, const std::unordered_map<nodeid, nodeid>& nodemap, 
 			std::unordered_map<nodeid, unsigned>& nref) {
 		auto area = 0;
@@ -355,7 +355,7 @@ namespace majesty {
 		return area;
 	}
 
-	int virtual_recursive_select(const logic_ntk& ntk, const logic_ntk& opt_ntk, 
+	inline int virtual_recursive_select(const logic_ntk& ntk, const logic_ntk& opt_ntk, 
 			const std::vector<nodeid>& fanin, const std::unordered_map<nodeid,nodeid>& nodemap, 
 			std::unordered_map<nodeid,unsigned>& nref) {
 		auto area = 0;

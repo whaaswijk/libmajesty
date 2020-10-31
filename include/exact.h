@@ -998,7 +998,7 @@ namespace majesty {
 	}
 
 	// We only want gates to implement functions from the specified set of restricted functions
-	void add_gate_restrictions(synth_spec* spec, const std::vector<cirkit::tt>& restricted_functions) {
+	inline void add_gate_restrictions(synth_spec* spec, const std::vector<cirkit::tt>& restricted_functions) {
 		assert(restricted_functions.size() > 0);
 		const auto num_vars = tt_num_vars(restricted_functions[0]);
 		const auto num_funcs = (1u << (1u << num_vars)) / 2; // Divide by 2 since we only consider normal functions
